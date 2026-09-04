@@ -45,3 +45,11 @@ Single-file database, synchronous driver, no server process to run on the Linux 
 ## 2026-09-05 — Missing files are flagged, not deleted
 
 `media_files.missing` is set when a scan no longer finds a file. The row and any playback state stay. Reason: renames and folder moves are common with downloaded media, and losing watch history for them is worse than a stale row.
+
+## 2026-09-05 — Lockout numbers and status codes
+
+Five wrong PINs lock a profile for fifteen minutes; login is also capped at twenty attempts per minute per IP. A four-digit PIN has ten thousand combinations, so these limits make online guessing take weeks. Locked profiles answer 423 Locked rather than 401 so clients can show a specific message. Unknown profile ids answer 401 with the same message as a wrong PIN, and the server still runs an Argon2 verify so timing does not reveal which it was.
+
+## 2026-09-05 — Tokens are stored hashed
+
+Sessions hold a SHA-256 of the bearer token, never the token. Tokens are 32 random bytes so a fast hash is enough; Argon2 is reserved for the low-entropy PINs.

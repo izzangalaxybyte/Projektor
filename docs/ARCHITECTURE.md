@@ -12,6 +12,12 @@ Describes what exists now. Planned components are in [PLAN.md](PLAN.md) and move
 
 `server/src/config.ts` parses the environment with zod into a `Config` and creates the `DATA_DIR` layout (`projektor.sqlite`, `images/`, `subtitles/`, `transcode/`). `buildApp` takes a `Config`, opens the database, and decorates the Fastify instance with `config` and `db` so routes reach both through `app`. Tests get an isolated `Config` in a temp directory from `test-utils.ts`.
 
+## Authentication
+
+`server/src/auth/` holds the pieces. `pin.ts` hashes PINs with Argon2id. `tokens.ts` generates 32-byte random bearer tokens and hashes them with SHA-256 for storage, so a leaked database does not leak usable tokens. `service.ts` is `AuthService`: setup, profile listing, login with the failed-attempt counter and lockout, token resolution, and session revocation. `plugin.ts` registers the service on `app.auth`, adds an `onRequest` hook that rejects any `/api` request without a valid token unless the route sets `config.public`, and exposes `app.requireAdmin` as a preHandler for admin-only routes. Routes live in `routes/auth.ts`.
+
+Login is rate limited per IP with `@fastify/rate-limit` (registered with `global: false`, applied only where a route sets `config.rateLimit`). Lockout is per profile: five wrong PINs lock it for fifteen minutes.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.
