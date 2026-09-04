@@ -1,0 +1,18 @@
+{
+  "name": "projektor",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Self-hosted media server for movies, TV shows, and anime with browser, Android, Android TV, iPad, and Samsung TV clients.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "scripts": {
+    "lint": "pnpm -r --if-present run lint",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build"
+  }
+}

@@ -1,0 +1,23 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+.env
+.env.local
+
+# generated media fixtures
+fixtures/
+
+# server runtime data
+data/
+
+# native builds
+android/.gradle/
+android/**/build/
+android/local.properties
+ios/**/xcuserdata/
+ios/**/DerivedData/
+tizen/.buildResult/
+tizen/*.wgt
