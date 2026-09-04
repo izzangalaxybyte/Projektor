@@ -13,31 +13,31 @@ One row per sub-phase from [PLAN.md](PLAN.md). Status is `todo`, `in progress`, 
 
 ## Phase 1 — Server + browser app (MVP)
 
-| Sub-phase                                        | Status | Landed in | Check |
-| ------------------------------------------------ | ------ | --------- | ----- |
-| 1.1 Database + config                            | todo   |           |       |
-| 1.2 Auth + setup wizard                          | todo   |           |       |
-| 1.3 Library CRUD + file walk                     | todo   |           |       |
-| 1.4 ffprobe + streams                            | todo   |           |       |
-| 1.5 Scene filename parsing                       | todo   |           |       |
-| 1.6 Fansub filename parsing                      | todo   |           |       |
-| 1.7 TMDB matching + artwork                      | todo   |           |       |
-| 1.8 AniList matching + season mapping            | todo   |           |       |
-| 1.9 Fix-match endpoint                           | todo   |           |       |
-| 1.10 Watcher + manual scan                       | todo   |           |       |
-| 1.11 Direct play                                 | todo   |           |       |
-| 1.12 Playback decision                           | todo   |           |       |
-| 1.13 HLS remux                                   | todo   |           |       |
-| 1.14 HLS transcode + seek restart                | todo   |           |       |
-| 1.15 VAAPI path                                  | todo   |           |       |
-| 1.16 Embedded + sidecar subtitles                | todo   |           |       |
-| 1.17 Progress + continue watching + next episode | todo   |           |       |
-| 1.18 Contract freeze                             | todo   |           |       |
-| 1.19 Web shell + auth                            | todo   |           |       |
-| 1.20 Browse screens                              | todo   |           |       |
-| 1.21 Player                                      | todo   |           |       |
-| 1.22 Settings + fix-match UI                     | todo   |           |       |
-| 1.23 Docker + deploy                             | todo   |           |       |
+| Sub-phase                                        | Status | Landed in | Check                                                                                                                                                 |
+| ------------------------------------------------ | ------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1 Database + config                            | done   | PR #2     | fresh `DATA_DIR` start created the SQLite file with 13 tables and the layout dirs; second start applied no migrations; `db/index.test.ts` covers both |
+| 1.2 Auth + setup wizard                          | todo   |           |                                                                                                                                                       |
+| 1.3 Library CRUD + file walk                     | todo   |           |                                                                                                                                                       |
+| 1.4 ffprobe + streams                            | todo   |           |                                                                                                                                                       |
+| 1.5 Scene filename parsing                       | todo   |           |                                                                                                                                                       |
+| 1.6 Fansub filename parsing                      | todo   |           |                                                                                                                                                       |
+| 1.7 TMDB matching + artwork                      | todo   |           |                                                                                                                                                       |
+| 1.8 AniList matching + season mapping            | todo   |           |                                                                                                                                                       |
+| 1.9 Fix-match endpoint                           | todo   |           |                                                                                                                                                       |
+| 1.10 Watcher + manual scan                       | todo   |           |                                                                                                                                                       |
+| 1.11 Direct play                                 | todo   |           |                                                                                                                                                       |
+| 1.12 Playback decision                           | todo   |           |                                                                                                                                                       |
+| 1.13 HLS remux                                   | todo   |           |                                                                                                                                                       |
+| 1.14 HLS transcode + seek restart                | todo   |           |                                                                                                                                                       |
+| 1.15 VAAPI path                                  | todo   |           |                                                                                                                                                       |
+| 1.16 Embedded + sidecar subtitles                | todo   |           |                                                                                                                                                       |
+| 1.17 Progress + continue watching + next episode | todo   |           |                                                                                                                                                       |
+| 1.18 Contract freeze                             | todo   |           |                                                                                                                                                       |
+| 1.19 Web shell + auth                            | todo   |           |                                                                                                                                                       |
+| 1.20 Browse screens                              | todo   |           |                                                                                                                                                       |
+| 1.21 Player                                      | todo   |           |                                                                                                                                                       |
+| 1.22 Settings + fix-match UI                     | todo   |           |                                                                                                                                                       |
+| 1.23 Docker + deploy                             | todo   |           |                                                                                                                                                       |
 
 ## Phase 2 — Android phone + Android TV
 
