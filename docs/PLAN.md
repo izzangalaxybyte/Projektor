@@ -100,13 +100,27 @@ Kotlin, Gradle with version catalog, minSdk 24 for mobile, 26 for TV.
 
 SwiftUI with deployment target iOS 15.0, so `NavigationView` not `NavigationStack`, and any iOS 16+ API is wrapped in `if #available`. AVPlayer handles HLS with subtitle renditions natively and direct-plays MP4/MOV; MKV goes through the server remux path. API client generated with `swift-openapi-generator` (or hand-written `URLSession` + `Codable` if the generator's iOS 15 support is a problem). Screens: Home, Movies, TV Shows, and Anime grids, detail, player with Picture-in-Picture and audio/subtitle track pickers. Progress reported on a timer and on background. Signed with a free Apple ID; `docs/ipad.md` explains the 7-day reinstall.
 
+## Documentation
+
+Documentation is part of every sub-phase, not a later cleanup. A sub-phase is not done until its check passes and these files reflect it:
+
+- `docs/PROGRESS.md` — one row per sub-phase with status (todo, in progress, done), the commit or PR that landed it, and how its check was run. Updated at the end of every sub-phase.
+- `docs/ARCHITECTURE.md` — the current shape of the system: packages, data flow, data model, playback decision, HLS session lifecycle. Updated whenever a sub-phase adds or changes a component.
+- `docs/DEV.md` — how to install, run, test, and regenerate the API client on a dev machine. Updated whenever a command or prerequisite changes.
+- `docs/API.md` — short prose guide to the API grouped by area, pointing at `packages/api-contract/openapi.json` as the source of truth. Updated whenever routes or schemas change.
+- `docs/DECISIONS.md` — dated log of design decisions and the reasoning, so later phases do not re-argue them. Appended whenever a non-obvious choice is made.
+- Platform guides (`docs/server.md`, `docs/android.md`, `docs/tizen.md`, `docs/ipad.md`) — created in the sub-phase that first targets the platform and kept current after that.
+- Code comments only where the code cannot say it: ffmpeg argument choices, platform quirks, workarounds with a link to the upstream issue.
+
+Each doc states what is true now. Superseded content is removed, not struck through; history lives in git. The PR for a sub-phase includes its doc updates in the same PR.
+
 ## Phases and order
 
-Each phase ends with something usable on its own. Sub-phases are sized to a few hours to a day each, and every one ends with a check you can run. Nothing in a later sub-phase is started until the earlier one's check passes.
+Each phase ends with something usable on its own. Sub-phases are sized to a few hours to a day each, and every one ends with a check you can run. Nothing in a later sub-phase is started until the earlier one's check passes and its documentation (see Documentation above) is updated. Every sub-phase lands as a PR into `main`.
 
 ### Phase 0 — Scaffold and contract
 
-- **0.1 Repo skeleton.** `docs/PLAN.md`, `.gitignore`, `.editorconfig`, pnpm workspace with empty `server/`, `web/`, `packages/api-contract/`. Check: `pnpm install` succeeds. First commit.
+- **0.1 Repo skeleton.** `docs/PLAN.md`, `docs/PROGRESS.md`, `docs/DEV.md`, `.gitignore`, `.editorconfig`, pnpm workspace with empty `server/`, `web/`, `packages/api-contract/`. Check: `pnpm install` succeeds. First commit.
 - **0.2 Tooling.** Shared `tsconfig.base.json`, ESLint + Prettier, vitest wired in every TS package, root scripts `lint`, `typecheck`, `test`. Check: all three run green on empty packages.
 - **0.3 Fixtures script.** `scripts/make-fixtures.sh` produces a 30s h264/aac mp4, a hevc+ac3 mkv with an embedded srt, a scene-named file, and a fansub-named mkv with two audio tracks and an embedded ASS track into `fixtures/` (gitignored). Check: ffprobe on each file shows the expected streams.
 - **0.4 Contract v0.** zod schemas for auth, libraries, items, playback decision, progress; Fastify boots with `/api/health` and serves the OpenAPI doc; `packages/api-contract` regenerates `openapi.json` and a typed fetch client. Check: generated client compiles against a running server.
