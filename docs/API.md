@@ -20,7 +20,6 @@ The source of truth is [`packages/api-contract/openapi.json`](../packages/api-co
 
 Grouped by the sub-phase that will route them.
 
-- **Libraries (1.3, 1.10)** — `Library`, `CreateLibraryRequest`, `ScanStatus`.
 - **Items (1.7 to 1.9, 1.17)** — `ItemSummary`, `ItemDetail`, `MediaFile`, `StreamInfo`, `ItemsQuery`, `FixMatchRequest`, `ProgressState`.
 - **Playback (1.11 to 1.14)** — `DeviceProfile`, `PlaybackDecideRequest`, `PlaybackDecision`, `PlaybackMethod`, `ProgressUpdateRequest`.
 
