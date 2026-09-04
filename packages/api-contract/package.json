@@ -3,5 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {}
+  "scripts": {
+    "lint": "eslint -c ../../eslint.config.js src",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
 }
