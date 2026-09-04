@@ -153,6 +153,36 @@ describe('identifyFiles', () => {
     });
   });
 
+  it('routes anime libraries through the fansub parser and groups by absolute number', async () => {
+    const root = tree([
+      '[Group] Frieren - 01 [1080p].mkv',
+      '[Group] Frieren - 01v2 [1080p].mkv',
+      '[Group] Frieren - 02 [1080p].mkv',
+      '[Group] Frieren S2 - 03 [1080p].mkv',
+    ]);
+    const { db, id } = library('anime', root);
+    const scan = await scanLibrary(db, id);
+    expect(identifyFiles(db, scan.changedFileIds)).toEqual({ movies: 0, episodes: 4, skipped: 0 });
+
+    const shows = db.select().from(schema.shows).all();
+    expect(shows.map((s) => s.title)).toEqual(['Frieren']);
+    const episodes = db
+      .select()
+      .from(schema.episodes)
+      .where(eq(schema.episodes.showId, shows[0]!.id))
+      .orderBy(schema.episodes.absoluteNumber, schema.episodes.episodeNumber)
+      .all();
+    expect(episodes.map((e) => [e.seasonNumber, e.episodeNumber, e.absoluteNumber])).toEqual([
+      [2, 3, null],
+      [null, null, 1],
+      [null, null, 2],
+    ]);
+    const first = episodes.find((e) => e.absoluteNumber === 1)!;
+    expect(
+      db.select().from(schema.mediaFiles).where(eq(schema.mediaFiles.episodeId, first.id)).all(),
+    ).toHaveLength(2);
+  });
+
   it('skips files that failed probing and is idempotent', async () => {
     const root = tree(['Show.S01E01.mkv', 'broken.mkv']);
     const { db, id } = library('tv', root);

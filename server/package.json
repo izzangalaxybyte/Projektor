@@ -16,7 +16,6 @@
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/sensible": "^6.0.5",
     "@fastify/swagger": "^9.8.1",
-    "anitomyscript": "^2.0.4",
     "argon2": "^0.45.1",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",

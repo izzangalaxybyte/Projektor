@@ -51,9 +51,6 @@ importers:
       '@fastify/swagger':
         specifier: ^9.8.1
         version: 9.8.1(supports-color@10.2.2)
-      anitomyscript:
-        specifier: ^2.0.4
-        version: 2.0.4
       argon2:
         specifier: ^0.45.1
         version: 0.45.1
@@ -918,9 +915,6 @@ packages:
 
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
-
-  anitomyscript@2.0.4:
-    resolution: {integrity: sha512-7LJ+td+POitox9fchXpNP0IydmsuODP+q8pgVeFhiYESNFPKWA+QH5IIIk+pZA9JYao7xTP7b1mXooL3I1XOFQ==}
 
   ansi-colors@4.1.3:
     resolution: {integrity: sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw==}
@@ -2522,8 +2516,6 @@ snapshots:
       fast-uri: 3.1.7
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
-
-  anitomyscript@2.0.4: {}
 
   ansi-colors@4.1.3: {}
 
