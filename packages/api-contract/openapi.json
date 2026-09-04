@@ -244,6 +244,17 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "filesProbed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "filesFailed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files ffprobe could not read"
+          },
           "startedAt": {
             "anyOf": [
               {
@@ -258,7 +269,16 @@
             ]
           }
         },
-        "required": ["libraryId", "state", "filesSeen", "filesChanged", "filesMissing", "startedAt"]
+        "required": [
+          "libraryId",
+          "state",
+          "filesSeen",
+          "filesChanged",
+          "filesMissing",
+          "filesProbed",
+          "filesFailed",
+          "startedAt"
+        ]
       },
       "ProgressStateInput": {
         "type": "object",
@@ -1115,6 +1135,17 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "filesProbed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "filesFailed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files ffprobe could not read"
+          },
           "startedAt": {
             "anyOf": [
               {
@@ -1135,6 +1166,8 @@
           "filesSeen",
           "filesChanged",
           "filesMissing",
+          "filesProbed",
+          "filesFailed",
           "startedAt"
         ],
         "additionalProperties": false

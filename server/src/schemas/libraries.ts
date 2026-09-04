@@ -24,6 +24,12 @@ export const ScanStatus = z
     filesSeen: z.number().int().nonnegative(),
     filesChanged: z.number().int().nonnegative(),
     filesMissing: z.number().int().nonnegative(),
+    filesProbed: z.number().int().nonnegative(),
+    filesFailed: z
+      .number()
+      .int()
+      .nonnegative()
+      .meta({ description: 'Files ffprobe could not read' }),
     startedAt: Timestamp.nullable(),
   })
   .meta({ id: 'ScanStatus' });

@@ -57,3 +57,11 @@ Sessions hold a SHA-256 of the bearer token, never the token. Tokens are 32 rand
 ## 2026-09-05 — Scan compares size and mtime, not hashes
 
 A file is "unchanged" when its size and mtime match the last scan. Hashing a multi-gigabyte library on every scan is not worth it; the rare false negative (same size, same mtime, different content) is corrected by a manual rescan after a rename.
+
+## 2026-09-05 — Probe failures are recorded, not retried every scan
+
+A file ffprobe rejects gets `probedAt` set and the error stored in `probeJson`. Retrying it on every scan would waste time on files that will never play. The scanner clears `probedAt` when size or mtime change, so a repaired or replaced file is probed again.
+
+## 2026-09-05 — Fixture files with subtitles use `-t`, not `-shortest`
+
+`-shortest` ends the output at the shortest input, and a subtitle input ends at its last cue. The anime and TV fixtures were 8 seconds long instead of 30 until this was caught by the probe tests.

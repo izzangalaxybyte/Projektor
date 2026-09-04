@@ -668,6 +668,9 @@ export interface components {
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
+      filesProbed: number;
+      /** @description Files ffprobe could not read */
+      filesFailed: number;
       startedAt: string | null;
     };
     ProgressStateInput: {
@@ -877,6 +880,9 @@ export interface components {
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
+      filesProbed: number;
+      /** @description Files ffprobe could not read */
+      filesFailed: number;
       startedAt: string | null;
     };
     ProgressState: {
