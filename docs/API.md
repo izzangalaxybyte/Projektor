@@ -12,9 +12,24 @@ The source of truth is [`packages/api-contract/openapi.json`](../packages/api-co
 
 ## Routes available now
 
-| Route             | Purpose                                                                    |
-| ----------------- | -------------------------------------------------------------------------- |
-| `GET /api/health` | Liveness. Returns `status`, server `version`, and current `time`. No auth. |
+| Route                            | Auth                  | Purpose                                                                                                                                                                                                                                         |
+| -------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/health`                | public                | Liveness. Returns `status`, server `version`, and current `time`.                                                                                                                                                                               |
+| `GET /api/auth/setup`            | public                | `{ needsSetup }`, true until the first admin exists.                                                                                                                                                                                            |
+| `POST /api/auth/setup`           | public                | Create the first admin profile from `{ name, pin }` and return `{ token, profile }`. 409 once any profile exists.                                                                                                                               |
+| `GET /api/auth/profiles`         | public                | Profiles for the login screen: id, name, admin flag, avatar colour.                                                                                                                                                                             |
+| `POST /api/auth/login`           | public, 20/min per IP | `{ profileId, pin, deviceName }` to `{ token, profile }`. 401 wrong PIN or unknown profile, 423 locked, 429 rate limited.                                                                                                                       |
+| `GET /api/auth/me`               | token                 | The profile behind the token.                                                                                                                                                                                                                   |
+| `POST /api/auth/logout`          | token                 | Revoke the current token. 204.                                                                                                                                                                                                                  |
+| `GET /api/auth/sessions`         | token                 | Devices logged in to this profile, with `current` marking the caller.                                                                                                                                                                           |
+| `DELETE /api/auth/sessions/{id}` | token                 | Log out another device. 404 if not yours.                                                                                                                                                                                                       |
+| `GET /api/libraries`             | token                 | All libraries with kind, paths, and last scan time.                                                                                                                                                                                             |
+| `GET /api/libraries/{id}`        | token                 | One library.                                                                                                                                                                                                                                    |
+| `POST /api/libraries`            | admin                 | Create from `{ name, kind, paths }`. Every path must be an existing directory; duplicates are collapsed. 201.                                                                                                                                   |
+| `DELETE /api/libraries/{id}`     | admin                 | Delete the library and, by cascade, every file, item, and stream indexed from it. 204.                                                                                                                                                          |
+| `POST /api/libraries/{id}/scan`  | admin                 | Walk the library now, reconcile files, and probe new or changed ones with ffprobe. Blocks until done and returns `ScanStatus` with `filesSeen`, `filesChanged`, `filesMissing`, `filesProbed`, `filesFailed`. Becomes a background job in 1.10. |
+
+PINs are 4 to 6 digits. Five wrong PINs in a row lock the profile for 15 minutes; during the lockout even the right PIN returns 423.
 
 ## Schemas defined for upcoming routes
 
