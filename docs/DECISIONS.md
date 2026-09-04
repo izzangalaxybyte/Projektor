@@ -53,3 +53,7 @@ Five wrong PINs lock a profile for fifteen minutes; login is also capped at twen
 ## 2026-09-05 — Tokens are stored hashed
 
 Sessions hold a SHA-256 of the bearer token, never the token. Tokens are 32 random bytes so a fast hash is enough; Argon2 is reserved for the low-entropy PINs.
+
+## 2026-09-05 — Scan compares size and mtime, not hashes
+
+A file is "unchanged" when its size and mtime match the last scan. Hashing a multi-gigabyte library on every scan is not worth it; the rare false negative (same size, same mtime, different content) is corrected by a manual rescan after a rename.

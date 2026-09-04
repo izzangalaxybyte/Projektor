@@ -18,6 +18,10 @@ Describes what exists now. Planned components are in [PLAN.md](PLAN.md) and move
 
 Login is rate limited per IP with `@fastify/rate-limit` (registered with `global: false`, applied only where a route sets `config.rateLimit`). Lockout is per profile: five wrong PINs lock it for fifteen minutes.
 
+## Libraries and scanning
+
+`server/src/library/service.ts` is `LibraryService`: create (validates every path is a directory, stores resolved and de-duplicated paths), list, get, delete. `walker.ts` is an async generator that walks a root breadth-first, yields files whose extension is in `VIDEO_EXTENSIONS`, skips dot-files and dot-directories, and reports unreadable directories through a callback instead of aborting. `scanner.ts` reconciles a library: for every walked file it inserts a new `media_files` row or, when size or mtime differ, updates the row and clears `probedAt` so the file is probed again; rows whose file was not seen are flagged `missing`, and a flagged row whose file reappears is unflagged. The scan returns counts plus the ids of files that need probing, which is the hand-off point for ffprobe in 1.4. Routes are in `routes/libraries.ts`; mutations require admin.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.
