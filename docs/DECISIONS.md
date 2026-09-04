@@ -37,3 +37,11 @@ The plan said Fastify 4; Fastify 5 is current and `fastify-type-provider-zod` 7 
 ## 2026-09-05 — Documentation is part of every sub-phase
 
 `docs/PROGRESS.md`, `ARCHITECTURE.md`, `DEV.md`, `API.md`, and this file are updated in the same PR as the code. A sub-phase is not done until its docs are.
+
+## 2026-09-05 — SQLite through better-sqlite3 and Drizzle
+
+Single-file database, synchronous driver, no server process to run on the Linux box. Drizzle gives typed queries and SQL migrations generated from the schema file, applied automatically on start. WAL mode so the scanner can write while clients read. Chosen over Prisma (heavier runtime, its own engine binary) and raw SQL (no types).
+
+## 2026-09-05 — Missing files are flagged, not deleted
+
+`media_files.missing` is set when a scan no longer finds a file. The row and any playback state stay. Reason: renames and folder moves are common with downloaded media, and losing watch history for them is worse than a stale row.

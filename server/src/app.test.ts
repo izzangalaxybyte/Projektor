@@ -2,13 +2,18 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
 import { HealthResponse } from './routes/health.js';
+import { makeTestConfig } from './test-utils.js';
 
 let app: FastifyInstance;
+const testConfig = makeTestConfig();
 beforeAll(async () => {
-  app = await buildApp();
+  app = await buildApp({ config: testConfig.config });
   await app.ready();
 });
-afterAll(() => app.close());
+afterAll(async () => {
+  await app.close();
+  testConfig.cleanup();
+});
 
 describe('GET /api/health', () => {
   it('returns a valid health payload', async () => {
