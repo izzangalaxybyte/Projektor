@@ -8,20 +8,37 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import type { Config } from './config.js';
+import { openDatabase, type Db } from './db/index.js';
 import { healthRoutes } from './routes/health.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
 
 export const API_VERSION = '0.0.0';
 
+declare module 'fastify' {
+  interface FastifyInstance {
+    config: Config;
+    db: Db;
+  }
+}
+
 export interface AppOptions {
+  config: Config;
   logger?: boolean;
 }
 
-export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
-  const app = fastify({ logger: options.logger ?? false }).withTypeProvider<ZodTypeProvider>();
+export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
+  const app = fastify({
+    logger: options.logger ? { level: options.config.logLevel } : false,
+  }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  const database = openDatabase(options.config.dbPath);
+  app.decorate('config', options.config);
+  app.decorate('db', database.db);
+  app.addHook('onClose', () => database.close());
 
   await app.register(sensible);
   await app.register(swagger, {

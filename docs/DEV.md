@@ -34,7 +34,29 @@ pnpm dev        # tsx watch, restarts on change
 pnpm start      # single run
 ```
 
-Listens on `0.0.0.0:8096` by default; override with `PORT` and `HOST`. `GET /api/health` is the liveness check.
+Listens on `0.0.0.0:8096` by default. `GET /api/health` is the liveness check.
+
+Environment variables (all optional):
+
+| Variable                       | Default              | Purpose                                     |
+| ------------------------------ | -------------------- | ------------------------------------------- |
+| `PORT`                         | `8096`               | Listen port                                 |
+| `HOST`                         | `0.0.0.0`            | Bind address                                |
+| `DATA_DIR`                     | `./data`             | Root for all server-owned state (see below) |
+| `LOG_LEVEL`                    | `info`               | pino level                                  |
+| `FFMPEG_PATH` / `FFPROBE_PATH` | `ffmpeg` / `ffprobe` | Binaries to spawn                           |
+
+`DATA_DIR` is created on start with this layout: `projektor.sqlite` (plus WAL files), `images/`, `subtitles/`, `transcode/`. Delete the directory to reset everything.
+
+## Database
+
+Schema lives in `server/src/db/schema.ts` (Drizzle ORM over better-sqlite3). Migrations are SQL files in `server/drizzle/` and run automatically on every start; a start with nothing pending is a no-op. After changing the schema:
+
+```bash
+cd server && pnpm db:generate
+```
+
+Commit the new file under `server/drizzle/` together with the schema change. Never edit an existing migration that has shipped.
 
 ## API contract
 

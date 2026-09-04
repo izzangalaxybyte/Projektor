@@ -1,7 +1,14 @@
 import { buildApp } from './app.js';
+import { loadConfig } from './config.js';
 
-const port = Number(process.env['PORT'] ?? 8096);
-const host = process.env['HOST'] ?? '0.0.0.0';
+const config = loadConfig();
+const app = await buildApp({ config, logger: true });
 
-const app = await buildApp({ logger: true });
-await app.listen({ port, host });
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    app.log.info({ signal }, 'shutting down');
+    void app.close().then(() => process.exit(0));
+  });
+}
+
+await app.listen({ port: config.port, host: config.host });
