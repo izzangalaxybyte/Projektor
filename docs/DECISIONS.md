@@ -65,3 +65,11 @@ A file ffprobe rejects gets `probedAt` set and the error stored in `probeJson`. 
 ## 2026-09-05 — Fixture files with subtitles use `-t`, not `-shortest`
 
 `-shortest` ends the output at the shortest input, and a subtitle input ends at its last cue. The anime and TV fixtures were 8 seconds long instead of 30 until this was caught by the probe tests.
+
+## 2026-09-05 — Items exist before metadata
+
+Files are linked to locally created movies, shows, seasons, and episodes as soon as they are parsed, flagged `needsReview`. Metadata matching later fills in TMDB and AniList data and clears the flag. Reason: the library is browsable and playable immediately after a scan, even with no API keys configured, and nothing is hidden because a match failed.
+
+## 2026-09-05 — Multi-episode files link to the first episode
+
+`S01E01-E02` parses with `episodeEnd = 2` but the file links only to episode 1. Storing the range in the database is deferred until a client needs to show it.

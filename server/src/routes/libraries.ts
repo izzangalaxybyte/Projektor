@@ -1,6 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { scanLibrary } from '../library/scanner.js';
+import { identifyFiles } from '../identify/identifier.js';
 import { probeFiles } from '../media/probe-service.js';
 import { LibraryError, LibraryService } from '../library/service.js';
 import { CreateLibraryRequest, ErrorResponse, Id, Library, ScanStatus } from '../schemas/index.js';
@@ -102,9 +103,11 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
         ffprobePath: app.config.ffprobePath,
         log: request.log,
       });
+      const identified = identifyFiles(app.db, result.changedFileIds, request.log);
       return {
         libraryId: request.params.id,
         state: 'idle' as const,
+        itemsLinked: identified.movies + identified.episodes,
         filesSeen: result.filesSeen,
         filesChanged: result.filesChanged,
         filesMissing: result.filesMissing,
