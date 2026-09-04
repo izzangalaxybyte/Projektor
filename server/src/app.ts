@@ -14,6 +14,7 @@ import { openDatabase, type Db } from './db/index.js';
 import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
@@ -72,6 +73,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(healthRoutes, { version: API_VERSION });
       await api.register(authRoutes, { prefix: '/auth' });
       await api.register(librariesRoutes, { prefix: '/libraries' });
+      await api.register(itemsRoutes, { prefix: '/items' });
     },
     { prefix: '/api' },
   );

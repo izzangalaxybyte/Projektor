@@ -586,6 +586,108 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Browse or search items
+     * @description Without kind or parentId, lists movies and shows. With parentId set to a show, lists its seasons and season-less episodes; set to a season, lists its episodes.
+     */
+    get: {
+      parameters: {
+        query?: {
+          libraryKind?: components['schemas']['LibraryKindInput'];
+          kind?: components['schemas']['ItemKindInput'];
+          /** @description Opaque identifier */
+          parentId?: string;
+          search?: string;
+          needsReview?: boolean;
+          sort?: 'title' | 'year' | 'added' | 'lastPlayed';
+          offset?: number;
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              items: components['schemas']['ItemSummary'][];
+              total: number;
+              offset: number;
+              limit: number;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Item detail with files, streams, and children */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemDetail'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -671,6 +773,8 @@ export interface components {
       filesProbed: number;
       /** @description Files ffprobe could not read */
       filesFailed: number;
+      /** @description Files linked to a movie or episode this scan */
+      itemsLinked: number;
       startedAt: string | null;
     };
     ProgressStateInput: {
@@ -883,6 +987,8 @@ export interface components {
       filesProbed: number;
       /** @description Files ffprobe could not read */
       filesFailed: number;
+      /** @description Files linked to a movie or episode this scan */
+      itemsLinked: number;
       startedAt: string | null;
     };
     ProgressState: {

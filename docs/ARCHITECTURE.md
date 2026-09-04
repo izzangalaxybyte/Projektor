@@ -26,6 +26,14 @@ Login is rate limited per IP with `@fastify/rate-limit` (registered with `global
 
 `server/src/media/ffprobe.ts` runs `ffprobe -print_format json -show_format -show_streams` through execa with an argument array (never a shell string) and a 60 second timeout, validates the JSON with zod, and normalises it: a canonical container name (ffprobe reports demuxer lists like `matroska,webm`, so the file extension breaks ties), duration in milliseconds, overall bitrate, and one entry per video, audio, or subtitle stream with codec, language (`und` becomes null), title, default and forced flags, dimensions, and channel count. Attached-picture streams (cover art) are dropped. `probe-service.ts` probes a list of file ids with a concurrency limit of 4, writes the result to `media_files` and replaces the file's `streams` rows in one transaction. A file ffprobe cannot read still gets `probedAt` set, with the error kept in `probeJson`, so broken files are not re-probed on every scan; a later change to the file clears `probedAt` through the scanner and it is tried again.
 
+## Identification
+
+`server/src/identify/scene-parser.ts` turns a file name plus its folder names into a `ParsedName`: kind (movie or episode), title, year, season, episode, and an `episodeEnd` for multi-episode files. Episode markers are matched first with our own patterns (`S01E02`, `S01E02-E03`, `S01.E02`, `1x05`, `Season 1 Episode 5`); `parse-torrent-title` then supplies titles and years and strips release tags. Folder hints fill gaps: a `Season NN` or `Specials` parent makes the grandparent the show title, and a Plex style `Title (Year)` parent overrides a bare movie file name. Every result carries a `confidence` that is `low` when it had to guess.
+
+`identifier.ts` links probed files to items. Movies group by library, normalised title (`sortKey`: lowercase, articles and punctuation removed), and year. Episodes group by show, season, and episode number; a file with no episode number gets its own row so it is visible for review. Seasons and shows are created on demand. Everything created here has `needsReview = true` until a metadata match confirms it. Files whose probe failed are left unlinked. The scan endpoint runs walk, probe, identify in that order.
+
+`items/service.ts` is the read model behind `/api/items`: it maps the four tables to `ItemSummary` and `ItemDetail`, handles browsing by library kind, kind, parent, search, and review flag, and attaches files with their streams to movies and episodes.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.

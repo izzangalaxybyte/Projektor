@@ -30,6 +30,11 @@ export const ScanStatus = z
       .int()
       .nonnegative()
       .meta({ description: 'Files ffprobe could not read' }),
+    itemsLinked: z
+      .number()
+      .int()
+      .nonnegative()
+      .meta({ description: 'Files linked to a movie or episode this scan' }),
     startedAt: Timestamp.nullable(),
   })
   .meta({ id: 'ScanStatus' });
