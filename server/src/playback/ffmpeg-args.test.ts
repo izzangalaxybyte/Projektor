@@ -231,7 +231,7 @@ describe('vodPlaylist', () => {
     expect(soft).toContain('-pix_fmt yuv420p');
   });
 
-  it('decodes on the CPU and encodes on the GPU in vaapi-encode mode, capping HDR at 1080p', () => {
+  it('decodes on the CPU and encodes on the GPU in vaapi-encode mode, capping HDR at 720p', () => {
     const b = base();
     const hdr4k: PlaybackSession = {
       ...b,
@@ -269,7 +269,7 @@ describe('vodPlaylist', () => {
     ).not.toContain('scale_vaapi=w=');
     expect(
       buildTranscodeArgs(hdr4k, '/out', { startSegment: 0, hardware: null }).join(' '),
-    ).toContain('-vf scale=1920:-2,zscale');
+    ).toContain('-vf scale=1280:-2,zscale');
     // Non-HDR 4K is not capped by the pipeline choice.
     const sdr4k: PlaybackSession = {
       ...hdr4k,
