@@ -39,7 +39,7 @@ enum class Tab(val label: String, val icon: ImageVector) {
 
 /** Bottom tabs. Each tab keeps its own state while the app is alive. */
 @Composable
-fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}) {
+fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}, openRecordings: () -> Unit = {}) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     Scaffold(
         bottomBar = {
@@ -62,7 +62,7 @@ fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChanne
             Tab.Movies -> LibraryScreen(container, LibraryKindInput.MOVIE, "Movies", openItem, modifier)
             Tab.Tv -> LibraryScreen(container, LibraryKindInput.TV, "TV Shows", openItem, modifier)
             Tab.Anime -> LibraryScreen(container, LibraryKindInput.ANIME, "Anime", openItem, modifier)
-            Tab.Live -> LiveScreen(container, openChannel, modifier)
+            Tab.Live -> LiveScreen(container, openChannel, modifier, openRecordings)
             Tab.Search -> SearchScreen(container, openItem, modifier)
         }
     }

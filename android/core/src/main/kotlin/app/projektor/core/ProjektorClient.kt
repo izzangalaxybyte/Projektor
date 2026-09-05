@@ -6,6 +6,7 @@ import app.projektor.core.api.apis.LibrariesApi
 import app.projektor.core.api.apis.LiveApi
 import app.projektor.core.api.apis.PlaybackApi
 import app.projektor.core.api.apis.ProgressApi
+import app.projektor.core.api.apis.RecordingsApi
 import app.projektor.core.api.apis.SettingsApi
 import app.projektor.core.api.apis.SystemApi
 import app.projektor.core.api.apis.UsersApi
@@ -60,6 +61,7 @@ class ProjektorClient(
     val progress by lazy { ProgressApi(base, httpEngine, configure) }
     val settings by lazy { SettingsApi(base, httpEngine, configure) }
     val live by lazy { LiveApi(base, httpEngine, configure) }
+    val recordings by lazy { RecordingsApi(base, httpEngine, configure) }
 
     /** URL for cached artwork at a given width. */
     fun imageUrl(key: String?, width: Int): String? = key?.let { "$base/api/images/$it?w=$width" }

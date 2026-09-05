@@ -89,6 +89,19 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  // Generated clients (the Kotlin one included) send body-less POSTs with a JSON content type
+  // and an empty body; Fastify's default parser rejects that with 400. Treat empty as no body.
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+    const text = typeof body === 'string' ? body : body.toString('utf8');
+    if (text.trim() === '') return done(null, undefined);
+    try {
+      done(null, JSON.parse(text));
+    } catch (error) {
+      const err = error as Error & { statusCode?: number };
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
 
   const database = openDatabase(options.config.dbPath);
   app.decorate('config', options.config);

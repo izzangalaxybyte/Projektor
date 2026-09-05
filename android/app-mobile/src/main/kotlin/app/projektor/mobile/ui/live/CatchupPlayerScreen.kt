@@ -72,6 +72,9 @@ sealed interface ProviderSource {
     data class Movie(val vodId: String) : ProviderSource {
         override val request = { p: app.projektor.core.api.models.DeviceProfileInput -> LiveDecideRequestInput(profile = p, vodId = vodId) }
     }
+    data class Recording(val recordingId: String) : ProviderSource {
+        override val request = { p: app.projektor.core.api.models.DeviceProfileInput -> LiveDecideRequestInput(profile = p, recordingId = recordingId) }
+    }
     data class Episode(val episodeId: String) : ProviderSource {
         override val request = { p: app.projektor.core.api.models.DeviceProfileInput -> LiveDecideRequestInput(profile = p, episodeId = episodeId) }
     }
@@ -182,5 +185,6 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
 private fun badge(d: LivePlaybackDecision): String = when (d.kind) {
     LivePlaybackDecision.Kind.CATCHUP -> "Catch-up"
     LivePlaybackDecision.Kind.LIVE -> "Live"
+    LivePlaybackDecision.Kind.RECORDING -> "Recording"
     LivePlaybackDecision.Kind.VOD -> if (d.method == LivePlaybackDecision.Method.DIRECT) "Direct play" else "Remux"
 }

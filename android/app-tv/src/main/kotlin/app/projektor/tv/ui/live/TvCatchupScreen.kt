@@ -61,7 +61,7 @@ private enum class Picker { SKIP, SPEED }
  * amount with the bar hidden, Centre toggles, Up/Down shows the bar with the skip and speed pickers).
  */
 @Composable
-fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: String, back: () -> Unit) {
+fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: String, back: () -> Unit, recordingId: String? = null) {
     val live = container.live() ?: return
     val client = container.client() ?: return
     val context = LocalContext.current
@@ -91,7 +91,7 @@ fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: Stri
     }
     LaunchedEffect(programmeId) {
         try {
-            val d = live.decide(LiveDecideRequestInput(profile = DeviceProfiles.current(), channelId = channelId, programmeId = programmeId))
+            val d = live.decide(if (recordingId != null) LiveDecideRequestInput(profile = DeviceProfiles.current(), recordingId = recordingId) else LiveDecideRequestInput(profile = DeviceProfiles.current(), channelId = channelId, programmeId = programmeId))
             decision = d
             player.load(liveMediaSpecFor(d, client), rate = settings.rate, knownDurationMs = (d.durationMs ?: 0).toLong())
             rootFocus.requestFocus()
@@ -146,7 +146,7 @@ fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: Stri
             val duration = if (state.durationMs > 0) state.durationMs else (decision?.durationMs ?: 0).toLong()
             Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 40.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(decision?.title ?: "", style = MaterialTheme.typography.titleLarge, modifier = Modifier.testTag("catchup-title"))
-                Text("Catch-up", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
+                Text(if (recordingId != null) "Recording" else "Catch-up", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(formatMs(state.positionMs), style = MaterialTheme.typography.labelLarge)
                     Box(Modifier.weight(1f).height(6.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {

@@ -161,6 +161,60 @@ describe('recordings', () => {
       ).toBe(404);
     });
 
+    it('stops promptly while a viewer shares the relay and data is still buffered', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/recordings',
+        headers: auth(),
+        payload: { channelId: '1001' },
+      });
+      const id = created.json().id;
+      await waitState(id, 'recording');
+      // A viewer on the same channel, reading slowly, so the relay keeps bytes buffered.
+      const viewer = new AbortController();
+      const res = await fetch(`${base}/api/live/channels/1001/stream?access_token=${token}`, {
+        signal: viewer.signal,
+      });
+      const reader = res.body!.getReader();
+      await reader.read();
+      await sleep(500);
+      const t0 = Date.now();
+      const stopped = await app.inject({
+        method: 'POST',
+        url: `/api/recordings/${id}/stop`,
+        headers: auth(),
+      });
+      expect(stopped.statusCode).toBe(200);
+      expect(stopped.json().state).toBe('done');
+      expect(Date.now() - t0).toBeLessThan(5_000);
+      viewer.abort();
+    });
+
+    it('accepts a body-less POST sent with a JSON content type and an empty body', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/recordings',
+        headers: auth(),
+        payload: { channelId: '1001' },
+      });
+      const id = created.json().id;
+      await waitState(id, 'recording');
+      // What the generated Kotlin client sends for POST /stop.
+      const res = await fetch(`${base}/api/recordings/${id}/stop`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: '',
+      });
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { state: string }).state).toBe('done');
+      const bad = await fetch(`${base}/api/recordings`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: '{not json',
+      });
+      expect(bad.status).toBe(400);
+    });
+
     it('stops on its own at the planned end', async () => {
       const startAt = new Date(Date.now() + 300).toISOString();
       const created = await app.inject({

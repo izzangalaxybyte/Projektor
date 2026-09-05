@@ -54,6 +54,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.ui.PlayerView
+import app.projektor.core.api.models.CreateRecordingRequestInput
 import app.projektor.core.api.models.LiveChannel
 import app.projektor.core.api.models.LiveDecideRequestInput
 import app.projektor.core.api.models.LivePlaybackDecision
@@ -87,7 +88,17 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
     var error by remember { mutableStateOf<String?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
+    var notice by remember { mutableStateOf<String?>(null) }
     val channel = channels.firstOrNull { it.id == current }
+    fun record(programmeId: String? = null) {
+        scope.launch {
+            notice = try {
+                val r = live.record(CreateRecordingRequestInput(channelId = current, programmeId = programmeId))
+                if (r.state.value == "scheduled") "Scheduled: ${r.title}" else "Recording: ${r.title}"
+            } catch (e: Exception) { e.userMessage() }
+        }
+    }
+    LaunchedEffect(notice) { if (notice != null) { delay(4_000); notice = null } }
 
     val player = remember { ProjektorPlayer(context) }
     val state by player.state.collectAsState()
@@ -148,6 +159,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
         Text(state.positionMs.toString(), Modifier.size(1.dp).testTag("position-ms"), color = Color.Transparent)
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
+        notice?.let { Text(it, Modifier.align(Alignment.TopCenter).padding(top = 72.dp).background(Color.Black.copy(alpha = 0.8f)).padding(horizontal = 16.dp, vertical = 8.dp).testTag("notice")) }
 
         if (controlsVisible || !state.isPlaying || showGuide) {
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -175,6 +187,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
                 } else Text("No guide information", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { showGuide = !showGuide; touched() }, modifier = Modifier.testTag("guide-toggle")) { Text("Guide") }
+                    OutlinedButton(onClick = { record(); touched() }, modifier = Modifier.testTag("record-now")) { Text("● Rec", color = MaterialTheme.colorScheme.error) }
                 }
             }
         }
@@ -195,6 +208,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
                                 p.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2) }
                             }
                             if (playable) TextButton(onClick = { openCatchup(current, p.id) }, modifier = Modifier.testTag("catchup-play")) { Text("Watch") }
+                            if (!ended) TextButton(onClick = { record(p.id) }, modifier = Modifier.testTag("record-programme")) { Text(if (LiveGuide.parseIso(p.startAt) <= System.currentTimeMillis()) "● Record" else "● Schedule") }
                         }
                     }
                 }

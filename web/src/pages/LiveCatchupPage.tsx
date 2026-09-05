@@ -17,7 +17,7 @@ import {
 import { buildDeviceProfile } from '../player/profile.js';
 import { fmt } from './ItemPage.js';
 
-export type ProviderSource = 'catchup' | 'movie' | 'episode';
+export type ProviderSource = 'catchup' | 'movie' | 'episode' | 'recording';
 
 /**
  * Seekable provider content: a catch-up programme, an IPTV movie, or a series episode. Unlike the
@@ -30,17 +30,27 @@ export function LiveCatchupPage({ source = 'catchup' }: { source?: ProviderSourc
     vodId = '',
     seriesId = '',
     episodeId = '',
+    recordingId = '',
   } = useParams();
   const navigate = useNavigate();
   const channels = useLiveChannels();
   const channel = channels.data?.find((c) => c.id === channelId);
-  const sourceKey = source === 'catchup' ? programmeId : source === 'movie' ? vodId : episodeId;
+  const sourceKey =
+    source === 'catchup'
+      ? programmeId
+      : source === 'movie'
+        ? vodId
+        : source === 'recording'
+          ? recordingId
+          : episodeId;
   const backTo =
     source === 'catchup'
       ? `/live/${channelId}/watch`
       : source === 'movie'
         ? `/live/movies/${vodId}`
-        : `/live/series/${seriesId}`;
+        : source === 'recording'
+          ? '/live/recordings'
+          : `/live/series/${seriesId}`;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HtmlVideoPlayer | null>(null);
@@ -78,7 +88,9 @@ export function LiveCatchupPage({ source = 'catchup' }: { source?: ProviderSourc
               ? { channelId, profile, programmeId }
               : source === 'movie'
                 ? { profile, vodId }
-                : { profile, episodeId },
+                : source === 'recording'
+                  ? { profile, recordingId }
+                  : { profile, episodeId },
         }),
       ),
   });
@@ -149,9 +161,11 @@ export function LiveCatchupPage({ source = 'catchup' }: { source?: ProviderSourc
   const badge =
     source === 'catchup'
       ? 'Catch-up'
-      : decision.data?.method === 'direct'
-        ? 'Direct play'
-        : 'Remux';
+      : source === 'recording'
+        ? 'Recording'
+        : decision.data?.method === 'direct'
+          ? 'Direct play'
+          : 'Remux';
 
   return (
     <div

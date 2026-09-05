@@ -175,3 +175,44 @@ test('IPTV movies and series: listed from the provider, a movie plays with exact
   await expect(page.getByTestId('catchup-title')).toHaveText('Sample Show · S1 E1 Pilot');
   await expect.poll(() => currentTime(page), { timeout: 30_000 }).toBeGreaterThan(0.5);
 });
+
+test('recordings: record from the guide, watch it go recording → done, play it, schedule and cancel', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto('/live/1001/watch');
+  await page.getByTestId('guide-toggle').click();
+  const guide = page.getByTestId('guide-panel');
+  // Big Match is on air: Record; Post-match is upcoming: Schedule.
+  await guide.locator('.guide-row', { hasText: 'Big Match' }).getByTestId('record-programme').click();
+  await expect(page.getByTestId('notice')).toContainText('Big Match');
+  await guide.locator('.guide-row', { hasText: 'Post-match' }).getByTestId('record-programme').click();
+  await expect(page.getByTestId('notice')).toContainText('Scheduled: Post-match');
+
+  await page.goto('/live/recordings');
+  await expect(page.getByTestId('recording-count')).toHaveText('2 recordings');
+  const scheduled = page.getByTestId('scheduled-list').locator('.recording-row', { hasText: 'Post-match' });
+  await expect(scheduled.getByTestId('rec-state')).toHaveText('Scheduled');
+  const running = page.getByTestId('recording-list').locator('.recording-row', { hasText: 'Big Match' });
+  await expect(running.getByTestId('rec-state')).toHaveText('Recording…', { timeout: 15_000 });
+
+  // Let a few seconds land on disk, then stop.
+  await page.waitForTimeout(4_000);
+  await running.getByTestId('stop').click();
+  await expect(running.getByTestId('rec-state')).toHaveText('Done', { timeout: 15_000 });
+  await expect(running).toContainText(/KB|MB/);
+
+  await running.getByTestId('play').click();
+  await expect(page).toHaveURL(/\/live\/recordings\/[^/]+\/watch$/);
+  await expect(page.getByTestId('decision')).toHaveText('Recording');
+  await expect(page.getByTestId('catchup-title')).toHaveText('Big Match');
+  await expect.poll(() => currentTime(page), { timeout: 40_000 }).toBeGreaterThan(0.5);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(/\/live\/recordings$/);
+
+  await scheduled.getByTestId('cancel').click();
+  await expect(page.getByTestId('recording-count')).toHaveText('1 recordings');
+  page.once('dialog', (d) => d.accept());
+  await running.getByTestId('delete').click();
+  await expect(page.getByTestId('recording-count')).toHaveText('0 recordings');
+});

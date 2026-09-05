@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, unwrap, withAccessToken } from '../api/client.js';
@@ -22,6 +22,25 @@ export function LivePlayerPage() {
   const channels = useLiveChannels();
   const channel = channels.data?.find((c) => c.id === channelId);
   const guide = useLiveGuide(channelId);
+  const qc = useQueryClient();
+  const [notice, setNotice] = useState<string | null>(null);
+  const record = useMutation({
+    mutationFn: async (body: {
+      channelId: string;
+      programmeId?: string;
+      durationMinutes?: number;
+    }) => unwrap(await api.POST('/api/recordings', { body })),
+    onSuccess: (rec) => {
+      void qc.invalidateQueries({ queryKey: ['recordings'] });
+      setNotice(rec.state === 'scheduled' ? `Scheduled: ${rec.title}` : `Recording: ${rec.title}`);
+    },
+    onError: (e) => setNotice((e as Error).message),
+  });
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HtmlVideoPlayer | null>(null);
@@ -144,6 +163,11 @@ export function LivePlayerPage() {
           {error ?? (decision.error as Error).message}
         </div>
       )}
+      {notice && (
+        <div className="player-notice" data-testid="notice">
+          {notice}
+        </div>
+      )}
       {(digits || entryMessage) && (
         <div className="number-entry" data-testid="number-entry">
           {digits || entryMessage}
@@ -230,6 +254,17 @@ export function LivePlayerPage() {
         </button>
         <button
           type="button"
+          className="ctl rec"
+          onClick={() => record.mutate({ channelId })}
+          disabled={record.isPending}
+          aria-label="Record this channel until stopped"
+          title="Record now; stop it from the Recordings tab"
+          data-testid="record-now"
+        >
+          ● Rec
+        </button>
+        <button
+          type="button"
           className="ctl"
           onClick={() => void document.documentElement.requestFullscreen?.()}
           aria-label="Fullscreen"
@@ -267,6 +302,18 @@ export function LivePlayerPage() {
                       >
                         Watch
                       </Link>
+                    )}
+                    {!past && (
+                      <button
+                        type="button"
+                        className="button small"
+                        onClick={() => record.mutate({ channelId, programmeId: p.id })}
+                        disabled={record.isPending}
+                        data-testid="record-programme"
+                        title={live ? 'Record until this programme ends' : 'Record when it starts'}
+                      >
+                        {live ? '● Record' : '● Schedule'}
+                      </button>
                     )}
                   </span>
                 </li>

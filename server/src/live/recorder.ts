@@ -27,6 +27,7 @@ interface Active {
   file: WriteStream;
   bytes: number;
   stopping: boolean;
+  onData?: (chunk: Buffer) => void;
 }
 
 export interface RecorderOptions {
@@ -294,10 +295,13 @@ export class RecordingManager {
       ),
     );
     this.log.info({ recordingId: id, filePath }, 'recording started');
-    subscription.stream.on('data', (chunk: Buffer) => {
+    const onData = (chunk: Buffer) => {
+      if (active.stopping) return;
       active.bytes += chunk.length;
       file.write(chunk);
-    });
+    };
+    active.onData = onData;
+    subscription.stream.on('data', onData);
     // The provider connection ended (dropped, or the relay was evicted): finish with what we have.
     subscription.stream.on('end', () => {
       if (!active.stopping) void this.finish(id, 'The stream ended before the planned end');
@@ -310,8 +314,11 @@ export class RecordingManager {
     if (!active || active.stopping) return;
     active.stopping = true;
     this.active.delete(id);
+    // Stop feeding the file before ending it: bytes still buffered in the relay stream would
+    // otherwise be written after end(), which errors the stream and never fires 'finish'.
+    if (active.onData) active.subscription.stream.off('data', active.onData);
     active.subscription.close();
-    await new Promise<void>((resolve) => active.file.end(resolve));
+    await closeFile(active.file);
     const filePath = this.filePath(id);
     const size = filePath
       ? await stat(filePath)
@@ -365,8 +372,9 @@ export class RecordingManager {
     // Shutdown: whatever is running stays 'recording' and is failed on restart, but flush files.
     for (const [id, a] of this.active) {
       a.stopping = true;
+      if (a.onData) a.subscription.stream.off('data', a.onData);
       a.subscription.close();
-      await new Promise<void>((resolve) => a.file.end(resolve));
+      await closeFile(a.file);
       const size = a.bytes;
       this.db
         .update(schema.recordings)
@@ -396,6 +404,22 @@ const toRecording = (r: typeof schema.recordings.$inferSelect): Recording => ({
   error: r.error,
   createdAt: r.createdAt,
 });
+
+/** Ends the file and waits for it to close, whether it finished cleanly or failed; never hangs. */
+function closeFile(file: WriteStream): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (file.closed || file.destroyed) return resolve();
+    const timer = setTimeout(() => {
+      file.destroy();
+      resolve();
+    }, 10_000);
+    file.once('close', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    file.end();
+  });
+}
 
 export function safeName(name: string): string {
   return (

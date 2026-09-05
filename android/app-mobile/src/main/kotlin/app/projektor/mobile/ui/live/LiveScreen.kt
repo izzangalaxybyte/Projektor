@@ -50,7 +50,7 @@ data class LiveData(val configured: Boolean, val categories: List<LiveCategory>,
 
 /** Live TV: category chips over the channel list with what is on now and next. */
 @Composable
-fun LiveScreen(container: AppContainer, openChannel: (String) -> Unit, modifier: Modifier = Modifier) {
+fun LiveScreen(container: AppContainer, openChannel: (String) -> Unit, modifier: Modifier = Modifier, openRecordings: () -> Unit = {}) {
     val live = container.live() ?: return
     var state by remember { mutableStateOf<UiState<LiveData>>(UiState.Loading) }
     var category by rememberSaveable { mutableStateOf<String?>(null) }
@@ -71,7 +71,10 @@ fun LiveScreen(container: AppContainer, openChannel: (String) -> Unit, modifier:
         UiState.Loading -> CircularProgressIndicator(modifier.padding(24.dp))
         is UiState.Failed -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = modifier.padding(24.dp))
         is UiState.Ready -> Column(modifier.fillMaxSize()) {
-            Text("Live TV", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp))
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Live TV", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextButton(onClick = openRecordings, modifier = Modifier.testTag("open-recordings")) { Text("Recordings") }
+            }
             if (!s.value.configured) {
                 Text("Live TV is not set up. Enter the IPTV login in the server's Settings.", Modifier.padding(horizontal = 16.dp).testTag("live-unconfigured"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 return@Column

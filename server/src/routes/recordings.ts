@@ -28,6 +28,7 @@ export const recordingsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     '/',
     {
+      prefixTrailingSlash: 'no-slash',
       schema: {
         ...sec,
         summary: 'Recordings, newest first',
@@ -41,6 +42,7 @@ export const recordingsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/',
     {
+      prefixTrailingSlash: 'no-slash',
       schema: {
         ...sec,
         summary: 'Record a channel: now, at a time, or a guide programme',

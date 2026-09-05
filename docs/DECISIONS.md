@@ -305,3 +305,11 @@ The plan had ffmpeg copying the stream into the recording file. With the relay i
 ## 2026-09-05 — Restart recovery is honest, not clever
 
 A recording running when the server stops cannot be resumed: the provider stream has moved on. On startup such rows become `failed` with the reason and the captured file kept and measured, and scheduled rows whose end has passed are failed as missed. A scheduled recording whose start was missed but whose end is still ahead starts late instead of being dropped, which is what the owner would want for a match already under way.
+
+## 2026-09-05 — An empty JSON body is no body
+
+The generated Kotlin client sends every POST with `Content-Type: application/json`, including the body-less ones such as `POST /api/recordings/{id}/stop`, and Fastify's default parser answers 400 to an empty JSON body. The phone's Stop button silently did nothing until the server log was read properly. Rather than teaching every client to omit the header, the server's JSON parser treats an empty body as `undefined`; malformed JSON is still a 400. Two more lessons from the same afternoon: a recorder must detach its data listener before ending its file, or bytes still buffered in the relay stream arrive after `end()` and the stream never finishes; and on the TV, focus for a newly shown panel is requested from inside that panel's composition, never from a timer.
+
+## 2026-09-05 — The record key toggles
+
+On a TV remote the record key is one button, so pressing it while this channel is already being recorded stops that recording instead of starting a second one. The phone and web use explicit Rec, Stop, and Delete controls because they have room for them. Recording from the guide follows the programme: on air means until it ends plus padding, upcoming means scheduled; anything already finished is offered as catch-up instead.

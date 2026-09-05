@@ -14,6 +14,7 @@ import app.projektor.mobile.ui.item.ItemScreen
 import app.projektor.mobile.ui.live.CatchupPlayerScreen
 import app.projektor.mobile.ui.live.LivePlayerScreen
 import app.projektor.mobile.ui.live.ProviderSource
+import app.projektor.mobile.ui.live.RecordingsScreen
 import app.projektor.mobile.ui.player.PlayerScreen
 
 object Routes {
@@ -27,6 +28,9 @@ object Routes {
     fun live(channelId: String) = "live/$channelId"
     const val CATCHUP = "live/{channelId}/catchup/{programmeId}"
     fun catchup(channelId: String, programmeId: String) = "live/$channelId/catchup/$programmeId"
+    const val RECORDINGS = "recordings"
+    const val RECORDING_PLAYER = "recordings/{id}/watch"
+    fun recordingPlayer(id: String) = "recordings/$id/watch"
 }
 
 /** Signed out shows the sign-in flow; signed in shows the tabs and detail/player destinations. */
@@ -39,7 +43,11 @@ fun AppNav(container: AppContainer) {
     }
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = Routes.MAIN) {
-        composable(Routes.MAIN) { MainScaffold(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }) }
+        composable(Routes.MAIN) { MainScaffold(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }, openRecordings = { nav.navigate(Routes.RECORDINGS) }) }
+        composable(Routes.RECORDINGS) { RecordingsScreen(container, play = { nav.navigate(Routes.recordingPlayer(it)) }, back = { nav.popBackStack() }) }
+        composable(Routes.RECORDING_PLAYER, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            CatchupPlayerScreen(container = container, source = ProviderSource.Recording(entry.arguments?.getString("id") ?: return@composable), back = { nav.popBackStack() })
+        }
         composable(Routes.LIVE, arguments = listOf(navArgument("channelId") { type = NavType.StringType })) { entry ->
             LivePlayerScreen(
                 container = container,
