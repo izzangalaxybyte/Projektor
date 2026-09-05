@@ -1,0 +1,16 @@
+<!-- 320x180 leanback banner: brand colour block with the app name. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#0F1115" />
+            <size android:width="320dp" android:height="180dp" />
+        </shape>
+    </item>
+    <item android:gravity="center">
+        <shape android:shape="rectangle">
+            <solid android:color="#E8B14A" />
+            <size android:width="120dp" android:height="24dp" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</layer-list>

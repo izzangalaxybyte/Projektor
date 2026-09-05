@@ -6,6 +6,7 @@ Describes what exists now. Planned components are in [PLAN.md](PLAN.md) and move
 
 - `server` — Fastify 5 API. Requests and responses are validated with zod through `fastify-type-provider-zod`, which also produces the OpenAPI 3.1 document at runtime via `@fastify/swagger`. Entry points: `src/main.ts` (listen), `src/app.ts` (`buildApp`, used by both main and tests), `src/openapi.ts` (writes the document to the contract package).
 - `packages/api-contract` — `openapi.json` emitted by the server, `src/schema.d.ts` generated from it by `openapi-typescript`, and `createProjektorClient`, a thin wrapper over `openapi-fetch` that injects a bearer token on every request. This is the only way clients written in TypeScript talk to the server; Kotlin and Swift clients will be generated from the same `openapi.json`.
+- `android/` — Gradle project with `:core`, `:player`, `:app-mobile`, `:app-tv` (Kotlin, Compose, Compose for TV, Media3). Not part of the pnpm workspace; see docs/android.md.
 - `web` — React 19 + Vite + TypeScript. TanStack Query for server state, react-router for routes, the generated `@projektor/api-contract` client for every call. Same-origin in production (the server serves `web/dist`), proxied through Vite in development. See Web app below.
 
 ## Configuration and data directory
