@@ -345,3 +345,7 @@ The bit-depth backfill did nothing on the box: the stored probe JSON was the zod
 ## 2026-09-05 — Sample clips are skipped, and the biggest version plays by default
 
 A release folder carried a one-minute sample next to the film; both files were linked to the movie and the player took the first one. The walker now skips files whose name ends in "-sample", ".sample", or "[sample]", files simply called "sample", and anything inside a `Sample`/`Samples` folder. It does not skip titles that merely contain the word (the fixtures "Sample Movie" and "Sample.Show" caught a first, greedier rule). Independently, an item's files are listed largest first, so when several versions remain the full-size one is the default. Files already in the database drop out on the next scan (they are no longer seen, so they are marked missing).
+
+## 2026-09-05 — CPU tone mapping runs at 720p by default
+
+Measured on the owner's four-core Skylake with the 4K HDR test file: software decode alone runs at 2.7× real time and the whole pipeline without colour correction at 1.9×, but with the float tone-mapping chain at 1080p it drops to 0.85× (20 fps for a 24 fps film), which is why the first segment never arrived. The chain's cost scales with pixels, so HDR tone-mapped on the CPU now targets 1280 wide, with `HDR_TONEMAP_MAX_WIDTH` to raise it on a stronger machine. Devices that show HDR themselves (the Android apps) never take this path.

@@ -254,7 +254,14 @@ describe('vodPlaylist', () => {
     }).join(' ');
     expect(joined).toContain('-init_hw_device vaapi=va:/dev/dri/renderD128 -filter_hw_device va');
     expect(joined).not.toContain('-hwaccel');
-    expect(joined).toContain('-vf scale=1920:-2,zscale=t=linear:npl=100');
+    expect(joined).toContain('-vf scale=1280:-2,zscale=t=linear:npl=100');
+    expect(
+      buildTranscodeArgs(hdr4k, '/out', {
+        startSegment: 0,
+        hardware: 'vaapi-encode',
+        hdrTonemapMaxWidth: 1920,
+      }).join(' '),
+    ).toContain('-vf scale=1920:-2,zscale');
     expect(joined).toContain('format=nv12,hwupload -c:v h264_vaapi -profile:v high -qp 23');
     // Full-GPU tone mapping keeps 4K; software paths cap it.
     expect(

@@ -57,6 +57,7 @@ export interface HlsOptions {
   /** Hardware encoder to use for transcodes, or null for libx264. */
   hardware: HardwareEncoder;
   vaapiDevice?: string | undefined;
+  hdrTonemapMaxWidth?: number | undefined;
   /** Segments a player may request ahead of ffmpeg before we restart at the requested one. */
   seekAheadSegments?: number | undefined;
   /** How long a playlist or segment request waits for ffmpeg to produce the file. */
@@ -159,6 +160,9 @@ export class HlsManager {
           startSegment: segment,
           hardware: this.hardwareFor(session.id),
           vaapiDevice: this.options.vaapiDevice ?? '/dev/dri/renderD128',
+          ...(this.options.hdrTonemapMaxWidth
+            ? { hdrTonemapMaxWidth: this.options.hdrTonemapMaxWidth }
+            : {}),
         })
       : buildRemuxArgs(session, outDir);
     const previous = this.starts.get(session.id) ?? 0;

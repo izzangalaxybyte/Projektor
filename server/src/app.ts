@@ -126,6 +126,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       // Replaced by the self-test result in onReady.
       hardware: null,
       vaapiDevice: options.config.vaapiDevice,
+      hdrTonemapMaxWidth: options.config.hdrTonemapMaxWidth,
       waitMs: 20_000,
     }),
   );
