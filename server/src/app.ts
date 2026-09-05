@@ -22,6 +22,8 @@ import { ImageStore } from './images/store.js';
 import { LiveHlsManager } from './live/live-hls.js';
 import { LiveRefresher } from './live/refresher.js';
 import { ProviderMatcher } from './live/provider-matcher.js';
+import { RecordingManager } from './live/recorder.js';
+import { LiveService } from './live/service.js';
 import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
@@ -35,6 +37,7 @@ import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
 import { liveRoutes } from './routes/live.js';
 import { liveVodRoutes } from './routes/live-vod.js';
+import { recordingsRoutes } from './routes/recordings.js';
 import { playbackRoutes } from './routes/playback.js';
 import { progressRoutes } from './routes/progress.js';
 import { settingsRoutes } from './routes/settings.js';
@@ -63,6 +66,7 @@ declare module 'fastify' {
     liveRelays: LiveRelayManager;
     liveHls: LiveHlsManager;
     iptvMatcher: ProviderMatcher;
+    recorder: RecordingManager;
   }
 }
 
@@ -73,6 +77,8 @@ export interface AppOptions {
   /** Test hooks: how long a live relay stays open with no viewers, and the HLS file wait. */
   liveGraceMs?: number;
   hlsWaitMs?: number;
+  /** Scheduler period for recordings; tests use a short one. */
+  recordingTickMs?: number;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -148,14 +154,30 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     }),
   );
   app.live.afterRefresh = () => void app.iptvMatcher.matchPending();
+  app.decorate(
+    'recorder',
+    new RecordingManager(
+      database.db,
+      options.config,
+      app.liveRelays,
+      new LiveService(database.db),
+      app.log,
+      {
+        tickMs: options.recordingTickMs ?? 5_000,
+        paddingMs: options.config.recordingPaddingMs,
+      },
+    ),
+  );
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
     if (options.config.watchLibraries) await watcher.startAll();
     if (options.config.liveRefresh) app.live.start();
+    app.recorder.start();
   });
   app.addHook('onClose', async () => {
     app.live.stop();
+    await app.recorder.close();
     await app.liveHls.close();
     await app.liveRelays.close();
     await app.hls.close();
@@ -203,6 +225,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(liveRoutes, { prefix: '/live' });
 
       await api.register(liveVodRoutes, { prefix: '/live' });
+
+      await api.register(recordingsRoutes, { prefix: '/recordings' });
     },
     { prefix: '/api' },
   );

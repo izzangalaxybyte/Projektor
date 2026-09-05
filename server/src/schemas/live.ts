@@ -74,6 +74,7 @@ export const LiveDecideRequest = z
       .string()
       .optional()
       .meta({ description: 'A past programme on a catch-up channel; omit for the live stream' }),
+    recordingId: z.string().optional().meta({ description: 'A recording made by the server' }),
   })
   .meta({ id: 'LiveDecideRequest' });
 
@@ -85,7 +86,7 @@ export const LivePlaybackDecision = z
     url: z.string().meta({ description: 'Relative URL of the TS stream or the HLS playlist' }),
     sessionId: z.string().nullable(),
     reason: z.string(),
-    kind: z.enum(['live', 'catchup', 'vod']),
+    kind: z.enum(['live', 'catchup', 'vod', 'recording']),
     durationMs: z
       .number()
       .int()

@@ -20,6 +20,8 @@ const EnvSchema = z.object({
   IPTV_URL: z.string().default('http://playshare.co:8080/'),
   LIVE_MAX_STREAMS: z.coerce.number().int().positive().default(2),
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
+  RECORDINGS_DIR: z.string().optional(),
+  RECORDING_PADDING_MS: z.coerce.number().int().nonnegative().default(120_000),
   LIVE_REFRESH: z
     .enum(['true', 'false'])
     .default('true')
@@ -66,6 +68,10 @@ export interface Config {
   imagesDir: string;
   subtitlesDir: string;
   transcodeDir: string;
+  /** Where recordings of live channels are written; defaults to DATA_DIR/recordings. */
+  recordingsDir: string;
+  /** Extra time recorded after a programme's guide end. */
+  recordingPaddingMs: number;
 }
 
 /** Builds a Config from environment variables and creates the data directory layout. */
@@ -89,6 +95,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     iptvUrl: parsed.IPTV_URL,
     liveMaxStreams: parsed.LIVE_MAX_STREAMS,
     authRateLimitPerMinute: parsed.AUTH_RATE_LIMIT,
+    recordingPaddingMs: parsed.RECORDING_PADDING_MS,
+    ...(parsed.RECORDINGS_DIR ? { recordingsDir: path.resolve(parsed.RECORDINGS_DIR) } : {}),
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
@@ -118,6 +126,7 @@ export function configForDataDir(
     iptvUrl: 'http://playshare.co:8080/',
     liveMaxStreams: 2,
     authRateLimitPerMinute: 20,
+    recordingPaddingMs: 120_000,
     watchLibraries: true,
     ...overrides,
     dataDir,
@@ -125,8 +134,15 @@ export function configForDataDir(
     imagesDir: path.join(dataDir, 'images'),
     subtitlesDir: path.join(dataDir, 'subtitles'),
     transcodeDir: path.join(dataDir, 'transcode'),
+    recordingsDir: overrides.recordingsDir ?? path.join(dataDir, 'recordings'),
   };
-  for (const dir of [config.dataDir, config.imagesDir, config.subtitlesDir, config.transcodeDir]) {
+  for (const dir of [
+    config.dataDir,
+    config.imagesDir,
+    config.subtitlesDir,
+    config.transcodeDir,
+    config.recordingsDir,
+  ]) {
     mkdirSync(dir, { recursive: true });
   }
   return config;

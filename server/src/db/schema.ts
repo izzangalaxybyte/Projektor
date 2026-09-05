@@ -377,3 +377,32 @@ export const iptvEpisodes = sqliteTable(
   },
   (t) => [index('iptv_episodes_series_idx').on(t.seriesId)],
 );
+
+/** Recordings of live channels made by the server (see live/recorder.ts). */
+export const recordings = sqliteTable(
+  'recordings',
+  {
+    id: text('id').primaryKey(),
+    channelId: text('channel_id').notNull(),
+    channelName: text('channel_name').notNull(),
+    channelLogoUrl: text('channel_logo_url'),
+    title: text('title').notNull(),
+    description: text('description'),
+    programmeId: text('programme_id'),
+    /** Planned start; the scheduler starts the recording at this time. */
+    startAt: text('start_at').notNull(),
+    /** Planned end including padding; null means it runs until stopped by hand. */
+    endAt: text('end_at'),
+    actualStartAt: text('actual_start_at'),
+    actualEndAt: text('actual_end_at'),
+    state: text('state', { enum: ['scheduled', 'recording', 'done', 'failed'] }).notNull(),
+    /** Absolute path of the .ts file once recording has started. */
+    filePath: text('file_path'),
+    sizeBytes: integer('size_bytes').notNull().default(0),
+    durationMs: integer('duration_ms'),
+    error: text('error'),
+    createdBy: text('created_by'),
+    ...timestamps,
+  },
+  (t) => [index('recordings_state_start_idx').on(t.state, t.startAt)],
+);

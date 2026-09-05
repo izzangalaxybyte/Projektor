@@ -2512,6 +2512,268 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recordings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recordings, newest first */
+        get: {
+            parameters: {
+                query?: {
+                    state?: components["schemas"]["RecordingStateInput"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recording"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Record a channel: now, at a time, or a guide programme
+         * @description With `programmeId` the recording runs from the programme start (or now) to its end plus padding. Otherwise it starts at `startAt` (default now) and runs `durationMinutes`, or until stopped.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateRecordingRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recording"];
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recordings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One recording */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recording"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a recording and its file */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recordings/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop a running recording (kept as done) or cancel a scheduled one (removed) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Recording"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recordings/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The recorded MPEG-TS file with byte ranges; grows while recording */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                416: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2844,6 +3106,8 @@ export interface components {
             episodeId?: string;
             /** @description A past programme on a catch-up channel; omit for the live stream */
             programmeId?: string;
+            /** @description A recording made by the server */
+            recordingId?: string;
         };
         LivePlaybackDecisionInput: {
             /**
@@ -2856,7 +3120,7 @@ export interface components {
             sessionId: string | null;
             reason: string;
             /** @enum {string} */
-            kind: "live" | "catchup" | "vod";
+            kind: "live" | "catchup" | "vod" | "recording";
             /** @description Programme length for catch-up (seekable); null while live */
             durationMs: number | null;
             /** @description Programme title for catch-up */
@@ -2933,6 +3197,52 @@ export interface components {
                 number: number;
                 episodes: components["schemas"]["IptvEpisodeInput"][];
             }[];
+        };
+        /** @enum {string} */
+        RecordingStateInput: "scheduled" | "recording" | "done" | "failed";
+        RecordingInput: {
+            /** @description Opaque identifier */
+            id: string;
+            channelId: string;
+            channelName: string;
+            channelLogoUrl: string | null;
+            title: string;
+            description: string | null;
+            programmeId: string | null;
+            /**
+             * Format: date-time
+             * @description Planned start
+             */
+            startAt: string;
+            /** @description Planned end including padding; null until stopped by hand */
+            endAt: string | null;
+            actualStartAt: string | null;
+            actualEndAt: string | null;
+            state: components["schemas"]["RecordingStateInput"];
+            sizeBytes: number;
+            /** @description Measured once the recording is done */
+            durationMs: number | null;
+            error: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            createdAt: string;
+        };
+        CreateRecordingRequestInput: {
+            channelId: string;
+            /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
+            programmeId?: string;
+            /**
+             * Format: date-time
+             * @description When to start; defaults to now (ignored with programmeId)
+             */
+            startAt?: string;
+            /** @description How long to record; omit for manual stop (ignored with programmeId) */
+            durationMinutes?: number;
+            title?: string;
+            /** @description Overrides RECORDING_PADDING_MS for a programme recording */
+            paddingMs?: number;
         };
         HealthResponseInput: {
             /** @constant */
@@ -3281,6 +3591,8 @@ export interface components {
             episodeId?: string;
             /** @description A past programme on a catch-up channel; omit for the live stream */
             programmeId?: string;
+            /** @description A recording made by the server */
+            recordingId?: string;
         };
         LivePlaybackDecision: {
             /**
@@ -3293,7 +3605,7 @@ export interface components {
             sessionId: string | null;
             reason: string;
             /** @enum {string} */
-            kind: "live" | "catchup" | "vod";
+            kind: "live" | "catchup" | "vod" | "recording";
             /** @description Programme length for catch-up (seekable); null while live */
             durationMs: number | null;
             /** @description Programme title for catch-up */
@@ -3370,6 +3682,52 @@ export interface components {
                 number: number;
                 episodes: components["schemas"]["IptvEpisode"][];
             }[];
+        };
+        /** @enum {string} */
+        RecordingState: "scheduled" | "recording" | "done" | "failed";
+        Recording: {
+            /** @description Opaque identifier */
+            id: string;
+            channelId: string;
+            channelName: string;
+            channelLogoUrl: string | null;
+            title: string;
+            description: string | null;
+            programmeId: string | null;
+            /**
+             * Format: date-time
+             * @description Planned start
+             */
+            startAt: string;
+            /** @description Planned end including padding; null until stopped by hand */
+            endAt: string | null;
+            actualStartAt: string | null;
+            actualEndAt: string | null;
+            state: components["schemas"]["RecordingState"];
+            sizeBytes: number;
+            /** @description Measured once the recording is done */
+            durationMs: number | null;
+            error: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            createdAt: string;
+        };
+        CreateRecordingRequest: {
+            channelId: string;
+            /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
+            programmeId?: string;
+            /**
+             * Format: date-time
+             * @description When to start; defaults to now (ignored with programmeId)
+             */
+            startAt?: string;
+            /** @description How long to record; omit for manual stop (ignored with programmeId) */
+            durationMinutes?: number;
+            title?: string;
+            /** @description Overrides RECORDING_PADDING_MS for a programme recording */
+            paddingMs?: number;
         };
         HealthResponse: {
             /** @constant */

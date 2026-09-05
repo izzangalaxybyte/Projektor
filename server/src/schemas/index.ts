@@ -5,3 +5,4 @@ export * from './items.js';
 export * from './playback.js';
 export * from './settings.js';
 export * from './live.js';
+export * from './recordings.js';
