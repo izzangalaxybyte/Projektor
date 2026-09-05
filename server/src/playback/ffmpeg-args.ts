@@ -79,7 +79,28 @@ export function buildRemuxArgs(session: PlaybackSession, outDir: string): string
   return [...input, ...maps, '-c:v', 'copy', ...tag, ...audio, ...hlsOutput(session, outDir, 0)];
 }
 
-export type HardwareEncoder = 'vaapi' | null;
+/**
+ * vaapi: decode, filter, and encode on the GPU. vaapi-encode: decode and filter on the CPU, then
+ * upload and encode on the GPU (for sources the GPU cannot decode, such as 10-bit HEVC on
+ * Skylake, or HDR where the driver lacks tone mapping). null: everything in software.
+ */
+export type HardwareEncoder = 'vaapi' | 'vaapi-encode' | null;
+
+/** The next thing to try when a transcode fails before producing a segment. */
+export function fallbackHardware(current: HardwareEncoder): HardwareEncoder | undefined {
+  if (current === 'vaapi') return 'vaapi-encode';
+  if (current === 'vaapi-encode') return null;
+  return undefined;
+}
+
+/** CPU-side tone mapping to BT.709 SDR; slow at 4K, so it is paired with a 1080p cap. */
+export const SOFTWARE_TONEMAP = [
+  'zscale=t=linear:npl=100',
+  'format=gbrpf32le',
+  'zscale=p=bt709',
+  'tonemap=hable:desat=0',
+  'zscale=t=bt709:m=bt709:r=tv',
+];
 
 export interface TranscodeOptions {
   /** First segment to produce; ffmpeg seeks to startSegment * HLS_SEGMENT_SECONDS. */
@@ -87,6 +108,9 @@ export interface TranscodeOptions {
   hardware: HardwareEncoder;
   vaapiDevice?: string;
 }
+
+/** Widest output when HDR has to be tone-mapped on the CPU. */
+export const SOFTWARE_HDR_MAX_WIDTH = 1920;
 
 /** ffmpeg's own playlist, written but never served; ours is generated from the duration. */
 export const FFMPEG_PLAYLIST = 'ffmpeg.m3u8';
@@ -107,10 +131,13 @@ export function buildTranscodeArgs(
 
   const video: string[] = [];
   const width = decision.videoStream?.width ?? null;
-  const targetWidth =
-    profile.maxWidth !== null && width !== null && width > profile.maxWidth
-      ? profile.maxWidth
-      : null;
+  const hdr = decision.videoStream?.hdr === true;
+  // CPU-side HDR tone mapping cannot keep up at 4K, so those paths cap the output at 1080p.
+  const capWidth =
+    hdr && options.hardware !== 'vaapi'
+      ? Math.min(profile.maxWidth ?? SOFTWARE_HDR_MAX_WIDTH, SOFTWARE_HDR_MAX_WIDTH)
+      : profile.maxWidth;
+  const targetWidth = capWidth !== null && width !== null && width > capWidth ? capWidth : null;
   const maxBitrate = profile.maxBitrate;
 
   if (options.hardware === 'vaapi') {
@@ -145,18 +172,35 @@ export function buildTranscodeArgs(
         String(maxBitrate * 2),
       );
     else video.push('-qp', '23');
+  } else if (options.hardware === 'vaapi-encode') {
+    // Software decode and filters (scale first, so tone mapping runs at the output size), then
+    // upload the frames and encode on the GPU.
+    input.unshift(
+      '-init_hw_device',
+      `vaapi=va:${options.vaapiDevice ?? '/dev/dri/renderD128'}`,
+      '-filter_hw_device',
+      'va',
+    );
+    const filters: string[] = [];
+    if (targetWidth !== null) filters.push(`scale=${targetWidth}:-2`);
+    if (hdr) filters.push(...SOFTWARE_TONEMAP);
+    filters.push('format=nv12', 'hwupload');
+    video.push('-vf', filters.join(','), '-c:v', 'h264_vaapi', '-profile:v', 'high');
+    if (maxBitrate !== null)
+      video.push(
+        '-b:v',
+        String(maxBitrate),
+        '-maxrate',
+        String(maxBitrate),
+        '-bufsize',
+        String(maxBitrate * 2),
+      );
+    else video.push('-qp', '23');
   } else {
     const soft: string[] = [];
-    if (decision.videoStream?.hdr)
-      // Software tone mapping (slow, but correct colours) for boxes without VAAPI.
-      soft.push(
-        'zscale=t=linear:npl=100',
-        'format=gbrpf32le',
-        'zscale=p=bt709',
-        'tonemap=hable:desat=0',
-        'zscale=t=bt709:m=bt709:r=tv',
-      );
     if (targetWidth !== null) soft.push(`scale=${targetWidth}:-2`);
+    // Software tone mapping (slow, but correct colours) for boxes without VAAPI.
+    if (hdr) soft.push(...SOFTWARE_TONEMAP);
     if (soft.length) video.push('-vf', soft.join(','));
     video.push(
       '-c:v',
