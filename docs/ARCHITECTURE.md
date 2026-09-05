@@ -82,6 +82,10 @@ Playback lives under `web/src/player/`. `profile.ts` builds the `DeviceProfile` 
 
 The end-to-end suite (`e2e/`, Playwright) runs the built app against the real server: `e2e/start-server.mjs` boots the API with a temporary data directory and `WEB_DIST`, specs seed libraries from the fixtures through the API, then drive the UI. It runs in branded Chrome rather than Playwright's Chromium because the latter ships without H.264 and AAC decoders, so real playback could not be asserted.
 
+## Deployment
+
+`deploy/Dockerfile` is two stages. The build stage installs the workspace with pnpm, compiles the server with `tsc` (tests, fakes, and the OpenAPI emitter excluded via `tsconfig.build.json`), builds the web app, and uses `pnpm deploy --prod` to produce a self-contained server directory. The runtime stage is `node:20-bookworm-slim` plus Debian's ffmpeg, libva, `vainfo`, and, on amd64, Intel's `iHD` (non-free) and `i965` VAAPI drivers, with `tini` as PID 1 so ffmpeg children are reaped. The server runs as `node dist/main.js` with `DATA_DIR=/data`, `WEB_DIST` pointing at the built web app, and `HARDWARE_ACCEL=auto`. `deploy/docker-compose.yml` publishes port 8096, mounts the data directory and the three media folders (read-only), and passes `/dev/dri` through. A Docker `HEALTHCHECK` polls `/api/health`.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.

@@ -1,0 +1,10 @@
+node_modules
+**/node_modules
+**/dist
+data
+fixtures
+test-results
+playwright-report
+.git
+deploy/.env
+deploy/data
