@@ -8,6 +8,16 @@ One container runs the API, the transcoder, and the web app on port 8096. Everyt
 - An Intel CPU with an iGPU for hardware transcoding; `/dev/dri/renderD128` must exist on the host. Without it the server still runs and transcodes on the CPU.
 - Media folders on local disk or a mounted share.
 
+## Quick install
+
+One command on the box, as your normal user (it uses sudo only to install Docker if it is missing):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/izzangalaxybyte/Projektor/main/deploy/install-linux.sh | bash -s -- /mnt/ssd
+```
+
+Replace `/mnt/ssd` with the mount point of the big disk (`df -h` shows it); the app and its data go under `<mount>/projektor`. Set `MOVIES_DIR`, `TV_DIR`, and `ANIME_DIR` in the environment first if your media is somewhere the script would not guess. Re-running the same command updates to the latest `main`. The manual steps below do the same thing by hand.
+
 ## First start
 
 ```bash
