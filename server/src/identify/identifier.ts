@@ -5,6 +5,7 @@ import path from 'node:path';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { now, schema, type Db } from '../db/index.js';
+import { parseFansubName } from './fansub-parser.js';
 import { parseSceneName, type ParsedName } from './scene-parser.js';
 
 export interface IdentifySummary {
@@ -30,9 +31,18 @@ export type NameParser = (
   libraryKind: LibraryKind,
 ) => ParsedName;
 
-/** Default parser: scene rules for every library kind. 1.6 swaps in the fansub parser for anime. */
-export const defaultParser: NameParser = (fileName, parentDirs) =>
-  parseSceneName(fileName, parentDirs);
+/**
+ * Default parser: fansub rules for anime libraries, scene rules for everything else. An anime
+ * file whose name gives no season keeps its number as absoluteEpisode for later season mapping.
+ */
+export const defaultParser: NameParser = (fileName, parentDirs, libraryKind) => {
+  if (libraryKind !== 'anime') return parseSceneName(fileName, parentDirs);
+  const parsed = parseFansubName(fileName, parentDirs);
+  if (parsed.season === null && parsed.episode !== null) {
+    return { ...parsed, episode: null, episodeEnd: null, absoluteEpisode: parsed.episode };
+  }
+  return { ...parsed, absoluteEpisode: null };
+};
 
 /** Links each unlinked file in fileIds to a movie or episode, creating items as needed. */
 export function identifyFiles(
@@ -192,20 +202,25 @@ function linkEpisode(db: Db, fileId: string, libraryId: string, parsed: ParsedNa
     }
   }
 
+  const absolute = parsed.absoluteEpisode ?? null;
   const conditions = [eq(schema.episodes.showId, show.id)];
-  conditions.push(
-    parsed.season === null
-      ? isNull(schema.episodes.seasonNumber)
-      : eq(schema.episodes.seasonNumber, parsed.season),
-  );
-  conditions.push(
-    parsed.episode === null
-      ? isNull(schema.episodes.episodeNumber)
-      : eq(schema.episodes.episodeNumber, parsed.episode),
-  );
-  // Files with no episode number cannot be grouped, so each gets its own row.
+  if (absolute !== null) {
+    conditions.push(eq(schema.episodes.absoluteNumber, absolute));
+  } else {
+    conditions.push(
+      parsed.season === null
+        ? isNull(schema.episodes.seasonNumber)
+        : eq(schema.episodes.seasonNumber, parsed.season),
+    );
+    conditions.push(
+      parsed.episode === null
+        ? isNull(schema.episodes.episodeNumber)
+        : eq(schema.episodes.episodeNumber, parsed.episode),
+    );
+  }
+  // Files with no number at all cannot be grouped, so each gets its own row.
   const existing =
-    parsed.episode === null
+    parsed.episode === null && absolute === null
       ? undefined
       : db
           .select({ id: schema.episodes.id })
@@ -221,8 +236,8 @@ function linkEpisode(db: Db, fileId: string, libraryId: string, parsed: ParsedNa
         seasonId,
         seasonNumber: parsed.season,
         episodeNumber: parsed.episode,
-        absoluteNumber: null,
-        title: parsed.episode === null ? parsed.title : null,
+        absoluteNumber: absolute,
+        title: parsed.episode === null && absolute === null ? parsed.title : null,
         createdAt: ts,
         updatedAt: ts,
       })

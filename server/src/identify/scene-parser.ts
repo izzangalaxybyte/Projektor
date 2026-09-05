@@ -15,6 +15,11 @@ export interface ParsedName {
   episodeEnd: number | null;
   /** Low when we had to fall back to folder names or found no year and no episode markers. */
   confidence: 'high' | 'low';
+  /**
+   * Anime only: the episode number as written when no season is known. Set by the fansub
+   * parser adapter; scene names never carry it.
+   */
+  absoluteEpisode?: number | null;
 }
 
 const EPISODE_PATTERNS: RegExp[] = [

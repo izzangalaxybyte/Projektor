@@ -64,7 +64,9 @@ describe.skipIf(!existsSync(fixtures))('items over the generated fixtures', () =
       ['show', 'Sample Show'],
       ['movie', 'some random download'],
     ]);
-    expect(all.items.filter((i) => i.libraryKind === 'anime').map((i) => i.kind)).toEqual(['show']);
+    expect(
+      all.items.filter((i) => i.libraryKind === 'anime').map((i) => [i.kind, i.title]),
+    ).toEqual([['show', 'Sample Anime']]);
 
     const tv = (
       await app.inject({ method: 'GET', url: '/api/items?libraryKind=tv', headers })
@@ -135,6 +137,26 @@ describe.skipIf(!existsSync(fixtures))('items over the generated fixtures', () =
     expect(episode.files[0]).toMatchObject({ container: 'mkv' });
     expect(episode.files[0]!.durationMs).toBeGreaterThan(29_000);
     expect(episode.files[0]!.streams.map((s) => s.codec)).toEqual(['hevc', 'ac3', 'subrip']);
+  });
+
+  it('lists anime episodes under the show by absolute number until seasons are mapped', async () => {
+    const anime = (
+      await app.inject({ method: 'GET', url: '/api/items?libraryKind=anime', headers })
+    ).json() as Page;
+    const show = (
+      await app.inject({ method: 'GET', url: `/api/items/${anime.items[0]!.id}`, headers })
+    ).json() as { children: Summary[] };
+    expect(
+      show.children.map((c) => [c.kind, c.seasonNumber, c.episodeNumber, c.title, c.needsReview]),
+    ).toEqual([['episode', null, 13, 'Episode 13', false]]);
+    const episode = (
+      await app.inject({ method: 'GET', url: `/api/items/${show.children[0]!.id}`, headers })
+    ).json() as {
+      files: Array<{ streams: Array<{ type: string; language: string | null }> }>;
+    };
+    expect(
+      episode.files[0]!.streams.filter((s) => s.type === 'audio').map((s) => s.language),
+    ).toEqual(['jpn', 'eng']);
   });
 
   it('404s for unknown ids', async () => {

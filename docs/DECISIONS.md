@@ -73,3 +73,11 @@ Files are linked to locally created movies, shows, seasons, and episodes as soon
 ## 2026-09-05 — Multi-episode files link to the first episode
 
 `S01E01-E02` parses with `episodeEnd = 2` but the file links only to episode 1. Storing the range in the database is deferred until a client needs to show it.
+
+## 2026-09-05 — Own fansub parser instead of anitomyscript
+
+The plan named `anitomyscript`, an Emscripten port of Anitomy. Its WASM loader is broken on current Node (it detects the global `fetch` and tries to fetch a filesystem path, then aborts) and the package has not been updated to fix it. A focused TypeScript parser with a 36-name test table covers the conventions fansub groups actually use and is easier to extend when a new pattern shows up. The dependency was removed.
+
+## 2026-09-05 — Season phrases split into title and searchTitle
+
+`Jujutsu Kaisen 2nd Season - 05` groups under the show `Jujutsu Kaisen`, season 2, episode 5 in our database, but AniList lists `Jujutsu Kaisen 2nd Season` as its own entry. The parser keeps both forms so grouping and metadata search each get the name they need.
