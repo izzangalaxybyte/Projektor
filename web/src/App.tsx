@@ -3,6 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { api, unwrap } from './api/client.js';
 import { useAuth } from './auth/useAuth.js';
 import { HomePage } from './pages/HomePage.js';
+import { ItemPage } from './pages/ItemPage.js';
+import { LibraryPage } from './pages/LibraryPage.js';
+import { SearchPage } from './pages/SearchPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { SetupPage } from './pages/SetupPage.js';
 import { AppShell } from './shell/AppShell.js';
@@ -61,6 +64,11 @@ export function App() {
             }
           >
             <Route index element={<HomePage />} />
+            <Route path="movies" element={<LibraryPage kind="movie" />} />
+            <Route path="tv" element={<LibraryPage kind="tv" />} />
+            <Route path="anime" element={<LibraryPage kind="anime" />} />
+            <Route path="search" element={<SearchPage />} />
+            <Route path="items/:id" element={<ItemPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
