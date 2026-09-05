@@ -1,12 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { scanLibrary } from '../library/scanner.js';
-import { identifyFiles } from '../identify/identifier.js';
-import { ImageStore } from '../images/store.js';
-import { probeFiles } from '../media/probe-service.js';
-import { Matcher } from '../metadata/matcher.js';
-import { TmdbClient } from '../metadata/tmdb.js';
-import { SettingsService } from '../settings/service.js';
 import { LibraryError, LibraryService } from '../library/service.js';
 import { CreateLibraryRequest, ErrorResponse, Id, Library, ScanStatus } from '../schemas/index.js';
 
@@ -66,7 +59,11 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 201: Library, 400: ErrorResponse, 403: ErrorResponse },
       },
     },
-    async (request, reply) => reply.code(201).send(await libraries.create(request.body)),
+    async (request, reply) => {
+      const library = await libraries.create(request.body);
+      if (app.config.watchLibraries) await app.watcher.watch(library.id);
+      return reply.code(201).send(library);
+    },
   );
 
   app.delete(
@@ -82,6 +79,7 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
+      await app.watcher.unwatch(request.params.id);
       libraries.delete(request.params.id);
       return reply.code(204).send(null);
     },
@@ -93,43 +91,34 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: app.requireAdmin,
       schema: {
         tags: ['libraries'],
-        summary: 'Scan a library now (admin). Runs to completion before responding.',
+        summary: 'Queue a scan of this library (admin)',
+        description:
+          'Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.',
         security: [{ bearerAuth: [] }],
         params,
-        response: { 200: ScanStatus, 403: ErrorResponse, 404: ErrorResponse },
+        response: { 202: ScanStatus, 403: ErrorResponse, 404: ErrorResponse },
+      },
+    },
+    async (request, reply) => {
+      libraries.get(request.params.id);
+      return reply.code(202).send(app.scans.request(request.params.id, 'manual'));
+    },
+  );
+
+  app.get(
+    '/:id/scan',
+    {
+      schema: {
+        tags: ['libraries'],
+        summary: 'Status of the latest scan of this library',
+        security: [{ bearerAuth: [] }],
+        params,
+        response: { 200: ScanStatus, 404: ErrorResponse },
       },
     },
     async (request) => {
       libraries.get(request.params.id);
-      const startedAt = new Date().toISOString();
-      const result = await scanLibrary(app.db, request.params.id, request.log);
-      const probed = await probeFiles(app.db, result.changedFileIds, {
-        ffprobePath: app.config.ffprobePath,
-        log: request.log,
-      });
-      const identified = identifyFiles(app.db, result.changedFileIds, request.log);
-      const tmdbKey = new SettingsService(app.db).get('tmdb.apiKey');
-      const matched = tmdbKey
-        ? await new Matcher({
-            db: app.db,
-            tmdb: new TmdbClient(tmdbKey),
-            images: new ImageStore(app.config.imagesDir),
-            log: request.log,
-          }).matchPending()
-        : { matched: 0, unmatched: 0, failed: 0 };
-      return {
-        libraryId: request.params.id,
-        state: 'idle' as const,
-        itemsLinked: identified.movies + identified.episodes,
-        itemsMatched: matched.matched,
-        itemsUnmatched: matched.unmatched,
-        filesSeen: result.filesSeen,
-        filesChanged: result.filesChanged,
-        filesMissing: result.filesMissing,
-        filesProbed: probed.probed,
-        filesFailed: probed.failed,
-        startedAt,
-      };
+      return app.scans.statusOf(request.params.id);
     },
   );
 };

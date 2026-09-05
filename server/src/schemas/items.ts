@@ -44,6 +44,19 @@ export const StreamInfo = z
   .meta({ id: 'StreamInfo' });
 export type StreamInfo = z.infer<typeof StreamInfo>;
 
+export const SubtitleTrack = z
+  .object({
+    id: Id,
+    source: z.enum(['embedded', 'external', 'opensubtitles']),
+    streamIndex: z.number().int().nullable(),
+    language: z.string().nullable(),
+    title: z.string().nullable(),
+    format: z.string().meta({ description: 'Source format: subrip, ass, mov_text, webvtt, ...' }),
+    url: z.string().meta({ description: 'WebVTT URL under /api/subtitles' }),
+  })
+  .meta({ id: 'SubtitleTrack' });
+export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
+
 export const MediaFile = z
   .object({
     id: Id,
@@ -53,6 +66,7 @@ export const MediaFile = z
     durationMs: z.number().int().nonnegative(),
     bitrate: z.number().int().nonnegative().nullable(),
     streams: StreamInfo.array(),
+    subtitles: SubtitleTrack.array(),
   })
   .meta({ id: 'MediaFile' });
 export type MediaFile = z.infer<typeof MediaFile>;
@@ -78,6 +92,29 @@ export const ItemsQuery = z.object({
   search: z.string().optional(),
   needsReview: z.coerce.boolean().optional(),
   sort: z.enum(['title', 'year', 'added', 'lastPlayed']).default('title'),
+});
+
+export const MatchCandidate = z
+  .object({
+    source: z.enum(['tmdb', 'anilist']),
+    id: z.number().int(),
+    title: z.string(),
+    year: z.number().int().nullable(),
+    overview: z.string().nullable(),
+    posterUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'Remote poster URL for preview; not cached' }),
+    score: z
+      .number()
+      .meta({ description: 'Ranking score, higher is better; 0.85 is the auto-accept threshold' }),
+  })
+  .meta({ id: 'MatchCandidate' });
+export type MatchCandidate = z.infer<typeof MatchCandidate>;
+
+export const CandidatesQuery = z.object({
+  query: z.string().optional().meta({ description: 'Defaults to the item title' }),
+  year: z.coerce.number().int().optional(),
 });
 
 export const FixMatchRequest = z

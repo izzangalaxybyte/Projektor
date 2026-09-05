@@ -9,6 +9,17 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   FFMPEG_PATH: z.string().default('ffmpeg'),
   FFPROBE_PATH: z.string().default('ffprobe'),
+  SCAN_DEBOUNCE_MS: z.coerce.number().int().positive().default(5000),
+  HLS_IDLE_MS: z.coerce.number().int().positive().default(60_000),
+  HLS_MAX_PROCESSES: z.coerce.number().int().positive().default(4),
+  HLS_MAX_TRANSCODES: z.coerce.number().int().positive().default(2),
+  HLS_SEEK_AHEAD_SEGMENTS: z.coerce.number().int().nonnegative().default(3),
+  VAAPI_DEVICE: z.string().default('/dev/dri/renderD128'),
+  HARDWARE_ACCEL: z.enum(['auto', 'vaapi', 'none']).default('auto'),
+  WATCH_LIBRARIES: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 export interface Config {
@@ -17,6 +28,20 @@ export interface Config {
   logLevel: z.infer<typeof EnvSchema>['LOG_LEVEL'];
   ffmpegPath: string;
   ffprobePath: string;
+  /** Quiet period after a folder change before a scan is queued. */
+  scanDebounceMs: number;
+  /** Stop an HLS session after this long without a request. */
+  hlsIdleMs: number;
+  /** Cap on concurrent ffmpeg processes across sessions. */
+  hlsMaxProcesses: number;
+  hlsMaxTranscodes: number;
+  /** Segments a player may request ahead of ffmpeg before the transcode restarts there. */
+  hlsSeekAheadSegments: number;
+  vaapiDevice: string;
+  /** auto probes VAAPI at startup; none forces libx264. */
+  hardwareAccel: 'auto' | 'vaapi' | 'none';
+  /** Whether to watch library folders for changes. */
+  watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
   dataDir: string;
   dbPath: string;
@@ -34,6 +59,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     logLevel: parsed.LOG_LEVEL,
     ffmpegPath: parsed.FFMPEG_PATH,
     ffprobePath: parsed.FFPROBE_PATH,
+    scanDebounceMs: parsed.SCAN_DEBOUNCE_MS,
+    hlsIdleMs: parsed.HLS_IDLE_MS,
+    hlsMaxProcesses: parsed.HLS_MAX_PROCESSES,
+    hlsMaxTranscodes: parsed.HLS_MAX_TRANSCODES,
+    hlsSeekAheadSegments: parsed.HLS_SEEK_AHEAD_SEGMENTS,
+    vaapiDevice: parsed.VAAPI_DEVICE,
+    hardwareAccel: parsed.HARDWARE_ACCEL,
+    watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
 
@@ -50,6 +83,14 @@ export function configForDataDir(
     logLevel: 'info',
     ffmpegPath: 'ffmpeg',
     ffprobePath: 'ffprobe',
+    scanDebounceMs: 5000,
+    hlsIdleMs: 60_000,
+    hlsMaxProcesses: 4,
+    hlsMaxTranscodes: 2,
+    hlsSeekAheadSegments: 3,
+    vaapiDevice: '/dev/dri/renderD128',
+    hardwareAccel: 'none',
+    watchLibraries: true,
     ...overrides,
     dataDir,
     dbPath: path.join(dataDir, 'projektor.sqlite'),

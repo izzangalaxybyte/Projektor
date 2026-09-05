@@ -79,6 +79,16 @@ scripts/                make-fixtures.sh and other helpers
 docs/                   this documentation
 ```
 
+## Hardware transcoding
+
+On the Linux box, confirm the GPU path after starting the server:
+
+```bash
+curl -s http://localhost:8096/api/health
+```
+
+`encoder` should be `h264_vaapi`. If it is `libx264`, `encoderReason` says why: usually the render node is not mapped into the container or the Intel media driver is missing. `vainfo` inside the container lists the supported profiles, and `intel_gpu_top` on the host shows the Video engine busy during a transcode.
+
 ## Metadata
 
 Matching needs a TMDB credential. Create one at https://www.themoviedb.org/settings/api (a free account is enough) and store it:

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { fixturesDir, makeTestConfig, setupAdmin } from '../test-utils.js';
+import { fixturesDir, makeTestConfig, scanAndWait, setupAdmin } from '../test-utils.js';
 
 let app: FastifyInstance;
 let admin: { token: string; id: string };
@@ -89,13 +89,8 @@ describe('libraries', () => {
         payload: { name: 'Everything', kind: 'movie', paths: [fixtures] },
       });
       allId = (create.json() as { id: string }).id;
-      const first = await app.inject({
-        method: 'POST',
-        url: `/api/libraries/${allId}/scan`,
-        headers: asAdmin(),
-      });
-      expect(first.statusCode).toBe(200);
-      expect(first.json()).toMatchObject({
+      const first = await scanAndWait(app, asAdmin(), allId);
+      expect(first).toMatchObject({
         libraryId: allId,
         state: 'idle',
         filesSeen: 4,
@@ -103,12 +98,8 @@ describe('libraries', () => {
         filesMissing: 0,
       });
 
-      const second = await app.inject({
-        method: 'POST',
-        url: `/api/libraries/${allId}/scan`,
-        headers: asAdmin(),
-      });
-      expect(second.json()).toMatchObject({
+      const second = await scanAndWait(app, asAdmin(), allId);
+      expect(second).toMatchObject({
         filesSeen: 4,
         filesChanged: 0,
         filesMissing: 0,

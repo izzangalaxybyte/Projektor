@@ -13,26 +13,44 @@ import type { Config } from './config.js';
 import { openDatabase, type Db } from './db/index.js';
 import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
+import { ScanRunner } from './library/scan-runner.js';
+import { LibraryWatcher } from './library/watcher.js';
+import { detectHardware, type HardwareReport } from './playback/hardware.js';
+import { HlsManager } from './playback/hls.js';
+import { SessionRegistry } from './playback/sessions.js';
+import { filesRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
 import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
+import { playbackRoutes } from './routes/playback.js';
 import { settingsRoutes } from './routes/settings.js';
+import { subtitlesRoutes } from './routes/subtitles.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
 
 export const API_VERSION = '0.0.0';
 
+export type HttpFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
 declare module 'fastify' {
   interface FastifyInstance {
     config: Config;
     db: Db;
+    /** Outbound HTTP for TMDB, AniList, and artwork. Injectable so tests never hit the network. */
+    httpFetch: HttpFetch;
+    scans: ScanRunner;
+    watcher: LibraryWatcher;
+    playback: SessionRegistry;
+    hls: HlsManager;
+    hardware: HardwareReport;
   }
 }
 
 export interface AppOptions {
   config: Config;
   logger?: boolean;
+  fetch?: HttpFetch;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -45,7 +63,40 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const database = openDatabase(options.config.dbPath);
   app.decorate('config', options.config);
   app.decorate('db', database.db);
-  app.addHook('onClose', () => database.close());
+  app.decorate('httpFetch', options.fetch ?? ((url, init) => fetch(url, init)));
+  const scans = new ScanRunner(app, app.log);
+  const watcher = new LibraryWatcher(database.db, scans, app.log, {
+    debounceMs: options.config.scanDebounceMs,
+  });
+  app.decorate('scans', scans);
+  const playback = new SessionRegistry();
+  app.decorate('playback', playback);
+  app.decorate(
+    'hls',
+    new HlsManager(options.config, playback, app.log, {
+      idleMs: options.config.hlsIdleMs,
+      maxProcesses: options.config.hlsMaxProcesses,
+      maxTranscodes: options.config.hlsMaxTranscodes,
+      seekAheadSegments: options.config.hlsSeekAheadSegments,
+      // Replaced by the self-test result in onReady.
+      hardware: null,
+      vaapiDevice: options.config.vaapiDevice,
+      waitMs: 20_000,
+    }),
+  );
+  app.decorate('watcher', watcher);
+  app.decorate('hardware', { encoder: null, reason: 'not probed yet' } as HardwareReport);
+  app.addHook('onReady', async () => {
+    app.hardware = await detectHardware(options.config, app.log);
+    app.hls.setHardware(app.hardware.encoder);
+    if (options.config.watchLibraries) await watcher.startAll();
+  });
+  app.addHook('onClose', async () => {
+    await app.hls.close();
+    await watcher.close();
+    await scans.whenIdle();
+    database.close();
+  });
 
   await app.register(sensible);
   // Registered with global: false so only routes that set config.rateLimit are limited.
@@ -78,6 +129,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(itemsRoutes, { prefix: '/items' });
       await api.register(imagesRoutes, { prefix: '/images' });
       await api.register(settingsRoutes, { prefix: '/settings' });
+      await api.register(filesRoutes, { prefix: '/files' });
+      await api.register(playbackRoutes, { prefix: '/playback' });
+      await api.register(subtitlesRoutes, { prefix: '/subtitles' });
     },
     { prefix: '/api' },
   );

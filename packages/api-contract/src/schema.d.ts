@@ -536,10 +536,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
-    put?: never;
-    /** Scan a library now (admin). Runs to completion before responding. */
-    post: {
+    /** Status of the latest scan of this library */
+    get: {
       parameters: {
         query?: never;
         header?: never;
@@ -553,6 +551,43 @@ export interface paths {
       responses: {
         /** @description Default Response */
         200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ScanStatus'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    /**
+     * Queue a scan of this library (admin)
+     * @description Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        202: {
           headers: {
             [name: string]: unknown;
           };
@@ -688,6 +723,140 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/items/{id}/candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search TMDB (and AniList for anime) for possible matches (admin) */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Defaults to the item title */
+          query?: string;
+          year?: number;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['MatchCandidate'][];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}/match': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a chosen match and refetch metadata (admin)
+     * @description Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['FixMatchRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemDetail'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/images/{key}': {
     parameters: {
       query?: never;
@@ -804,6 +973,356 @@ export interface paths {
     };
     trace?: never;
   };
+  '/api/files/{id}/subtitles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Text subtitle tracks available for a file */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SubtitleTrack'][];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/files/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Direct play: the original file with byte-range support
+     * @description Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        416: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/decide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Choose direct play, remux, or transcode for a file and device profile
+     * @description Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['PlaybackDecideRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['PlaybackDecision'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}/master.m3u8': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** HLS master playlist for a session */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * HLS media playlist, init segment, or media segment
+     * @description Starts ffmpeg on first request and waits up to 20 seconds for the requested file.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+          name: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        501: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        504: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Stop a session and delete its segments */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}.vtt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A subtitle track as WebVTT, converted from its source on first request */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -883,6 +1402,7 @@ export interface components {
       libraryId: string;
       /** @enum {string} */
       state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
@@ -896,6 +1416,9 @@ export interface components {
       /** @description Items TMDB search could not match confidently */
       itemsUnmatched: number;
       startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
     };
     ProgressStateInput: {
       positionMs: number;
@@ -935,6 +1458,19 @@ export interface components {
       height: number | null;
       channels: number | null;
     };
+    SubtitleTrackInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+    };
     MediaFileInput: {
       /** @description Opaque identifier */
       id: string;
@@ -944,6 +1480,7 @@ export interface components {
       durationMs: number;
       bitrate: number | null;
       streams: components['schemas']['StreamInfoInput'][];
+      subtitles: components['schemas']['SubtitleTrackInput'][];
     };
     ItemDetailInput: {
       /** @description Opaque identifier */
@@ -970,6 +1507,18 @@ export interface components {
       files: components['schemas']['MediaFileInput'][];
       /** @description Seasons of a show, episodes of a season */
       children: components['schemas']['ItemSummaryInput'][];
+    };
+    MatchCandidateInput: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
     };
     FixMatchRequestInput: {
       tmdbId?: number;
@@ -1004,15 +1553,16 @@ export interface components {
     PlaybackMethodInput: 'direct' | 'remux' | 'transcode';
     PlaybackDecisionInput: {
       method: components['schemas']['PlaybackMethodInput'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
       /** @description Relative URL of the media or HLS master playlist */
       url: string;
       sessionId: string | null;
       reason: string;
-      subtitleUrls: {
-        streamIndex: number;
-        language: string | null;
-        url: string;
-      }[];
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrackInput'][];
     };
     ProgressUpdateRequestInput: {
       /** @description Opaque identifier */
@@ -1044,6 +1594,12 @@ export interface components {
       status: 'ok';
       version: string;
       time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
     };
     /** @enum {string} */
     LibraryKind: 'movie' | 'tv' | 'anime';
@@ -1120,6 +1676,7 @@ export interface components {
       libraryId: string;
       /** @enum {string} */
       state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
@@ -1133,6 +1690,9 @@ export interface components {
       /** @description Items TMDB search could not match confidently */
       itemsUnmatched: number;
       startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
     };
     ProgressState: {
       positionMs: number;
@@ -1172,6 +1732,19 @@ export interface components {
       height: number | null;
       channels: number | null;
     };
+    SubtitleTrack: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+    };
     MediaFile: {
       /** @description Opaque identifier */
       id: string;
@@ -1181,6 +1754,7 @@ export interface components {
       durationMs: number;
       bitrate: number | null;
       streams: components['schemas']['StreamInfo'][];
+      subtitles: components['schemas']['SubtitleTrack'][];
     };
     ItemDetail: {
       /** @description Opaque identifier */
@@ -1207,6 +1781,18 @@ export interface components {
       files: components['schemas']['MediaFile'][];
       /** @description Seasons of a show, episodes of a season */
       children: components['schemas']['ItemSummary'][];
+    };
+    MatchCandidate: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
     };
     FixMatchRequest: {
       tmdbId?: number;
@@ -1241,15 +1827,16 @@ export interface components {
     PlaybackMethod: 'direct' | 'remux' | 'transcode';
     PlaybackDecision: {
       method: components['schemas']['PlaybackMethod'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
       /** @description Relative URL of the media or HLS master playlist */
       url: string;
       sessionId: string | null;
       reason: string;
-      subtitleUrls: {
-        streamIndex: number;
-        language: string | null;
-        url: string;
-      }[];
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrack'][];
     };
     ProgressUpdateRequest: {
       /** @description Opaque identifier */
@@ -1281,6 +1868,12 @@ export interface components {
       status: 'ok';
       version: string;
       time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
     };
   };
   responses: never;

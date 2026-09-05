@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Id } from './common.js';
+import { SubtitleTrack } from './items.js';
 
 export const DeviceProfile = z
   .object({
@@ -27,16 +28,19 @@ export const PlaybackDecideRequest = z
 export const PlaybackMethod = z
   .enum(['direct', 'remux', 'transcode'])
   .meta({ id: 'PlaybackMethod' });
+export type PlaybackMethod = z.infer<typeof PlaybackMethod>;
 
 export const PlaybackDecision = z
   .object({
     method: PlaybackMethod,
+    video: z.enum(['copy', 'transcode']),
+    audio: z.enum(['copy', 'transcode', 'none']),
     url: z.string().meta({ description: 'Relative URL of the media or HLS master playlist' }),
     sessionId: Id.nullable(),
     reason: z.string(),
-    subtitleUrls: z
-      .object({ streamIndex: z.number().int(), language: z.string().nullable(), url: z.string() })
-      .array(),
+    subtitles: SubtitleTrack.array().meta({
+      description: 'Text subtitles available for this file as WebVTT',
+    }),
   })
   .meta({ id: 'PlaybackDecision' });
 export type PlaybackDecision = z.infer<typeof PlaybackDecision>;

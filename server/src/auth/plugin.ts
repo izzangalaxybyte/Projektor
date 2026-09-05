@@ -33,7 +33,16 @@ export const authPlugin = fp(
       if (request.routeOptions.config.public) return;
       if (!request.url.startsWith('/api/')) return;
       const header = request.headers.authorization;
-      const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : null;
+      // <video src> and <img src> cannot set headers, so read-only requests may carry the token
+      // as ?access_token=. It is never accepted for mutations.
+      const query = request.query as Record<string, unknown> | undefined;
+      const fromQuery =
+        request.method === 'GET' || request.method === 'HEAD' ? query?.['access_token'] : undefined;
+      const token = header?.startsWith('Bearer ')
+        ? header.slice('Bearer '.length).trim()
+        : typeof fromQuery === 'string' && fromQuery
+          ? fromQuery
+          : null;
       const resolved = token ? auth.authenticate(token) : null;
       if (!resolved) {
         return reply.code(401).send({

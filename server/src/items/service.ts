@@ -1,5 +1,6 @@
 import { and, asc, eq, like, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
+import type { SubtitleService } from '../subtitles/service.js';
 import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
 
 export interface ItemsQueryInput {
@@ -24,7 +25,10 @@ export class ItemNotFound extends Error {}
 
 /** Read side for movies, shows, seasons, and episodes as the API presents them. */
 export class ItemsService {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly subtitles?: SubtitleService,
+  ) {}
 
   list(q: ItemsQueryInput): ItemsPage {
     // Only top-level items (movies and shows) are listed unless a kind or parent is given.
@@ -228,6 +232,7 @@ export class ItemsService {
       container: f.container ?? 'unknown',
       durationMs: f.durationMs ?? 0,
       bitrate: f.bitrate,
+      subtitles: this.subtitles?.list(f.id) ?? [],
       streams: this.db
         .select()
         .from(schema.streams)

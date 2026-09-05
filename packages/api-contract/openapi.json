@@ -229,6 +229,17 @@
             "type": "string",
             "enum": ["idle", "running"]
           },
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["walking", "probing", "identifying", "matching"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "filesSeen": {
             "type": "integer",
             "minimum": 0,
@@ -285,11 +296,29 @@
                 "type": "null"
               }
             ]
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "description": "Set when the last scan failed",
+            "type": ["string", "null"]
           }
         },
         "required": [
           "libraryId",
           "state",
+          "phase",
           "filesSeen",
           "filesChanged",
           "filesMissing",
@@ -298,7 +327,9 @@
           "itemsLinked",
           "itemsMatched",
           "itemsUnmatched",
-          "startedAt"
+          "startedAt",
+          "finishedAt",
+          "error"
         ]
       },
       "ProgressStateInput": {
@@ -494,6 +525,47 @@
           "channels"
         ]
       },
+      "SubtitleTrackInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["embedded", "external", "opensubtitles"]
+          },
+          "streamIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "language": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "format": {
+            "type": "string",
+            "description": "Source format: subrip, ass, mov_text, webvtt, ..."
+          },
+          "url": {
+            "type": "string",
+            "description": "WebVTT URL under /api/subtitles"
+          }
+        },
+        "required": ["id", "source", "streamIndex", "language", "title", "format", "url"]
+      },
       "MediaFileInput": {
         "type": "object",
         "properties": {
@@ -535,9 +607,24 @@
             "items": {
               "$ref": "#/components/schemas/StreamInfoInput"
             }
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleTrackInput"
+            }
           }
         },
-        "required": ["id", "fileName", "sizeBytes", "container", "durationMs", "bitrate", "streams"]
+        "required": [
+          "id",
+          "fileName",
+          "sizeBytes",
+          "container",
+          "durationMs",
+          "bitrate",
+          "streams",
+          "subtitles"
+        ]
       },
       "ItemDetailInput": {
         "type": "object",
@@ -707,6 +794,47 @@
           "children"
         ]
       },
+      "MatchCandidateInput": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["tmdb", "anilist"]
+          },
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": ["string", "null"]
+          },
+          "posterUrl": {
+            "description": "Remote poster URL for preview; not cached",
+            "type": ["string", "null"]
+          },
+          "score": {
+            "type": "number",
+            "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
+          }
+        },
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"]
+      },
       "FixMatchRequestInput": {
         "type": "object",
         "properties": {
@@ -837,6 +965,14 @@
           "method": {
             "$ref": "#/components/schemas/PlaybackMethodInput"
           },
+          "video": {
+            "type": "string",
+            "enum": ["copy", "transcode"]
+          },
+          "audio": {
+            "type": "string",
+            "enum": ["copy", "transcode", "none"]
+          },
           "url": {
             "type": "string",
             "description": "Relative URL of the media or HLS master playlist"
@@ -856,28 +992,15 @@
           "reason": {
             "type": "string"
           },
-          "subtitleUrls": {
+          "subtitles": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "streamIndex": {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                },
-                "language": {
-                  "type": ["string", "null"]
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": ["streamIndex", "language", "url"]
-            }
+              "$ref": "#/components/schemas/SubtitleTrackInput"
+            },
+            "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": ["method", "url", "sessionId", "reason", "subtitleUrls"]
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"]
       },
       "ProgressUpdateRequestInput": {
         "type": "object",
@@ -967,9 +1090,17 @@
           },
           "time": {
             "type": "string"
+          },
+          "encoder": {
+            "type": "string",
+            "enum": ["h264_vaapi", "libx264"],
+            "description": "Video encoder transcodes will use"
+          },
+          "encoderReason": {
+            "type": "string"
           }
         },
-        "required": ["status", "version", "time"]
+        "required": ["status", "version", "time", "encoder", "encoderReason"]
       },
       "LibraryKind": {
         "type": "string",
@@ -1196,6 +1327,17 @@
             "type": "string",
             "enum": ["idle", "running"]
           },
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["walking", "probing", "identifying", "matching"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "filesSeen": {
             "type": "integer",
             "minimum": 0,
@@ -1252,11 +1394,29 @@
                 "type": "null"
               }
             ]
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "description": "Set when the last scan failed",
+            "type": ["string", "null"]
           }
         },
         "required": [
           "libraryId",
           "state",
+          "phase",
           "filesSeen",
           "filesChanged",
           "filesMissing",
@@ -1265,7 +1425,9 @@
           "itemsLinked",
           "itemsMatched",
           "itemsUnmatched",
-          "startedAt"
+          "startedAt",
+          "finishedAt",
+          "error"
         ],
         "additionalProperties": false
       },
@@ -1465,6 +1627,48 @@
         ],
         "additionalProperties": false
       },
+      "SubtitleTrack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["embedded", "external", "opensubtitles"]
+          },
+          "streamIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "language": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "format": {
+            "type": "string",
+            "description": "Source format: subrip, ass, mov_text, webvtt, ..."
+          },
+          "url": {
+            "type": "string",
+            "description": "WebVTT URL under /api/subtitles"
+          }
+        },
+        "required": ["id", "source", "streamIndex", "language", "title", "format", "url"],
+        "additionalProperties": false
+      },
       "MediaFile": {
         "type": "object",
         "properties": {
@@ -1506,6 +1710,12 @@
             "items": {
               "$ref": "#/components/schemas/StreamInfo"
             }
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleTrack"
+            }
           }
         },
         "required": [
@@ -1515,7 +1725,8 @@
           "container",
           "durationMs",
           "bitrate",
-          "streams"
+          "streams",
+          "subtitles"
         ],
         "additionalProperties": false
       },
@@ -1688,6 +1899,48 @@
         ],
         "additionalProperties": false
       },
+      "MatchCandidate": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["tmdb", "anilist"]
+          },
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": ["string", "null"]
+          },
+          "posterUrl": {
+            "description": "Remote poster URL for preview; not cached",
+            "type": ["string", "null"]
+          },
+          "score": {
+            "type": "number",
+            "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
+          }
+        },
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"],
+        "additionalProperties": false
+      },
       "FixMatchRequest": {
         "type": "object",
         "properties": {
@@ -1821,6 +2074,14 @@
           "method": {
             "$ref": "#/components/schemas/PlaybackMethod"
           },
+          "video": {
+            "type": "string",
+            "enum": ["copy", "transcode"]
+          },
+          "audio": {
+            "type": "string",
+            "enum": ["copy", "transcode", "none"]
+          },
           "url": {
             "type": "string",
             "description": "Relative URL of the media or HLS master playlist"
@@ -1840,29 +2101,15 @@
           "reason": {
             "type": "string"
           },
-          "subtitleUrls": {
+          "subtitles": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "streamIndex": {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                },
-                "language": {
-                  "type": ["string", "null"]
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": ["streamIndex", "language", "url"],
-              "additionalProperties": false
-            }
+              "$ref": "#/components/schemas/SubtitleTrack"
+            },
+            "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": ["method", "url", "sessionId", "reason", "subtitleUrls"],
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"],
         "additionalProperties": false
       },
       "ProgressUpdateRequest": {
@@ -1957,9 +2204,17 @@
           },
           "time": {
             "type": "string"
+          },
+          "encoder": {
+            "type": "string",
+            "enum": ["h264_vaapi", "libx264"],
+            "description": "Video encoder transcodes will use"
+          },
+          "encoderReason": {
+            "type": "string"
           }
         },
-        "required": ["status", "version", "time"],
+        "required": ["status", "version", "time", "encoder", "encoderReason"],
         "additionalProperties": false
       }
     }
@@ -2389,7 +2644,61 @@
     },
     "/api/libraries/{id}/scan": {
       "post": {
-        "summary": "Scan a library now (admin). Runs to completion before responding.",
+        "summary": "Queue a scan of this library (admin)",
+        "tags": ["libraries"],
+        "description": "Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Status of the latest scan of this library",
         "tags": ["libraries"],
         "parameters": [
           {
@@ -2415,16 +2724,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ScanStatus"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2612,6 +2911,159 @@
         }
       }
     },
+    "/api/items/{id}/candidates": {
+      "get": {
+        "summary": "Search TMDB (and AniList for anime) for possible matches (admin)",
+        "tags": ["items"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "description": "Defaults to the item title"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "year",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchCandidate"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/match": {
+      "post": {
+        "summary": "Apply a chosen match and refetch metadata (admin)",
+        "tags": ["items"],
+        "description": "Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixMatchRequestInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/images/{key}": {
       "get": {
         "summary": "Cached artwork, optionally resized",
@@ -2704,6 +3156,351 @@
             }
           },
           "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}/subtitles": {
+      "get": {
+        "summary": "Text subtitle tracks available for a file",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleTrack"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}/stream": {
+      "get": {
+        "summary": "Direct play: the original file with byte-range support",
+        "tags": ["playback"],
+        "description": "Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/playback/decide": {
+      "post": {
+        "summary": "Choose direct play, remux, or transcode for a file and device profile",
+        "tags": ["playback"],
+        "description": "Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackDecideRequestInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackDecision"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playback/sessions/{id}/master.m3u8": {
+      "get": {
+        "summary": "HLS master playlist for a session",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playback/sessions/{id}/{name}": {
+      "get": {
+        "summary": "HLS media playlist, init segment, or media segment",
+        "tags": ["playback"],
+        "description": "Starts ffmpeg on first request and waits up to 20 seconds for the requested file.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(index\\.m3u8|init\\.mp4|seg-\\d+\\.(ts|m4s)|sub-[A-Za-z0-9-]+\\.(m3u8|vtt))$"
+            },
+            "in": "path",
+            "name": "name",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playback/sessions/{id}": {
+      "delete": {
+        "summary": "Stop a session and delete its segments",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/subtitles/{id}.vtt": {
+      "get": {
+        "summary": "A subtitle track as WebVTT, converted from its source on first request",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
             "description": "Default Response",
             "content": {
               "application/json": {

@@ -1,0 +1,1 @@
+ALTER TABLE `subtitles` ADD `source_path` text;

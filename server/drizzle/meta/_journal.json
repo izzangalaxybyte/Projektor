@@ -15,6 +15,13 @@
       "when": 1788566719456,
       "tag": "0001_sloppy_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788568751245,
+      "tag": "0002_silky_violations",
+      "breakpoints": true
     }
   ]
 }

@@ -93,3 +93,63 @@ Originals are downloaded once at TMDB's `w780` or `w1280`; the 300/780/1280 JPEG
 ## 2026-09-05 — Stacked PRs are merged with merge commits, branches deleted last
 
 See DEV.md. Learned the hard way when `--delete-branch` on the first PR in the stack closed the rest.
+
+## 2026-09-05 — AniList then TMDB for anime, not "TMDB id from AniList"
+
+The plan assumed AniList exposes a TMDB id. It does not (only a MyAnimeList id), so the anime matcher searches TMDB by the AniList titles and year and accepts only a confident match. The AniList step alone is enough to make a show browsable; the TMDB step adds season structure and episode titles.
+
+## 2026-09-05 — Season offset is added to the absolute number
+
+`shows.season_offset` is a plain integer added before mapping. Offset 12 makes a sequel entry whose fansub numbering restarts at 1 land on TMDB season 2 of a 12-episode first season. Simple to reason about and enough for the fix-match UI to expose as one field.
+
+## 2026-09-05 — One injectable outbound fetch on the app
+
+`app.httpFetch` is the only way server code reaches TMDB, AniList, or artwork. Tests inject a router over the fake servers and exercise real routes end to end. Mocking modules or spying on `globalThis.fetch` would have been more fragile and would not have covered the wiring in the scan route.
+
+## 2026-09-05 — A folder change triggers a full library reconcile, not a per-file update
+
+The watcher only tells the runner "this library changed". The scan then walks the whole library, which the size+mtime check makes cheap, and probes only what changed. Per-file handling would duplicate the reconcile logic and get the missing-file case wrong for renames.
+
+## 2026-09-05 — Scans are serialised
+
+One scan at a time across all libraries. ffprobe already runs four wide inside a scan, and two libraries probing at once would only fight for disk. Requests during a run coalesce into a single rerun.
+
+## 2026-09-05 — Token in the query string for read-only media requests
+
+`<video>`, `<img>`, and some TV players cannot set headers, so GET and HEAD under `/api` accept `?access_token=`. It is refused on every other method, so a leaked URL can at most read what the profile could already read. Jellyfin uses the same pattern with `api_key`.
+
+## 2026-09-05 — Device profiles are declared by the client, not sniffed by the server
+
+Each client sends what it can play. User-agent sniffing is unreliable on TVs and the client is the only place that can ask the platform (MediaCapabilities, MediaCodecList, AVPlayer) what it supports. Profiles for our own clients live in the client code.
+
+## 2026-09-05 — Subtitles never influence the playback decision
+
+Text subtitles are delivered as WebVTT beside the stream (1.16), so the choice between direct, remux, and transcode depends only on container, video, and audio. Burn-in is out of scope for v1.
+
+## 2026-09-05 — Remux playlists are written by ffmpeg, transcode playlists by us
+
+When streams are copied, segment boundaries fall on the source's keyframes, which are unknown until ffmpeg has written the segment, so the remux path serves ffmpeg's event playlist as it grows. Remuxing is I/O bound and finishes a feature film in well under a minute, so seeking beyond the written part only waits briefly. Transcoding forces keyframes every 6 seconds, which makes the playlist predictable and lets a seek restart ffmpeg at the right segment.
+
+## 2026-09-05 — Playback sessions live in memory
+
+Sessions are ephemeral: a restart drops them and clients simply ask for a new decision. Persisting them would add a table and a cleanup problem for no user-visible benefit.
+
+## 2026-09-05 — Seeks restart ffmpeg at the requested segment
+
+Rather than transcode a whole film ahead of the viewer, ffmpeg runs from the current position and is restarted whenever a request lands more than three segments ahead of what exists, behind the run's start, or after the run finished. Forced keyframes make segment boundaries deterministic, so segments from earlier runs stay valid and are served from disk. This is the same shape as Jellyfin's transcoding, without its keyframe extraction step because we do not remux this way.
+
+## 2026-09-05 — CRF for software, QP or bitrate for VAAPI
+
+libx264 uses CRF 23 with an optional `maxrate` from the profile; `h264_vaapi` has no CRF, so it uses `qp 23` when the profile sets no bitrate and constant bitrate when it does.
+
+## 2026-09-05 — Hardware encoding is decided once at startup
+
+A one-frame `h264_vaapi` encode at boot tells us whether the GPU path works. Deciding per session would repeat the probe for every viewer and make failures harder to see; deciding at boot gives one log line and one health field to check after deploy. The setting can still force either path.
+
+## 2026-09-05 — Subtitles are one WebVTT "segment" in HLS
+
+Each subtitle rendition's media playlist lists the whole track as a single segment spanning the media duration. Apple's spec allows it, hls.js, AVPlayer, and ExoPlayer accept it, and it avoids splitting VTT cues on segment boundaries. Web browsers get the same VTT through `/api/subtitles/{id}.vtt` and render it with our own overlay.
+
+## 2026-09-05 — Playlists carry the query token when the client used one
+
+Players resolve `seg-0.ts` relative to the playlist URL without its query string, so a token passed as `?access_token=` would be lost on segment requests. The server appends it to every URI in playlists it serves when, and only when, the request itself used a query token. Header-authenticated clients see clean playlists.
