@@ -313,3 +313,11 @@ The generated Kotlin client sends every POST with `Content-Type: application/jso
 ## 2026-09-05 — The record key toggles
 
 On a TV remote the record key is one button, so pressing it while this channel is already being recorded stops that recording instead of starting a second one. The phone and web use explicit Rec, Stop, and Delete controls because they have room for them. Recording from the guide follows the programme: on air means until it ends plus padding, upcoming means scheduled; anything already finished is offered as catch-up instead.
+
+## 2026-09-05 — Browsers never direct-play Matroska
+
+First real-world playback on the box: a 6 GB anime MKV that Chrome said it could play (`canPlayType` returns "maybe" for `video/x-matroska`) started after a long wait and would not resume after a pause. The server log showed Chrome hopping around the file with range requests it kept abandoning, which is how browsers handle Matroska's end-of-file index. The web device profile now lists only `mp4` and `webm` as direct-play containers, so MKV files take the remux path: an ffmpeg copy into HLS that the end-to-end tests already cover, costing no re-encode. Android keeps direct play for MKV because ExoPlayer handles it.
+
+## 2026-09-05 — AniList requests are paced and 429s are waited out
+
+The first anime scan (7,587 files, 61 shows) tripped AniList's limit after 25 shows; the rest logged "rate limit hit" and stayed unmatched until the next scan. The client now runs requests one at a time with a 2.1 s gap (AniList's degraded limit is 30 a minute) and, on a 429, waits for `Retry-After` (a minute if absent) before retrying, twice. A show whose search still fails keeps `matchAttemptedAt` empty, so pressing Scan again picks it up.

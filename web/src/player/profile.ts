@@ -30,7 +30,10 @@ function canPlay(video: HTMLVideoElement, key: string): boolean {
 export function buildDeviceProfile(
   video: HTMLVideoElement = document.createElement('video'),
 ): DeviceProfile {
-  const containers = ['mp4', 'webm', 'mkv', 'mov'].filter((c) => canPlay(video, c));
+  // Only mp4 and webm are handed to the browser directly. Chrome says "maybe" to Matroska and
+  // QuickTime, then plays a multi-gigabyte MKV by hopping around it with range requests and stalls
+  // on the way; a remux to HLS costs nothing but a copy and is reliable.
+  const containers = ['mp4', 'webm'].filter((c) => canPlay(video, c));
   const videoCodecs = ['h264', 'hevc', 'vp9', 'av1'].filter((c) => canPlay(video, c));
   const audioCodecs = ['aac', 'ac3', 'eac3', 'opus', 'mp3', 'flac'].filter((c) =>
     canPlay(video, c),
