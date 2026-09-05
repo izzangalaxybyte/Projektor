@@ -297,3 +297,11 @@ Flipping through channels leaves each one connected for five seconds in case the
 ## 2026-09-05 — Android plays live channels as raw MPEG-TS, catch-up as HLS
 
 The Android device profile lists `ts`, so the server hands channels to ExoPlayer as the plain relay with the `video/mp2t` MIME type set, which ExoPlayer treats as an unbounded progressive stream: no packager process on the server, no segment latency. Catch-up and provider files go through the same decision as the web, HLS or a direct file, and reuse the skip-amount and speed controls. The live and catch-up screens are separate from the item player on both phone and TV rather than one player with modes: they share `ProjektorPlayer` and `PlayerPrefs` but not the item-specific state (progress reports, subtitle and audio pickers, next episode), so each stays readable.
+
+## 2026-09-05 — Recordings are the relay's bytes written to disk
+
+The plan had ffmpeg copying the stream into the recording file. With the relay in place the provider's MPEG-TS bytes are already flowing through the server, so the recorder simply writes them to a file: no process to supervise, nothing to fail mid-programme, and a file that any player handles. ffmpeg only runs after the fact, to measure the duration, and at playback time for browsers that need HLS. The file keeps the raw `.ts` rather than being remuxed to MP4, so a crash mid-recording leaves a playable partial file and the recorder never rewrites what it captured.
+
+## 2026-09-05 — Restart recovery is honest, not clever
+
+A recording running when the server stops cannot be resumed: the provider stream has moved on. On startup such rows become `failed` with the reason and the captured file kept and measured, and scheduled rows whose end has passed are failed as missed. A scheduled recording whose start was missed but whose end is still ahead starts late instead of being dropped, which is what the owner would want for a match already under way.
