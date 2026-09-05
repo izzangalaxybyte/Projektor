@@ -4,6 +4,8 @@ import { scanLibrary } from '../library/scanner.js';
 import { identifyFiles } from '../identify/identifier.js';
 import { ImageStore } from '../images/store.js';
 import { probeFiles } from '../media/probe-service.js';
+import { AniListClient } from '../metadata/anilist.js';
+import { AnimeMatcher } from '../metadata/anime-matcher.js';
 import { Matcher } from '../metadata/matcher.js';
 import { TmdbClient } from '../metadata/tmdb.js';
 import { SettingsService } from '../settings/service.js';
@@ -117,12 +119,19 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
             log: request.log,
           }).matchPending()
         : { matched: 0, unmatched: 0, failed: 0 };
+      const anime = await new AnimeMatcher({
+        db: app.db,
+        anilist: new AniListClient(),
+        tmdb: tmdbKey ? new TmdbClient(tmdbKey) : null,
+        images: new ImageStore(app.config.imagesDir),
+        log: request.log,
+      }).matchPending();
       return {
         libraryId: request.params.id,
         state: 'idle' as const,
         itemsLinked: identified.movies + identified.episodes,
-        itemsMatched: matched.matched,
-        itemsUnmatched: matched.unmatched,
+        itemsMatched: matched.matched + anime.matched,
+        itemsUnmatched: matched.unmatched + anime.unmatched,
         filesSeen: result.filesSeen,
         filesChanged: result.filesChanged,
         filesMissing: result.filesMissing,

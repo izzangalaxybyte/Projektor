@@ -93,3 +93,11 @@ Originals are downloaded once at TMDB's `w780` or `w1280`; the 300/780/1280 JPEG
 ## 2026-09-05 — Stacked PRs are merged with merge commits, branches deleted last
 
 See DEV.md. Learned the hard way when `--delete-branch` on the first PR in the stack closed the rest.
+
+## 2026-09-05 — AniList then TMDB for anime, not "TMDB id from AniList"
+
+The plan assumed AniList exposes a TMDB id. It does not (only a MyAnimeList id), so the anime matcher searches TMDB by the AniList titles and year and accepts only a confident match. The AniList step alone is enough to make a show browsable; the TMDB step adds season structure and episode titles.
+
+## 2026-09-05 — Season offset is added to the absolute number
+
+`shows.season_offset` is a plain integer added before mapping. Offset 12 makes a sequel entry whose fansub numbering restarts at 1 land on TMDB season 2 of a 12-episode first season. Simple to reason about and enough for the fix-match UI to expose as one field.
