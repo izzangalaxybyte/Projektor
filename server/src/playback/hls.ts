@@ -1,12 +1,20 @@
 // HLS session lifecycle: start ffmpeg on first request, serve playlists and segments as they
 // appear, stop idle sessions, and clean up their working directories.
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { execa } from 'execa';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Config } from '../config.js';
-import { buildRemuxArgs, hlsNaming } from './ffmpeg-args.js';
+import {
+  buildRemuxArgs,
+  buildTranscodeArgs,
+  HLS_SEGMENT_SECONDS,
+  hlsNaming,
+  segmentCount,
+  vodPlaylist,
+  type HardwareEncoder,
+} from './ffmpeg-args.js';
 import type { PlaybackSession, SessionRegistry } from './sessions.js';
 
 /** The parts of an execa subprocess this module uses; execa's own generic type is unwieldy. */
@@ -23,6 +31,10 @@ interface Running {
   exited: boolean;
   exitCode: number | null;
   stderr: string;
+  /** First segment this run produces (transcode only; remux always starts at 0). */
+  startSegment: number;
+  /** How many times ffmpeg has been (re)started for the session. */
+  starts: number;
 }
 
 export class HlsError extends Error {
@@ -37,6 +49,13 @@ export class HlsError extends Error {
 export interface HlsOptions {
   idleMs: number;
   maxProcesses: number;
+  /** Cap on concurrent transcodes, which are far heavier than remuxes. */
+  maxTranscodes: number;
+  /** Hardware encoder to use for transcodes, or null for libx264. */
+  hardware: HardwareEncoder;
+  vaapiDevice?: string | undefined;
+  /** Segments a player may request ahead of ffmpeg before we restart at the requested one. */
+  seekAheadSegments?: number | undefined;
   /** How long a playlist or segment request waits for ffmpeg to produce the file. */
   waitMs: number;
 }
@@ -50,7 +69,6 @@ export class HlsManager {
     private readonly registry: SessionRegistry,
     private readonly log: FastifyBaseLogger,
     private readonly options: HlsOptions,
-    private readonly argsFor: (session: PlaybackSession, outDir: string) => string[] = defaultArgs,
   ) {
     this.sweeper = setInterval(
       () => void this.sweep(),
@@ -86,25 +104,51 @@ export class HlsManager {
     ].join('\n');
   }
 
-  /** Starts ffmpeg for the session if it is not already running. */
-  async ensureStarted(session: PlaybackSession): Promise<void> {
+  /** Starts ffmpeg for the session if it is not already running (optionally at a given segment). */
+  async ensureStarted(session: PlaybackSession, startSegment?: number): Promise<void> {
     if (this.running.has(session.id)) return;
-    const live = [...this.running.values()].filter((r) => !r.exited).length;
-    if (live >= this.options.maxProcesses)
+    const isTranscode = session.decision.method === 'transcode';
+    const live = [...this.running.values()].filter((r) => !r.exited);
+    if (live.length >= this.options.maxProcesses)
       throw new HlsError(503, 'Too many active streams; try again shortly');
+    if (
+      isTranscode &&
+      live.filter((r) => this.registry.get(this.idOf(r))?.decision.method === 'transcode').length >=
+        this.options.maxTranscodes
+    ) {
+      throw new HlsError(503, 'Too many active transcodes; try again shortly');
+    }
     const outDir = this.dir(session.id);
     await mkdir(outDir, { recursive: true });
-    const args = this.argsFor(session, outDir);
+    const segment =
+      startSegment ??
+      (isTranscode ? Math.floor(session.startPositionMs / (HLS_SEGMENT_SECONDS * 1000)) : 0);
+    const args = isTranscode
+      ? buildTranscodeArgs(session, outDir, {
+          startSegment: segment,
+          hardware: this.options.hardware,
+          vaapiDevice: this.options.vaapiDevice ?? '/dev/dri/renderD128',
+        })
+      : buildRemuxArgs(session, outDir);
+    const previous = this.starts.get(session.id) ?? 0;
+    this.starts.set(session.id, previous + 1);
     const child = execa(this.config.ffmpegPath, args, {
       reject: false,
       stdin: 'ignore',
       stdout: 'ignore',
       stderr: 'pipe',
     }) as unknown as FfmpegProcess;
-    const run: Running = { process: child, exited: false, exitCode: null, stderr: '' };
+    const run: Running = {
+      process: child,
+      exited: false,
+      exitCode: null,
+      stderr: '',
+      startSegment: segment,
+      starts: previous + 1,
+    };
     this.running.set(session.id, run);
     this.log.info(
-      { sessionId: session.id, method: session.decision.method, args },
+      { sessionId: session.id, method: session.decision.method, startSegment: segment, args },
       'ffmpeg started',
     );
     child.stderr?.on(
@@ -122,12 +166,76 @@ export class HlsManager {
     });
   }
 
+  private readonly starts = new Map<string, number>();
+
+  private idOf(run: Running): string {
+    for (const [id, r] of this.running) if (r === run) return id;
+    return '';
+  }
+
+  /** Number of ffmpeg starts for a session, for tests and diagnostics. */
+  startCount(sessionId: string): number {
+    return this.starts.get(sessionId) ?? 0;
+  }
+
+  /** Kills the current ffmpeg for a session (keeping produced segments) and starts at a segment. */
+  private async restartAt(session: PlaybackSession, segment: number): Promise<void> {
+    const run = this.running.get(session.id);
+    this.running.delete(session.id);
+    if (run && !run.exited) {
+      run.process.kill('SIGTERM');
+      await Promise.race([run.process, sleep(3000)]);
+      if (!run.exited) run.process.kill('SIGKILL');
+    }
+    await this.ensureStarted(session, segment);
+  }
+
+  private highestSegment(session: PlaybackSession): number {
+    const ext = hlsNaming(session.profile.hlsSegmentContainer).segmentExtension;
+    let highest = -1;
+    for (const name of readdirSyncSafe(this.dir(session.id))) {
+      const m = new RegExp(`^seg-(\\d+)\\.${ext}$`).exec(name);
+      if (m) highest = Math.max(highest, Number(m[1]));
+    }
+    return highest;
+  }
+
   /** Returns the file's contents once ffmpeg has produced it, or throws 504/404. */
   async awaitFile(session: PlaybackSession, name: string): Promise<Buffer> {
-    if (!/^(index\.m3u8|init\.mp4|seg-\d+\.(ts|m4s))$/.test(name))
-      throw new HlsError(404, 'No such segment');
+    const match = /^(index\.m3u8|init\.mp4|seg-(\d+)\.(ts|m4s))$/.exec(name);
+    if (!match) throw new HlsError(404, 'No such segment');
+    const isTranscode = session.decision.method === 'transcode';
+
+    if (isTranscode && name === 'index.m3u8') {
+      // The playlist is known up front; start ffmpeg so the first segment is ready sooner.
+      await this.ensureStarted(session);
+      return Buffer.from(vodPlaylist(session.durationMs, session.profile.hlsSegmentContainer));
+    }
     await this.ensureStarted(session);
     const file = path.join(this.dir(session.id), name);
+    const requested = match[2] !== undefined ? Number(match[2]) : null;
+
+    if (isTranscode && requested !== null) {
+      if (requested >= segmentCount(session.durationMs))
+        throw new HlsError(404, 'Segment past the end');
+      if (!existsSync(file)) {
+        const run = this.running.get(session.id)!;
+        const produced = this.highestSegment(session);
+        const ahead = this.options.seekAheadSegments ?? 3;
+        const behind = requested < run.startSegment;
+        // The run writes nextSegment next; only a request beyond that plus the window restarts.
+        const nextSegment = Math.max(produced, run.startSegment - 1) + 1;
+        const farAhead = requested > nextSegment + ahead;
+        if (behind || farAhead || run.exited) {
+          this.log.info(
+            { sessionId: session.id, requested, produced, from: run.startSegment },
+            'seek: restarting ffmpeg',
+          );
+          await this.restartAt(session, requested);
+        }
+      }
+    }
+
     const run = this.running.get(session.id)!;
     const deadline = Date.now() + this.options.waitMs;
     while (!existsSync(file)) {
@@ -152,13 +260,10 @@ export class HlsManager {
     return 'video/mp4';
   }
 
-  isFinished(sessionId: string): boolean {
-    return this.running.get(sessionId)?.exited ?? false;
-  }
-
   async stop(sessionId: string): Promise<void> {
     const run = this.running.get(sessionId);
     this.running.delete(sessionId);
+    this.starts.delete(sessionId);
     this.registry.remove(sessionId);
     if (run && !run.exited) {
       run.process.kill('SIGTERM');
@@ -185,10 +290,13 @@ export class HlsManager {
   }
 }
 
-function defaultArgs(session: PlaybackSession, outDir: string): string[] {
-  if (session.decision.method === 'remux') return buildRemuxArgs(session, outDir);
-  throw new HlsError(501, 'Transcoding is not available yet');
-}
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function readdirSyncSafe(dir: string): string[] {
+  try {
+    return readdirSync(dir);
+  } catch {
+    return [];
+  }
+}
 export { hlsNaming };

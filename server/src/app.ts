@@ -73,6 +73,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     new HlsManager(options.config, playback, app.log, {
       idleMs: options.config.hlsIdleMs,
       maxProcesses: options.config.hlsMaxProcesses,
+      maxTranscodes: options.config.hlsMaxTranscodes,
+      seekAheadSegments: options.config.hlsSeekAheadSegments,
+      // 1.15 replaces this with the VAAPI self-test result.
+      hardware: options.config.hardwareAccel === 'vaapi' ? 'vaapi' : null,
+      vaapiDevice: options.config.vaapiDevice,
       waitMs: 20_000,
     }),
   );

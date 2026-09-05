@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PlaybackSession } from './sessions.js';
-import { buildRemuxArgs, hlsNaming } from './ffmpeg-args.js';
+import {
+  buildRemuxArgs,
+  buildTranscodeArgs,
+  hlsNaming,
+  segmentCount,
+  vodPlaylist,
+} from './ffmpeg-args.js';
 
 const base = (over: Partial<PlaybackSession> = {}): PlaybackSession => ({
   id: 'abc',
@@ -121,5 +127,86 @@ describe('buildRemuxArgs', () => {
       initFile: 'init.mp4',
       playlist: 'index.m3u8',
     });
+  });
+});
+
+describe('buildTranscodeArgs', () => {
+  const session = (): PlaybackSession => {
+    const s = base({ profile: { ...base().profile, maxWidth: 1280, maxBitrate: 4_000_000 } });
+    s.decision = { ...s.decision, method: 'transcode', video: 'transcode', audio: 'transcode' };
+    return s;
+  };
+
+  it('encodes h264 with libx264, forced keyframes, scaling, and a bitrate cap from segment 0', () => {
+    const args = buildTranscodeArgs(session(), '/out', { startSegment: 0, hardware: null });
+    const joined = args.join(' ');
+    expect(joined).not.toContain('-ss');
+    expect(joined).toContain('-vf scale=1280:-2');
+    expect(joined).toContain(
+      '-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -profile:v high -level 4.1',
+    );
+    expect(joined).toContain('-maxrate 4000000 -bufsize 8000000');
+    expect(joined).toContain('-force_key_frames expr:gte(t,n_forced*6) -sc_threshold 0');
+    expect(joined).toContain('-c:a aac -ac 2 -b:a 192k');
+    expect(joined).not.toContain('-output_ts_offset');
+    expect(joined).toContain('-start_number 0');
+    expect(args[args.length - 1]).toBe('/out/ffmpeg.m3u8');
+  });
+
+  it('seeks to the segment start and offsets timestamps when starting mid-file', () => {
+    const args = buildTranscodeArgs(session(), '/out', { startSegment: 40, hardware: null });
+    const joined = args.join(' ');
+    expect(joined).toContain('-ss 240.000 -i /media/show.mkv');
+    expect(joined).toContain('-output_ts_offset 240');
+    expect(joined).toContain('-start_number 40');
+  });
+
+  it('uses VAAPI decode, scale, and encode when hardware is available', () => {
+    const args = buildTranscodeArgs(session(), '/out', {
+      startSegment: 0,
+      hardware: 'vaapi',
+      vaapiDevice: '/dev/dri/renderD129',
+    });
+    const joined = args.join(' ');
+    expect(joined).toContain('-init_hw_device vaapi=va:/dev/dri/renderD129 -filter_hw_device va');
+    expect(joined).toContain('-hwaccel vaapi -hwaccel_output_format vaapi -i /media/show.mkv');
+    expect(joined).toContain(
+      '-vf scale_vaapi=w=1280:h=-2:format=nv12 -c:v h264_vaapi -profile:v high',
+    );
+    expect(joined).toContain('-b:v 4000000 -maxrate 4000000 -bufsize 8000000');
+    expect(joined).not.toContain('libx264');
+  });
+
+  it('skips scaling when the source fits and uses qp without a bitrate cap on vaapi', () => {
+    const s = session();
+    s.profile = { ...s.profile, maxWidth: null, maxBitrate: null };
+    expect(
+      buildTranscodeArgs(s, '/out', { startSegment: 0, hardware: null }).join(' '),
+    ).not.toContain('scale=');
+    expect(
+      buildTranscodeArgs(s, '/out', { startSegment: 0, hardware: 'vaapi' }).join(' '),
+    ).toContain('-vf scale_vaapi=format=nv12 -c:v h264_vaapi -profile:v high -qp 23');
+  });
+});
+
+describe('vodPlaylist', () => {
+  it('lays out 6 second segments with a short tail and an end marker', () => {
+    expect(segmentCount(30_005)).toBe(6);
+    expect(segmentCount(30_000)).toBe(5);
+    expect(segmentCount(100)).toBe(1);
+    const playlist = vodPlaylist(20_500, 'ts');
+    expect(playlist).toContain('#EXT-X-PLAYLIST-TYPE:VOD');
+    expect(playlist).toContain('#EXT-X-TARGETDURATION:6');
+    expect(playlist).toContain('#EXTINF:6.000,\nseg-0.ts');
+    expect(playlist).toContain('#EXTINF:6.000,\nseg-2.ts');
+    expect(playlist).toContain('#EXTINF:2.500,\nseg-3.ts');
+    expect(playlist.trim().endsWith('#EXT-X-ENDLIST')).toBe(true);
+    expect(playlist).not.toContain('seg-4');
+  });
+  it('adds the init segment map for fmp4', () => {
+    const playlist = vodPlaylist(6_000, 'fmp4');
+    expect(playlist).toContain('#EXT-X-VERSION:7');
+    expect(playlist).toContain('#EXT-X-MAP:URI="init.mp4"');
+    expect(playlist).toContain('seg-0.m4s');
   });
 });

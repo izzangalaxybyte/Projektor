@@ -133,3 +133,11 @@ When streams are copied, segment boundaries fall on the source's keyframes, whic
 ## 2026-09-05 — Playback sessions live in memory
 
 Sessions are ephemeral: a restart drops them and clients simply ask for a new decision. Persisting them would add a table and a cleanup problem for no user-visible benefit.
+
+## 2026-09-05 — Seeks restart ffmpeg at the requested segment
+
+Rather than transcode a whole film ahead of the viewer, ffmpeg runs from the current position and is restarted whenever a request lands more than three segments ahead of what exists, behind the run's start, or after the run finished. Forced keyframes make segment boundaries deterministic, so segments from earlier runs stay valid and are served from disk. This is the same shape as Jellyfin's transcoding, without its keyframe extraction step because we do not remux this way.
+
+## 2026-09-05 — CRF for software, QP or bitrate for VAAPI
+
+libx264 uses CRF 23 with an optional `maxrate` from the profile; `h264_vaapi` has no CRF, so it uses `qp 23` when the profile sets no bitrate and constant bitrate when it does.
