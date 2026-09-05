@@ -15,6 +15,7 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
 import { SessionRegistry } from './playback/sessions.js';
 import { filesRoutes } from './routes/files.js';
@@ -41,6 +42,7 @@ declare module 'fastify' {
     watcher: LibraryWatcher;
     playback: SessionRegistry;
     hls: HlsManager;
+    hardware: HardwareReport;
   }
 }
 
@@ -75,14 +77,17 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       maxProcesses: options.config.hlsMaxProcesses,
       maxTranscodes: options.config.hlsMaxTranscodes,
       seekAheadSegments: options.config.hlsSeekAheadSegments,
-      // 1.15 replaces this with the VAAPI self-test result.
-      hardware: options.config.hardwareAccel === 'vaapi' ? 'vaapi' : null,
+      // Replaced by the self-test result in onReady.
+      hardware: null,
       vaapiDevice: options.config.vaapiDevice,
       waitMs: 20_000,
     }),
   );
   app.decorate('watcher', watcher);
+  app.decorate('hardware', { encoder: null, reason: 'not probed yet' } as HardwareReport);
   app.addHook('onReady', async () => {
+    app.hardware = await detectHardware(options.config, app.log);
+    app.hls.setHardware(app.hardware.encoder);
     if (options.config.watchLibraries) await watcher.startAll();
   });
   app.addHook('onClose', async () => {

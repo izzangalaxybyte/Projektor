@@ -1486,6 +1486,12 @@ export interface components {
       status: 'ok';
       version: string;
       time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
     };
     /** @enum {string} */
     LibraryKind: 'movie' | 'tv' | 'anime';
@@ -1743,6 +1749,12 @@ export interface components {
       status: 'ok';
       version: string;
       time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
     };
   };
   responses: never;

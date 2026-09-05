@@ -20,6 +20,8 @@ describe('GET /api/health', () => {
     const res = await app.inject({ method: 'GET', url: '/api/health' });
     expect(res.statusCode).toBe(200);
     expect(HealthResponse.safeParse(res.json()).success).toBe(true);
+    // Test config forces HARDWARE_ACCEL=none, so the encoder is always libx264 here.
+    expect(res.json()).toMatchObject({ encoder: 'libx264', encoderReason: 'HARDWARE_ACCEL=none' });
   });
 });
 

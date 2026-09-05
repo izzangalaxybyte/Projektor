@@ -68,13 +68,22 @@ export class HlsManager {
     private readonly config: Config,
     private readonly registry: SessionRegistry,
     private readonly log: FastifyBaseLogger,
-    private readonly options: HlsOptions,
+    private options: HlsOptions,
   ) {
     this.sweeper = setInterval(
       () => void this.sweep(),
       Math.min(15_000, Math.max(200, options.idleMs / 2)),
     );
     this.sweeper.unref();
+  }
+
+  /** Switches the encoder used by new transcodes; called after the startup self-test. */
+  setHardware(encoder: HardwareEncoder): void {
+    this.options.hardware = encoder;
+  }
+
+  get hardware(): HardwareEncoder {
+    return this.options.hardware;
   }
 
   dir(sessionId: string): string {

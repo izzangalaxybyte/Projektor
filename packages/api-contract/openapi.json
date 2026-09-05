@@ -1047,9 +1047,17 @@
           },
           "time": {
             "type": "string"
+          },
+          "encoder": {
+            "type": "string",
+            "enum": ["h264_vaapi", "libx264"],
+            "description": "Video encoder transcodes will use"
+          },
+          "encoderReason": {
+            "type": "string"
           }
         },
-        "required": ["status", "version", "time"]
+        "required": ["status", "version", "time", "encoder", "encoderReason"]
       },
       "LibraryKind": {
         "type": "string",
@@ -2118,9 +2126,17 @@
           },
           "time": {
             "type": "string"
+          },
+          "encoder": {
+            "type": "string",
+            "enum": ["h264_vaapi", "libx264"],
+            "description": "Video encoder transcodes will use"
+          },
+          "encoderReason": {
+            "type": "string"
           }
         },
-        "required": ["status", "version", "time"],
+        "required": ["status", "version", "time", "encoder", "encoderReason"],
         "additionalProperties": false
       }
     }

@@ -141,3 +141,7 @@ Rather than transcode a whole film ahead of the viewer, ffmpeg runs from the cur
 ## 2026-09-05 — CRF for software, QP or bitrate for VAAPI
 
 libx264 uses CRF 23 with an optional `maxrate` from the profile; `h264_vaapi` has no CRF, so it uses `qp 23` when the profile sets no bitrate and constant bitrate when it does.
+
+## 2026-09-05 — Hardware encoding is decided once at startup
+
+A one-frame `h264_vaapi` encode at boot tells us whether the GPU path works. Deciding per session would repeat the probe for every viewer and make failures harder to see; deciding at boot gives one log line and one health field to check after deploy. The setting can still force either path.
