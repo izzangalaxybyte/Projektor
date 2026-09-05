@@ -23,6 +23,7 @@ export const ScanStatus = z
     state: z.enum(['idle', 'running']),
     filesSeen: z.number().int().nonnegative(),
     filesChanged: z.number().int().nonnegative(),
+    filesMissing: z.number().int().nonnegative(),
     startedAt: Timestamp.nullable(),
   })
   .meta({ id: 'ScanStatus' });

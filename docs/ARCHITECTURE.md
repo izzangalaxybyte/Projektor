@@ -12,6 +12,16 @@ Describes what exists now. Planned components are in [PLAN.md](PLAN.md) and move
 
 `server/src/config.ts` parses the environment with zod into a `Config` and creates the `DATA_DIR` layout (`projektor.sqlite`, `images/`, `subtitles/`, `transcode/`). `buildApp` takes a `Config`, opens the database, and decorates the Fastify instance with `config` and `db` so routes reach both through `app`. Tests get an isolated `Config` in a temp directory from `test-utils.ts`.
 
+## Authentication
+
+`server/src/auth/` holds the pieces. `pin.ts` hashes PINs with Argon2id. `tokens.ts` generates 32-byte random bearer tokens and hashes them with SHA-256 for storage, so a leaked database does not leak usable tokens. `service.ts` is `AuthService`: setup, profile listing, login with the failed-attempt counter and lockout, token resolution, and session revocation. `plugin.ts` registers the service on `app.auth`, adds an `onRequest` hook that rejects any `/api` request without a valid token unless the route sets `config.public`, and exposes `app.requireAdmin` as a preHandler for admin-only routes. Routes live in `routes/auth.ts`.
+
+Login is rate limited per IP with `@fastify/rate-limit` (registered with `global: false`, applied only where a route sets `config.rateLimit`). Lockout is per profile: five wrong PINs lock it for fifteen minutes.
+
+## Libraries and scanning
+
+`server/src/library/service.ts` is `LibraryService`: create (validates every path is a directory, stores resolved and de-duplicated paths), list, get, delete. `walker.ts` is an async generator that walks a root breadth-first, yields files whose extension is in `VIDEO_EXTENSIONS`, skips dot-files and dot-directories, and reports unreadable directories through a callback instead of aborting. `scanner.ts` reconciles a library: for every walked file it inserts a new `media_files` row or, when size or mtime differ, updates the row and clears `probedAt` so the file is probed again; rows whose file was not seen are flagged `missing`, and a flagged row whose file reappears is unflagged. The scan returns counts plus the ids of files that need probing, which is the hand-off point for ffprobe in 1.4. Routes are in `routes/libraries.ts`; mutations require admin.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.

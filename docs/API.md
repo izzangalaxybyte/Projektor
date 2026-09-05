@@ -5,7 +5,8 @@ The source of truth is [`packages/api-contract/openapi.json`](../packages/api-co
 ## Conventions
 
 - Base path `/api`. JSON in and out. Errors use `ErrorResponse` (`statusCode`, `error`, `message`).
-- Authentication is a bearer token from `POST /api/auth/login`. Not enforced yet; lands in sub-phase 1.2.
+- Authentication is a bearer token from `POST /api/auth/login` or `POST /api/auth/setup`, sent as `Authorization: Bearer <token>`. Every `/api` route requires it except the ones marked public below. Missing or unknown token returns 401.
+- Admin-only routes return 403 for non-admin profiles.
 - Ids are opaque strings. Timestamps are ISO 8601 UTC. Durations and positions are integer milliseconds.
 - List endpoints take `offset` and `limit` (max 200) and return `{ items, total, offset, limit }`.
 
@@ -19,8 +20,6 @@ The source of truth is [`packages/api-contract/openapi.json`](../packages/api-co
 
 Grouped by the sub-phase that will route them.
 
-- **Auth (1.2)** — `SetupStatus`, `SetupRequest`, `LoginRequest`, `LoginResponse`, `Profile`, `Session`. Login is profile id plus a 4 to 6 digit PIN and a device name.
-- **Libraries (1.3, 1.10)** — `Library`, `CreateLibraryRequest`, `ScanStatus`.
 - **Items (1.7 to 1.9, 1.17)** — `ItemSummary`, `ItemDetail`, `MediaFile`, `StreamInfo`, `ItemsQuery`, `FixMatchRequest`, `ProgressState`.
 - **Playback (1.11 to 1.14)** — `DeviceProfile`, `PlaybackDecideRequest`, `PlaybackDecision`, `PlaybackMethod`, `ProgressUpdateRequest`.
 

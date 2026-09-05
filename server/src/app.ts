@@ -1,6 +1,7 @@
 import fastify, { type FastifyInstance } from 'fastify';
 import swagger from '@fastify/swagger';
 import sensible from '@fastify/sensible';
+import rateLimit from '@fastify/rate-limit';
 import {
   jsonSchemaTransform,
   jsonSchemaTransformObject,
@@ -10,7 +11,10 @@ import {
 } from 'fastify-type-provider-zod';
 import type { Config } from './config.js';
 import { openDatabase, type Db } from './db/index.js';
+import { authPlugin } from './auth/plugin.js';
+import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { librariesRoutes } from './routes/libraries.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
 
@@ -41,6 +45,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.addHook('onClose', () => database.close());
 
   await app.register(sensible);
+  // Registered with global: false so only routes that set config.rateLimit are limited.
+  await app.register(rateLimit, { global: false });
+  await app.register(authPlugin);
   await app.register(swagger, {
     openapi: {
       openapi: '3.1.0',
@@ -63,6 +70,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(
     async (api) => {
       await api.register(healthRoutes, { version: API_VERSION });
+      await api.register(authRoutes, { prefix: '/auth' });
+      await api.register(librariesRoutes, { prefix: '/libraries' });
     },
     { prefix: '/api' },
   );
