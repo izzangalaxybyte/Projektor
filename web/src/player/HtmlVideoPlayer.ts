@@ -38,7 +38,13 @@ export class HtmlVideoPlayer {
       void this.video.play().catch(() => undefined);
     };
     if (options.hls && !supportsNativeHls(this.video) && Hls.isSupported()) {
-      this.hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      // startPosition matters for EVENT playlists (a remux still being written): without it hls.js
+      // starts near the live edge instead of where the viewer asked.
+      this.hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        startPosition: options.startMs / 1000,
+      });
       this.hls.on(Hls.Events.MANIFEST_PARSED, start);
       this.hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) this.emit('error');
@@ -75,6 +81,14 @@ export class HtmlVideoPlayer {
   }
   get paused(): boolean {
     return this.video.paused;
+  }
+  /** Playback speed; survives load() because it lives on the element. */
+  setRate(rate: number): void {
+    this.video.playbackRate = rate;
+    this.video.defaultPlaybackRate = rate;
+  }
+  get rate(): number {
+    return this.video.playbackRate;
   }
 
   on(event: PlayerEvent, handler: () => void): () => void {

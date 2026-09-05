@@ -197,3 +197,15 @@ The image bundles API, transcoder, and web app; the Linux box runs one thing. It
 ## 2026-09-05 — Intel drivers are installed only on amd64
 
 The image builds on an Apple Silicon Mac for testing, where the Intel packages do not exist. The Dockerfile installs them only when `dpkg --print-architecture` is amd64, which is what the Linux box is.
+
+## 2026-09-05 — Skip amount is a first-class, persisted setting
+
+The owner's primary reason for the app is that skipping moves by an amount they choose, not a fixed 10 seconds. The selector offers 3 to 15 seconds, the speed selector 0.5× to 2×, both persist per device, and both are required in every client's player rather than being a web nicety. Recorded in the plan under "Core player behaviour".
+
+## 2026-09-05 — Never clear a p-limit queue mid-run
+
+After a TMDB 401 the matcher used to call `clearQueue()` on its concurrency limiter. Tasks still queued then never settle, and the `Promise.all` waiting on them hung the scan in its matching phase forever. A `keyRejected` flag now makes queued items fail fast instead. Found by the e2e suite: a rescan after a bogus key never finished.
+
+## 2026-09-05 — First remux playlist waits briefly for ENDLIST
+
+hls.js treats a growing EVENT playlist as live and starts near its end unless told otherwise. The player now passes an explicit start position, and the server holds the first `index.m3u8` of a remux for up to 8 seconds so short and fast remuxes present as a finished VOD playlist. Long remuxes still stream as EVENT. Upstream TMDB and AniList requests also gained a 15 second timeout so a slow network can never stall a scan.

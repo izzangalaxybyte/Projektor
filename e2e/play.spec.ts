@@ -13,7 +13,8 @@ test.beforeAll(async ({ request }) => {
 async function openEpisode(page: Page) {
   await signIn(page);
   await page.getByRole('link', { name: 'TV Shows' }).click();
-  await page.getByRole('link', { name: 'Sample Show' }).click();
+  await expect(page).toHaveURL(/\/tv$/);
+  await page.locator('.grid').getByRole('link', { name: 'Sample Show' }).click();
   await page.getByTestId('tile-season').first().click();
   await page.getByTestId('tile-episode').first().click();
 }
@@ -37,12 +38,17 @@ test('plays the hevc/ac3 episode through HLS, shows subtitles, seeks, and report
 
   // Subtitles: pick the embedded track and expect the first cue (1s to 4s) after seeking to 2s.
   await page.getByTestId('subtitle-select').selectOption({ index: 1 });
+  // Pause, then seek into the first cue's window (1s to 4s) so the overlay has time to show.
+  await page.getByTestId('toggle').click();
+  await expect(page.getByTestId('toggle')).toHaveAttribute('aria-label', 'Play');
   await page.getByTestId('video').evaluate((v: HTMLVideoElement) => (v.currentTime = 2));
   await expect(page.getByTestId('subtitle')).toContainText('First subtitle line', {
     timeout: 10_000,
   });
 
-  // Seek forward with the keyboard.
+  // Resume, then seek forward with the keyboard.
+  await page.getByTestId('toggle').click();
+  await expect(page.getByTestId('toggle')).toHaveAttribute('aria-label', 'Pause');
   await page.getByTestId('player').click();
   await page.keyboard.press('ArrowRight');
   await expect.poll(() => currentTime(page), { timeout: 15_000 }).toBeGreaterThan(11);
@@ -66,14 +72,15 @@ test('plays the hevc/ac3 episode through HLS, shows subtitles, seeks, and report
     .toBeGreaterThan(10_000);
 
   // Back on the detail page the button offers to resume.
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByTestId('play')).toHaveText(/Resume from/);
 });
 
 test('direct plays the mp4 movie', async ({ page }) => {
   await signIn(page);
-  await page.getByRole('link', { name: 'Movies' }).click();
-  await page.getByRole('link', { name: 'Sample Movie' }).click();
+  await page.getByRole('link', { name: 'Movies', exact: true }).click();
+  await expect(page).toHaveURL(/\/movies$/);
+  await page.locator('.grid').getByRole('link', { name: 'Sample Movie' }).click();
   await page.getByTestId('play').click();
   await expect(page.getByTestId('decision')).toHaveText('Direct play');
   await expect.poll(() => currentTime(page), { timeout: 30_000 }).toBeGreaterThan(0.5);

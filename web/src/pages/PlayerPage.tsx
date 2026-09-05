@@ -1,10 +1,20 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, unwrap, withAccessToken, type PlaybackDecision } from '../api/client.js';
 import { SubtitleOverlay } from '../components/SubtitleOverlay.js';
 import { useItem, useNextEpisode } from '../hooks/useItems.js';
 import { HtmlVideoPlayer } from '../player/HtmlVideoPlayer.js';
+import {
+  formatRate,
+  loadPrefs,
+  RATE_OPTIONS,
+  savePrefs,
+  SKIP_OPTIONS,
+  type PlaybackRate,
+  type PlayerPrefs,
+  type SkipSeconds,
+} from '../player/prefs.js';
 import { buildDeviceProfile } from '../player/profile.js';
 import { fmt } from './ItemPage.js';
 
@@ -17,6 +27,7 @@ export function PlayerPage() {
   const itemId = params.get('item') ?? undefined;
   const startMs = Number(params.get('t') ?? 0) || 0;
 
+  const qc = useQueryClient();
   const item = useItem(itemId);
   const next = useNextEpisode(item.data?.kind === 'episode' ? item.data.id : undefined);
   const file = item.data?.files.find((f) => f.id === fileId) ?? item.data?.files[0];
@@ -33,6 +44,19 @@ export function PlayerPage() {
   const [ended, setEnded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const [prefs, setPrefs] = useState<PlayerPrefs>(() => loadPrefs());
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
+  const updatePrefs = (patch: Partial<PlayerPrefs>) => {
+    const next = { ...prefsRef.current, ...patch };
+    setPrefs(next);
+    savePrefs(next);
+    if (patch.rate !== undefined) playerRef.current?.setRate(patch.rate);
+  };
+  const skip = (direction: 1 | -1) => {
+    const p = playerRef.current;
+    if (p) p.seek(p.currentMs + direction * prefsRef.current.skipSeconds * 1000);
+  };
   const lastReport = useRef(0);
   const resumeAt = useRef(startMs);
   const reportRef = useRef<(force?: boolean) => void>(() => undefined);
@@ -58,6 +82,12 @@ export function PlayerPage() {
   const report = useMutation({
     mutationFn: async (input: { positionMs: number; durationMs: number }) =>
       itemId ? unwrap(await api.POST('/api/progress', { body: { itemId, ...input } })) : null,
+    // Detail pages and home rows cache progress; make them refetch after a report.
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['item', itemId] });
+      void qc.invalidateQueries({ queryKey: ['continue'] });
+      void qc.invalidateQueries({ queryKey: ['children'] });
+    },
   });
   const reportNow = useCallback(
     (force = false) => {
@@ -118,6 +148,7 @@ export function PlayerPage() {
     if (!d || !player) return;
     setError(null);
     player.load(withAccessToken(d.url), { hls: d.method !== 'direct', startMs: resumeAt.current });
+    player.setRate(prefsRef.current.rate);
   }, [decision.data]);
 
   const switchAudio = (index: number) => {
@@ -133,8 +164,8 @@ export function PlayerPage() {
       if (e.key === ' ' || e.key === 'k') {
         e.preventDefault();
         p.toggle();
-      } else if (e.key === 'ArrowRight') p.seek(p.currentMs + 10_000);
-      else if (e.key === 'ArrowLeft') p.seek(p.currentMs - 10_000);
+      } else if (e.key === 'ArrowRight') p.seek(p.currentMs + prefsRef.current.skipSeconds * 1000);
+      else if (e.key === 'ArrowLeft') p.seek(p.currentMs - prefsRef.current.skipSeconds * 1000);
       else if (e.key === 'f') void document.documentElement.requestFullscreen?.();
       else if (e.key === 'Escape' && !document.fullscreenElement) navigate(-1);
       setShowControls(true);
@@ -200,11 +231,29 @@ export function PlayerPage() {
         <button
           type="button"
           className="ctl"
+          onClick={() => skip(-1)}
+          aria-label={`Skip back ${prefs.skipSeconds} seconds`}
+          data-testid="skip-back"
+        >
+          ↺{prefs.skipSeconds}
+        </button>
+        <button
+          type="button"
+          className="ctl"
           onClick={() => playerRef.current?.toggle()}
           aria-label={paused ? 'Play' : 'Pause'}
           data-testid="toggle"
         >
           {paused ? '▶' : '❚❚'}
+        </button>
+        <button
+          type="button"
+          className="ctl"
+          onClick={() => skip(1)}
+          aria-label={`Skip forward ${prefs.skipSeconds} seconds`}
+          data-testid="skip-forward"
+        >
+          {prefs.skipSeconds}↻
         </button>
         <span className="time" data-testid="time">
           {fmt(currentMs)}
@@ -256,6 +305,31 @@ export function PlayerPage() {
             ))}
           </select>
         )}
+        <select
+          aria-label="Skip amount"
+          value={prefs.skipSeconds}
+          onChange={(e) => updatePrefs({ skipSeconds: Number(e.target.value) as SkipSeconds })}
+          data-testid="skip-select"
+          title="How far forward and back jump"
+        >
+          {SKIP_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              +{n}s
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Playback speed"
+          value={prefs.rate}
+          onChange={(e) => updatePrefs({ rate: Number(e.target.value) as PlaybackRate })}
+          data-testid="speed-select"
+        >
+          {RATE_OPTIONS.map((r) => (
+            <option key={r} value={r}>
+              {formatRate(r)}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="ctl"

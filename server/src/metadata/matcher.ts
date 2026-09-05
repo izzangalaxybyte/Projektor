@@ -27,6 +27,8 @@ const yearOf = (date: string | null | undefined): number | null => {
 
 export class Matcher {
   private readonly limit = pLimit(2);
+  /** Set after a 401 so queued items fail fast instead of each hitting the API. */
+  private keyRejected = false;
 
   constructor(private readonly deps: MatcherDeps) {}
 
@@ -53,14 +55,19 @@ export class Matcher {
   }
 
   private async tally(summary: MatchSummary, run: () => Promise<boolean>): Promise<void> {
+    // A key rejection would fail every item; skip the rest without touching the API. Never use
+    // pLimit's clearQueue here: dropped tasks leave their promises pending and matchPending hangs.
+    if (this.keyRejected) {
+      summary.failed += 1;
+      return;
+    }
     try {
       if (await run()) summary.matched += 1;
       else summary.unmatched += 1;
     } catch (error) {
       summary.failed += 1;
       this.deps.log?.warn({ error: String(error) }, 'metadata match failed');
-      // A key rejection would fail every item; stop hammering the API.
-      if (error instanceof TmdbError && error.status === 401) this.limit.clearQueue();
+      if (error instanceof TmdbError && error.status === 401) this.keyRejected = true;
     }
   }
 

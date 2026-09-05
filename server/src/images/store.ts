@@ -16,7 +16,8 @@ export type Fetcher = (url: string) => Promise<Response>;
 export class ImageStore {
   constructor(
     private readonly dir: string,
-    private readonly fetcher: Fetcher = (url) => fetch(url),
+    private readonly fetcher: Fetcher = (url) =>
+      fetch(url, { signal: AbortSignal.timeout(30_000) }),
   ) {}
 
   static keyFor(sourceUrl: string): string {

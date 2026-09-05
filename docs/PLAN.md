@@ -18,6 +18,15 @@ Decisions already made with the user:
 
 The design borrows the proven approach of Jellyfin: ffmpeg-driven HLS with on-demand segment generation, TMDB for metadata, OpenSubtitles for subtitles, and a per-device capability profile that the server uses to choose direct play, remux, or transcode.
 
+## Core player behaviour (every client)
+
+The owner's main reason for building this: skipping should move by an amount they choose, not a fixed ten seconds. Every player, on every client, has two controls in its bottom bar:
+
+- **Skip amount**: a selector offering +3, +4, +5, +6, +7, +8, +9, +10, and +15 seconds. The forward and back buttons, and the arrow keys or remote left/right, jump by exactly that amount.
+- **Speed**: 0.5×, 0.75×, normal, 1.25×, 1.5×, 1.75×, 2×.
+
+Both choices persist per device across sessions. The web player has them from Phase 1; the Android, Tizen, and iPad players must ship with them, not add them later.
+
 ## Scope boundaries
 
 In: movies, TV shows, and anime as three separate libraries and three separate sections in every client (anime never appears under TV), multiple household users, watch progress and resume, posters/backdrops/episode stills, subtitles (embedded extraction + online fetch), LAN playback on all five clients.
@@ -160,15 +169,15 @@ Server first, one capability at a time, each proven with integration tests again
 - **2.3 Device profile.** `MediaCodecList` inspection into a decision request. Check: emulator without AC3 receives a transcode decision for the ac3 fixture.
 - **2.4 ExoPlayer wrapper.** Direct play, HLS, sideloaded VTT, progress reporting. Check: instrumented test plays a fixture for 10s and posts progress.
 - **2.5 Mobile browse.** Bottom nav with Home, Movies, TV, Anime, Search; grids and detail screens. Check: emulator reaches an episode detail from Home.
-- **2.6 Mobile player.** Fullscreen player, gesture seek, track pickers, resume. Check: manual run on a phone plays, seeks, and resumes.
+- **2.6 Mobile player.** Fullscreen player, gesture seek, track pickers, resume, skip-amount and speed selectors (see Core player behaviour). Check: manual run on a phone plays, seeks, and resumes.
 - **2.7 TV browse.** Compose for TV rows, leanback launcher, banner, D-pad focus. Check: Android TV emulator navigates Home to detail by D-pad.
-- **2.8 TV player.** Remote-key controls and pickers. Check: full episode on the Android TV emulator with subtitles.
+- **2.8 TV player.** Remote-key controls and pickers; left/right jump by the chosen skip amount; speed selector. Check: full episode on the Android TV emulator with subtitles.
 
 ### Phase 3 — TV shell + Tizen
 
 - **3.1 TV shell scaffold.** `?tv=1` switch, spatial navigation provider, focusable tile and row primitives, back-key handling. Check: Playwright with arrow keys moves focus across a row and into detail.
 - **3.2 TV screens.** Home, Movies, TV Shows, Anime, detail, on-screen keyboard search. Check: every pointer-shell route has a TV equivalent reachable by keys only.
-- **3.3 TV player controls.** Remote-key transport (play/pause, seek, back), track pickers as focusable menus, resume prompt. Check: keyboard-only Playwright playback test passes.
+- **3.3 TV player controls.** Remote-key transport (play/pause, seek by the chosen skip amount, back), track pickers and the skip/speed selectors as focusable menus, resume prompt. Check: keyboard-only Playwright playback test passes.
 - **3.4 Tizen build target.** Vite config with `chrome63` target and core-js, style lint forbidding flex `gap`, `:has`, container queries, list virtualization, small image widths. Check: bundle builds and the lint rule catches a deliberate flex `gap`.
 - **3.5 Tizen packaging.** `tizen/config.xml`, icons, static device profile with `ts` segments, `.wgt` build script, `docs/tizen.md` for developer mode and certificates. Check: `.wgt` installs and launches on the Q70B and reaches Home.
 - **3.6 AVPlay adapter.** `AvPlayPlayer` implementing the `Player` interface, HTML5 video fallback flag. Check: h264 mp4 direct and hevc mkv transcode both play on the Q70B with seek and subtitles.
@@ -180,7 +189,7 @@ Server first, one capability at a time, each proven with integration tests again
 - **4.1 Xcode project.** SwiftUI app, iOS 15.0 deployment target, free-ID signing, `docs/ipad.md`. Check: empty app installs and launches on the iPad.
 - **4.2 API client + auth.** Generated or hand-written `Codable` client, keychain token store, login. Check: unit test lists libraries from a local server.
 - **4.3 Browse screens.** `NavigationView` based Home, Movies, TV Shows, Anime, detail. Check: reach an episode detail on the device.
-- **4.4 Player.** AVPlayer with HLS subtitle renditions, direct play for mp4, remux for mkv, track pickers, PiP, progress on timer and background. Check: mkv fixture plays with subtitles and PiP; progress shows in the web app.
+- **4.4 Player.** AVPlayer with HLS subtitle renditions, direct play for mp4, remux for mkv, track pickers, skip-amount and speed selectors, PiP, progress on timer and background. Check: mkv fixture plays with subtitles and PiP; progress shows in the web app.
 - **4.5 Cross-client pass.** Start on web, resume on Android TV, finish on iPad. Check: watched state matches everywhere.
 
 Phases 2 to 4 depend only on the frozen contract from 1.18. Order was chosen by the user: Android, then Samsung TV, then iPad.
