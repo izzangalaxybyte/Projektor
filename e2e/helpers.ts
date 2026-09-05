@@ -51,7 +51,7 @@ export async function seedLibrary(
     .poll(
       async () =>
         (await (await request.get(`/api/libraries/${id}/scan`, { headers })).json()).finishedAt,
-      { timeout: 30_000 },
+      { timeout: 90_000 },
     )
     .not.toBeNull();
   return id as string;

@@ -187,10 +187,12 @@ describe('Matcher', () => {
     expect(await matcher.matchPending()).toEqual({ matched: 0, unmatched: 0, failed: 0 });
   });
 
-  it('reports failures when the key is rejected', async () => {
+  it('reports failures when the key is rejected and still settles with more items than the concurrency', async () => {
     const { db, matcher } = setup('bad');
     const lib = addLibrary(db, 'movie');
-    addMovie(db, lib, 'Heat', 1995);
-    expect(await matcher.matchPending()).toEqual({ matched: 0, unmatched: 0, failed: 1 });
+    for (const title of ['Heat', 'Sample Movie', 'Third', 'Fourth', 'Fifth'])
+      addMovie(db, lib, title, 1995);
+    // Five items, concurrency two: the queued ones must fail fast, not hang.
+    expect(await matcher.matchPending()).toEqual({ matched: 0, unmatched: 0, failed: 5 });
   });
 });

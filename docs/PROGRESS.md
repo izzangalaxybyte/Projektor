@@ -41,6 +41,12 @@ Phase 1 is complete as of 2026-09-05 except the checks that need the Linux box i
 | 1.22 Settings + fix-match UI                     | done                                          | PR #27                   | `routes/users.test.ts`; `e2e/settings.spec.ts`: libraries list with scan counts, add an empty library and scan it to 0 files, delete it, bad path error shown; TMDB key stored and masked to `…1234`; new profile appears on the login screen; needs-review lists the loose download and surfaces the server's TMDB error for a bad key; anime season offset saved; non-admin has no Settings link and is bounced from `/settings`                                                                   |
 | 1.23 Docker + deploy                             | done (files); image build and box run pending | PR #28                   | Dockerfile, compose, `.env.example`, `docs/server.md` written. The production path was verified on the host: `pnpm deploy --prod` produced a self-contained server, `node dist/main.js` served `/api/health` (1.0.0) and the built web app. `docker build` could not be verified on this Mac because Docker Desktop's registry pulls stalled behind its proxy; run `docker compose -f deploy/docker-compose.yml up -d --build` on the Linux box and check `encoder: h264_vaapi` as in docs/server.md |
 
+## Cross-cutting
+
+| Feature                             | Status | Landed in | Check                                                                                                                                                                                                                                   |
+| ----------------------------------- | ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skip amount + speed selectors (web) | done   | PR #29    | `player/prefs.test.ts`; `e2e/skip-speed.spec.ts`: forward/back buttons and arrow keys move by exactly the chosen amount (4s, then 15s, clamped at 0), speed 1.5× applied to the element, both choices survive a reload via localStorage |
+
 ## Phase 2 — Android phone + Android TV
 
 | Sub-phase                   | Status | Landed in | Check |

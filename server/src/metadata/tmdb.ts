@@ -107,7 +107,11 @@ export class TmdbClient {
     const url = new URL(API_BASE + pathname);
     for (const [k, v] of Object.entries(params))
       if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
-    const init: RequestInit = { headers: { accept: 'application/json' } };
+    // Never let a slow upstream stall a scan: 15 seconds per request.
+    const init: RequestInit = {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(15_000),
+    };
     if (this.usesBearer)
       (init.headers as Record<string, string>)['authorization'] = `Bearer ${this.credential}`;
     else url.searchParams.set('api_key', this.credential);

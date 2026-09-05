@@ -36,6 +36,7 @@ interface Running {
   startSegment: number;
   /** How many times ffmpeg has been (re)started for the session. */
   starts: number;
+  startedAt: number;
 }
 
 export class HlsError extends Error {
@@ -174,6 +175,7 @@ export class HlsManager {
       stderr: '',
       startSegment: segment,
       starts: previous + 1,
+      startedAt: Date.now(),
     };
     this.running.set(session.id, run);
     this.log.info(
@@ -279,7 +281,22 @@ export class HlsManager {
         throw new HlsError(504, 'Timed out waiting for the stream to start');
       await sleep(100);
     }
+    if (!isTranscode && name === 'index.m3u8') return this.remuxPlaylist(run, file);
     return readFile(file);
+  }
+
+  /**
+   * A remux finishes far faster than real time, so for the first few seconds we wait for ffmpeg's
+   * ENDLIST and hand players a VOD playlist. Long files fall back to the growing EVENT playlist,
+   * which players treat as live-ish but still seekable within what exists.
+   */
+  private async remuxPlaylist(run: Running, file: string): Promise<Buffer> {
+    const holdUntil = run.startedAt + REMUX_VOD_HOLD_MS;
+    for (;;) {
+      const body = await readFile(file);
+      if (run.exited || body.includes('#EXT-X-ENDLIST') || Date.now() > holdUntil) return body;
+      await sleep(150);
+    }
   }
 
   contentType(name: string): string {
@@ -318,6 +335,9 @@ export class HlsManager {
     await Promise.all(this.registry.list().map((s) => this.stop(s.id)));
   }
 }
+
+/** How long the first remux playlist request waits for ffmpeg to finish before serving it live. */
+const REMUX_VOD_HOLD_MS = 8_000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

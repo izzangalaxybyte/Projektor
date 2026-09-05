@@ -466,7 +466,7 @@ select {
 }
 .player-controls {
   bottom: 0;
-  grid-template-columns: auto auto 1fr auto auto auto auto;
+  grid-template-columns: auto auto auto auto 1fr auto auto auto auto auto auto;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
 }
 .player-top {

@@ -55,6 +55,7 @@ export class AniListClient {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ query, variables }),
+      signal: AbortSignal.timeout(15_000),
     });
     if (res.status === 429) throw new AniListError('AniList rate limit hit', 429);
     if (!res.ok) throw new AniListError(`AniList request failed with ${res.status}`, res.status);
