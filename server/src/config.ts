@@ -10,6 +10,8 @@ const EnvSchema = z.object({
   FFMPEG_PATH: z.string().default('ffmpeg'),
   FFPROBE_PATH: z.string().default('ffprobe'),
   SCAN_DEBOUNCE_MS: z.coerce.number().int().positive().default(5000),
+  HLS_IDLE_MS: z.coerce.number().int().positive().default(60_000),
+  HLS_MAX_PROCESSES: z.coerce.number().int().positive().default(4),
   WATCH_LIBRARIES: z
     .enum(['true', 'false'])
     .default('true')
@@ -24,6 +26,10 @@ export interface Config {
   ffprobePath: string;
   /** Quiet period after a folder change before a scan is queued. */
   scanDebounceMs: number;
+  /** Stop an HLS session after this long without a request. */
+  hlsIdleMs: number;
+  /** Cap on concurrent ffmpeg processes across sessions. */
+  hlsMaxProcesses: number;
   /** Whether to watch library folders for changes. */
   watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
@@ -44,6 +50,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ffmpegPath: parsed.FFMPEG_PATH,
     ffprobePath: parsed.FFPROBE_PATH,
     scanDebounceMs: parsed.SCAN_DEBOUNCE_MS,
+    hlsIdleMs: parsed.HLS_IDLE_MS,
+    hlsMaxProcesses: parsed.HLS_MAX_PROCESSES,
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
@@ -62,6 +70,8 @@ export function configForDataDir(
     ffmpegPath: 'ffmpeg',
     ffprobePath: 'ffprobe',
     scanDebounceMs: 5000,
+    hlsIdleMs: 60_000,
+    hlsMaxProcesses: 4,
     watchLibraries: true,
     ...overrides,
     dataDir,

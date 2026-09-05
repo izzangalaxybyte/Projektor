@@ -125,3 +125,11 @@ Each client sends what it can play. User-agent sniffing is unreliable on TVs and
 ## 2026-09-05 — Subtitles never influence the playback decision
 
 Text subtitles are delivered as WebVTT beside the stream (1.16), so the choice between direct, remux, and transcode depends only on container, video, and audio. Burn-in is out of scope for v1.
+
+## 2026-09-05 — Remux playlists are written by ffmpeg, transcode playlists by us
+
+When streams are copied, segment boundaries fall on the source's keyframes, which are unknown until ffmpeg has written the segment, so the remux path serves ffmpeg's event playlist as it grows. Remuxing is I/O bound and finishes a feature film in well under a minute, so seeking beyond the written part only waits briefly. Transcoding forces keyframes every 6 seconds, which makes the playlist predictable and lets a seek restart ffmpeg at the right segment.
+
+## 2026-09-05 — Playback sessions live in memory
+
+Sessions are ephemeral: a restart drops them and clients simply ask for a new decision. Persisting them would add a table and a cleanup problem for no user-visible benefit.

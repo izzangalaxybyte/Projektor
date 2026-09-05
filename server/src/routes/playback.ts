@@ -2,9 +2,28 @@ import { asc, eq } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { schema } from '../db/index.js';
 import { decide } from '../playback/decision.js';
-import { ErrorResponse, PlaybackDecideRequest, PlaybackDecision } from '../schemas/index.js';
+import { HlsError } from '../playback/hls.js';
+import { z } from 'zod';
+import { ErrorResponse, Id, PlaybackDecideRequest, PlaybackDecision } from '../schemas/index.js';
 
 export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof HlsError) {
+      const names = {
+        404: 'Not Found',
+        501: 'Not Implemented',
+        503: 'Service Unavailable',
+        504: 'Gateway Timeout',
+      } as const;
+      return reply.code(error.statusCode).send({
+        statusCode: error.statusCode,
+        error: names[error.statusCode],
+        message: error.message,
+      });
+    }
+    throw error;
+  });
+
   app.post(
     '/decide',
     {
@@ -72,6 +91,75 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         url: `/api/playback/sessions/${session.id}/master.m3u8`,
         sessionId: session.id,
       };
+    },
+  );
+
+  const sessionParams = z.object({ id: Id });
+  const hlsSecurity = { security: [{ bearerAuth: [] }], tags: ['playback'] };
+
+  app.get(
+    '/sessions/:id/master.m3u8',
+    {
+      schema: {
+        ...hlsSecurity,
+        summary: 'HLS master playlist for a session',
+        params: sessionParams,
+        querystring: z.object({ access_token: z.string().optional() }),
+        response: { 404: ErrorResponse },
+      },
+    },
+    async (request, reply) => {
+      const session = app.hls.session(request.params.id);
+      return reply
+        .header('content-type', 'application/vnd.apple.mpegurl')
+        .header('cache-control', 'no-store')
+        .send(app.hls.masterPlaylist(session) as never);
+    },
+  );
+
+  app.get(
+    '/sessions/:id/:name',
+    {
+      schema: {
+        ...hlsSecurity,
+        summary: 'HLS media playlist, init segment, or media segment',
+        description:
+          'Starts ffmpeg on first request and waits up to 20 seconds for the requested file.',
+        params: sessionParams.extend({
+          name: z.string().regex(/^(index\.m3u8|init\.mp4|seg-\d+\.(ts|m4s))$/),
+        }),
+        querystring: z.object({ access_token: z.string().optional() }),
+        response: {
+          404: ErrorResponse,
+          501: ErrorResponse,
+          503: ErrorResponse,
+          504: ErrorResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = app.hls.session(request.params.id);
+      const body = await app.hls.awaitFile(session, request.params.name);
+      return reply
+        .header('content-type', app.hls.contentType(request.params.name))
+        .header('cache-control', 'no-store')
+        .send(body as never);
+    },
+  );
+
+  app.delete(
+    '/sessions/:id',
+    {
+      schema: {
+        ...hlsSecurity,
+        summary: 'Stop a session and delete its segments',
+        params: sessionParams,
+        response: { 204: z.null() },
+      },
+    },
+    async (request, reply) => {
+      await app.hls.stop(request.params.id);
+      return reply.code(204).send(null);
     },
   );
 };

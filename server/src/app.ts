@@ -15,6 +15,7 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { HlsManager } from './playback/hls.js';
 import { SessionRegistry } from './playback/sessions.js';
 import { filesRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
@@ -39,6 +40,7 @@ declare module 'fastify' {
     scans: ScanRunner;
     watcher: LibraryWatcher;
     playback: SessionRegistry;
+    hls: HlsManager;
   }
 }
 
@@ -64,12 +66,22 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     debounceMs: options.config.scanDebounceMs,
   });
   app.decorate('scans', scans);
-  app.decorate('playback', new SessionRegistry());
+  const playback = new SessionRegistry();
+  app.decorate('playback', playback);
+  app.decorate(
+    'hls',
+    new HlsManager(options.config, playback, app.log, {
+      idleMs: options.config.hlsIdleMs,
+      maxProcesses: options.config.hlsMaxProcesses,
+      waitMs: 20_000,
+    }),
+  );
   app.decorate('watcher', watcher);
   app.addHook('onReady', async () => {
     if (options.config.watchLibraries) await watcher.startAll();
   });
   app.addHook('onClose', async () => {
+    await app.hls.close();
     await watcher.close();
     await scans.whenIdle();
     database.close();
