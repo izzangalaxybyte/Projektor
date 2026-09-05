@@ -245,3 +245,7 @@ The Linux box always has `192.168.100.20`, so `http://192.168.100.20:8096` is a 
 ## 2026-09-05 — IPTV is integrated server-side through the Xtream Codes API
 
 The owner's subscription (`https://playshare.co:8080/`) exposes the Xtream API. Credentials are stored once in server Settings; the server fetches channels, guide, VOD, and series, and relays streams so devices never see the provider or its credentials, browsers avoid cross-origin blocks, and streams can be remuxed for players that cannot take raw MPEG-TS. Catch-up programmes are seekable, so the skip-amount and speed controls apply to them. Live TV became Phase 3; Samsung TV and iPad moved to Phases 4 and 5.
+
+## 2026-09-05 — Recordings are files the server makes from the live relay
+
+A recording is the same ffmpeg copy that feeds a live viewer, written to `DATA_DIR/recordings` instead, so no second stream is pulled from the provider when both happen at once. Timed, until-programme-end, and manual stops all end the same process. Finished recordings are items of their own kind, so they get resume, skip amount, and speed for free, and they are kept on the server's disk rather than beside the owner's media. Remote triggering is deferred to a remote-access phase; scheduling from the guide covers recording while away.
