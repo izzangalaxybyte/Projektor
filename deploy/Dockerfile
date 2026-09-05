@@ -2,7 +2,12 @@
 
 # ---- build: compile the server and the web app -------------------------------------------
 FROM node:22-bookworm-slim AS build
-RUN corepack enable
+# better-sqlite3 and argon2 fall back to compiling from source when a prebuilt binary is not
+# available for the exact Node build, so the build stage carries a toolchain.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && corepack enable
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
 COPY server/package.json server/
