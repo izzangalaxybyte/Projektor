@@ -237,3 +237,7 @@ tv-material controls ignore Compose's touch-style `performClick`, so TV UI tests
 ## 2026-09-05 — Left and Right on the remote are the skip keys
 
 While the TV player's controls are hidden, Left/Right jump by the chosen skip amount rather than scrubbing a timeline, because that is the whole point of the app for its owner. The control bar appears on Up/Down, so seeking the slider is still possible, and the media keys behave as expected at all times. The next episode starts on its own after a ten-second countdown, since a TV viewer usually has the remote out of reach by then.
+
+## 2026-09-05 — The server address is baked in for now
+
+The Linux box always has `192.168.100.20`, so `http://192.168.100.20:8096` is a constant in every client (`DEFAULT_SERVER_URL` in `:core` for Android, `web/src/config.ts` for the web and Tizen builds). Sign-in screens prefill it, so Continue is one press and a TV remote never has to spell an IP. The field stays editable for a different box or a later address change. Discovery over mDNS is the eventual replacement.

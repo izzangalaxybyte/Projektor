@@ -58,6 +58,10 @@ cd server && pnpm db:generate
 
 Commit the new file under `server/drizzle/` together with the schema change. Never edit an existing migration that has shipped.
 
+## Server address
+
+The clients default to `http://192.168.100.20:8096` (`DEFAULT_SERVER_URL` in `android/core/.../ProjektorClient.kt` and `web/src/config.ts`). The browser build ignores it because the server serves the page itself; the Tizen build and the Android apps use it.
+
 ## Web app
 
 ```bash

@@ -62,6 +62,13 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `a fresh store points at the baked-in server address`() {
+        assertEquals("http://192.168.100.20:8096", DEFAULT_SERVER_URL)
+        assertEquals(DEFAULT_SERVER_URL, MemorySessionStore().serverUrl.value)
+        assertNull(MemorySessionStore().session.value)
+    }
+
+    @Test
     fun `image and token URLs are built from the server address`() {
         val store = MemorySessionStore()
         val client = ProjektorClient("http://s:8096/", { "abc" }, engine)

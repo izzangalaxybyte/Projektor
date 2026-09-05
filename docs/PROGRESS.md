@@ -43,9 +43,10 @@ Phase 1 is complete as of 2026-09-05 except the checks that need the Linux box i
 
 ## Cross-cutting
 
-| Feature                             | Status | Landed in | Check                                                                                                                                                                                                                                   |
-| ----------------------------------- | ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Skip amount + speed selectors (web) | done   | PR #29    | `player/prefs.test.ts`; `e2e/skip-speed.spec.ts`: forward/back buttons and arrow keys move by exactly the chosen amount (4s, then 15s, clamped at 0), speed 1.5× applied to the element, both choices survive a reload via localStorage |
+| Feature                                       | Status | Landed in | Check                                                                                                                                                                                                                                   |
+| --------------------------------------------- | ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Baked-in server address `192.168.100.20:8096` | done   | PR #39    | `core` unit test asserts the fresh store's address; `web/src/config.test.ts` asserts same-origin vs packaged; both Android apps build                                                                                                   |
+| Skip amount + speed selectors (web)           | done   | PR #29    | `player/prefs.test.ts`; `e2e/skip-speed.spec.ts`: forward/back buttons and arrow keys move by exactly the chosen amount (4s, then 15s, clamped at 0), speed 1.5× applied to the element, both choices survive a reload via localStorage |
 
 ## Phase 2 — Android phone + Android TV
 

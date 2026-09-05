@@ -1,6 +1,7 @@
 package app.projektor.core.auth
 
 import android.content.Context
+import app.projektor.core.DEFAULT_SERVER_URL
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -19,7 +20,7 @@ interface SessionStore {
 class PrefsSessionStore(context: Context) : SessionStore {
     private val prefs = context.getSharedPreferences("projektor.session", Context.MODE_PRIVATE)
     private val _session = MutableStateFlow(load())
-    private val _serverUrl = MutableStateFlow(prefs.getString(KEY_SERVER, null))
+    private val _serverUrl = MutableStateFlow(prefs.getString(KEY_SERVER, null) ?: DEFAULT_SERVER_URL)
     override val session: StateFlow<Session?> = _session
     override val serverUrl: StateFlow<String?> = _serverUrl
 
@@ -62,7 +63,7 @@ class PrefsSessionStore(context: Context) : SessionStore {
 }
 
 /** In-memory store for tests and previews. */
-class MemorySessionStore(initial: Session? = null, server: String? = initial?.serverUrl) : SessionStore {
+class MemorySessionStore(initial: Session? = null, server: String? = initial?.serverUrl ?: DEFAULT_SERVER_URL) : SessionStore {
     private val _session = MutableStateFlow(initial)
     private val _serverUrl = MutableStateFlow(server)
     override val session: StateFlow<Session?> = _session

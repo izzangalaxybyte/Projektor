@@ -36,6 +36,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.Card
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import app.projektor.core.DEFAULT_SERVER_URL
 import app.projektor.core.api.models.Profile
 import app.projektor.tv.TvContainer
 import app.projektor.tv.ui.userMessage
@@ -66,7 +67,7 @@ fun TvSignIn(container: TvContainer) {
         Text("Projektor", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
         when (val s = step) {
             Step.Server -> {
-                var url by remember { mutableStateOf(savedServer ?: "http://") }
+                var url by remember { mutableStateOf(savedServer ?: DEFAULT_SERVER_URL) }
                 val fieldFocus = remember { FocusRequester() }
                 LaunchedEffect(Unit) { delay(100); runCatching { fieldFocus.requestFocus() } }
                 Text("Where is your server?", color = MaterialTheme.colorScheme.onSurfaceVariant)
