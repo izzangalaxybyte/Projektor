@@ -47,6 +47,10 @@ The server address defaults to `http://10.0.2.2:8096` (the host as seen from an 
 
 Two TV-specific lessons are baked in: tv-material buttons respond to key events, not to touch-style clicks, so tests drive them with `UiDevice.pressKeyCode`; and the Android TV emulator image does not route `10.0.2.2` to the host, so run `adb reverse tcp:8096 tcp:8096` and point the app (or `PROJEKTOR_SERVER_URL`) at `http://127.0.0.1:8096`. Create the emulator with `sdkmanager --install "system-images;android-34;android-tv;arm64-v8a"` and `avdmanager create avd -n projektor_tv -k <image> -d tv_1080p`.
 
+## TV player
+
+`TvPlayerScreen` is driven by the remote. With the controls hidden, Left and Right jump by the chosen skip amount, Centre toggles play/pause, and Up/Down reveals the control bar; the media keys (play/pause, rewind, fast-forward) work regardless. The control bar holds skip back, play/pause, skip forward, and buttons that open a side list for the **skip amount** (+3 to +15 seconds), the **speed** (0.5× to 2×), the audio track, and subtitles; Back closes the list, then the bar, then the player. Both choices persist through `PlayerPrefs`, shared with the phone app. When an episode ends, "Play next episode" takes focus and starts on its own after a ten-second countdown. `TvPlayerTest` checks the remote behaviour on an emulator: Right jumps 10 s by default, 4 s after picking +4s, Left returns, and the speed picker stores 1.5×.
+
 ## Building
 
 Requirements: the Android SDK (platform 36 and build tools; Android Studio installs them) and a JDK 17 to 21. Android Studio's bundled JDK works:
