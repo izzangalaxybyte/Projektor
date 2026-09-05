@@ -16,6 +16,7 @@ const EnvSchema = z.object({
   HLS_SEEK_AHEAD_SEGMENTS: z.coerce.number().int().nonnegative().default(3),
   VAAPI_DEVICE: z.string().default('/dev/dri/renderD128'),
   HARDWARE_ACCEL: z.enum(['auto', 'vaapi', 'none']).default('auto'),
+  WEB_DIST: z.string().optional(),
   WATCH_LIBRARIES: z
     .enum(['true', 'false'])
     .default('true')
@@ -40,6 +41,8 @@ export interface Config {
   vaapiDevice: string;
   /** auto probes VAAPI at startup; none forces libx264. */
   hardwareAccel: 'auto' | 'vaapi' | 'none';
+  /** Built web app to serve at /; unset means API only. */
+  webDist: string | null;
   /** Whether to watch library folders for changes. */
   watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
@@ -66,6 +69,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     hlsSeekAheadSegments: parsed.HLS_SEEK_AHEAD_SEGMENTS,
     vaapiDevice: parsed.VAAPI_DEVICE,
     hardwareAccel: parsed.HARDWARE_ACCEL,
+    webDist: parsed.WEB_DIST ? path.resolve(parsed.WEB_DIST) : null,
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
@@ -90,6 +94,7 @@ export function configForDataDir(
     hlsSeekAheadSegments: 3,
     vaapiDevice: '/dev/dri/renderD128',
     hardwareAccel: 'none',
+    webDist: null,
     watchLibraries: true,
     ...overrides,
     dataDir,

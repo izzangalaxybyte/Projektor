@@ -58,6 +58,24 @@ cd server && pnpm db:generate
 
 Commit the new file under `server/drizzle/` together with the schema change. Never edit an existing migration that has shipped.
 
+## Web app
+
+```bash
+cd web
+pnpm dev        # Vite on http://localhost:5173, proxies /api to localhost:8096
+pnpm build      # writes web/dist
+```
+
+In production the server serves `web/dist` itself: set `WEB_DIST=/path/to/web/dist` and every non-API path falls back to `index.html` so client routes deep-link. Run the API (`cd server && pnpm dev`) alongside Vite during development.
+
+## End-to-end tests
+
+```bash
+pnpm e2e
+```
+
+Builds the web app, starts the API on port 8099 against a throwaway `DATA_DIR` serving `web/dist`, and runs Playwright (Chromium) through the real UI. Tests seed libraries from `fixtures/` through the API, so run `scripts/make-fixtures.sh` first. `npx playwright test --ui` opens the inspector; traces are kept on failure under `test-results/`.
+
 ## API contract
 
 The OpenAPI document is generated from the server's zod schemas, and the TypeScript client is generated from that document. After changing any route or schema:

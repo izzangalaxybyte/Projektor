@@ -1,0 +1,195 @@
+/* Grid gap only (flex gap is Chrome 84+, and the Tizen 5 TV has Chrome 63). */
+:root {
+  --bg: #0f1115;
+  --surface: #181b22;
+  --surface-2: #222630;
+  --text: #f2f3f5;
+  --muted: #9aa1ad;
+  --accent: #e8b14a;
+  --danger: #e06767;
+  --radius: 10px;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.muted {
+  color: var(--muted);
+}
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 2rem;
+  margin: 0 0 0.5rem;
+}
+.brand.small {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+/* Auth pages */
+.auth-page {
+  max-width: 420px;
+  margin: 8vh auto;
+  padding: 0 1rem;
+  display: grid;
+  grid-gap: 1rem;
+  gap: 1rem;
+}
+.field-label,
+.pinpad-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.text-input,
+.pinpad-input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--surface-2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.1rem;
+}
+.pinpad-input {
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-size: 1.6rem;
+}
+.pinpad {
+  display: grid;
+  grid-gap: 0.75rem;
+}
+.pinpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 0.5rem;
+}
+.pinpad-key {
+  padding: 0.9rem 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--surface-2);
+  background: var(--surface);
+  font-size: 1.2rem;
+}
+.pinpad-key:hover,
+.pinpad-key:focus-visible {
+  background: var(--surface-2);
+  outline: 2px solid var(--accent);
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-gap: 1rem;
+}
+.profile-card {
+  display: grid;
+  justify-items: center;
+  grid-gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--surface-2);
+  background: var(--surface);
+}
+.profile-card:hover,
+.profile-card:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #0f1115;
+}
+.avatar.tiny {
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
+}
+.link-button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0.25rem 0;
+  text-decoration: underline;
+}
+.form-error {
+  color: var(--danger);
+  margin: 0;
+}
+
+/* Shell */
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-gap: 1.5rem;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--surface-2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav {
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 0.25rem;
+  justify-content: start;
+}
+.nav-link {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+}
+.nav-link.active,
+.nav-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.topbar-user {
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 0.75rem;
+  align-items: center;
+}
+.content {
+  padding: 1.25rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
