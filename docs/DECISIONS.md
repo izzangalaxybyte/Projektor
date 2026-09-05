@@ -225,3 +225,11 @@ The Mac has JDK 25, which is newer than the Android Gradle Plugin certifies. The
 ## 2026-09-05 — Nulls are sent explicitly from the Android client
 
 The contract marks nullable fields as required. Omitting `maxWidth: null` made zod reject the decision request with a 400 that the generated client then tried to parse as a decision. `explicitNulls` stays on, and `bodyOrThrow()` surfaces the server's error message for every non-2xx response.
+
+## 2026-09-05 — TV focus is requested from inside the focused component
+
+Requesting focus on a tile from the screen level raced the lazy list and failed silently, leaving the remote on the first focusable element instead. Tiles and the Play button now request focus from their own composition, which cannot run before they exist. The same applies to the first profile card and the PIN field on the sign-in screen.
+
+## 2026-09-05 — TV tests use remote keys, and adb reverse for the dev server
+
+tv-material controls ignore Compose's touch-style `performClick`, so TV UI tests press D-pad keys through UiAutomator, which is also what a real remote does. The Android TV emulator image cannot reach the host via `10.0.2.2`; `adb reverse` maps the server port into the emulator instead.
