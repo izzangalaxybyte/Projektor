@@ -44,6 +44,19 @@ export const StreamInfo = z
   .meta({ id: 'StreamInfo' });
 export type StreamInfo = z.infer<typeof StreamInfo>;
 
+export const SubtitleTrack = z
+  .object({
+    id: Id,
+    source: z.enum(['embedded', 'external', 'opensubtitles']),
+    streamIndex: z.number().int().nullable(),
+    language: z.string().nullable(),
+    title: z.string().nullable(),
+    format: z.string().meta({ description: 'Source format: subrip, ass, mov_text, webvtt, ...' }),
+    url: z.string().meta({ description: 'WebVTT URL under /api/subtitles' }),
+  })
+  .meta({ id: 'SubtitleTrack' });
+export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
+
 export const MediaFile = z
   .object({
     id: Id,
@@ -53,6 +66,7 @@ export const MediaFile = z
     durationMs: z.number().int().nonnegative(),
     bitrate: z.number().int().nonnegative().nullable(),
     streams: StreamInfo.array(),
+    subtitles: SubtitleTrack.array(),
   })
   .meta({ id: 'MediaFile' });
 export type MediaFile = z.infer<typeof MediaFile>;

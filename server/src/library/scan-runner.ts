@@ -5,6 +5,7 @@ import { identifyFiles } from '../identify/identifier.js';
 import { probeFiles } from '../media/probe-service.js';
 import { metadataDeps } from '../metadata/deps.js';
 import type { ScanStatus } from '../schemas/index.js';
+import { SubtitleService } from '../subtitles/service.js';
 import { scanLibrary } from './scanner.js';
 
 type Counters = Omit<
@@ -106,6 +107,9 @@ export class ScanRunner {
         ffprobePath: this.app.config.ffprobePath,
         log: this.log,
       });
+      await new SubtitleService(this.app.db, this.app.config, this.log).discover(
+        walked.changedFileIds,
+      );
       set({ phase: 'identifying', filesProbed: probed.probed, filesFailed: probed.failed });
       const identified = identifyFiles(this.app.db, walked.changedFileIds, this.log);
       set({ phase: 'matching', itemsLinked: identified.movies + identified.episodes });

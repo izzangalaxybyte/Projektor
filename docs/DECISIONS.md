@@ -145,3 +145,11 @@ libx264 uses CRF 23 with an optional `maxrate` from the profile; `h264_vaapi` ha
 ## 2026-09-05 — Hardware encoding is decided once at startup
 
 A one-frame `h264_vaapi` encode at boot tells us whether the GPU path works. Deciding per session would repeat the probe for every viewer and make failures harder to see; deciding at boot gives one log line and one health field to check after deploy. The setting can still force either path.
+
+## 2026-09-05 — Subtitles are one WebVTT "segment" in HLS
+
+Each subtitle rendition's media playlist lists the whole track as a single segment spanning the media duration. Apple's spec allows it, hls.js, AVPlayer, and ExoPlayer accept it, and it avoids splitting VTT cues on segment boundaries. Web browsers get the same VTT through `/api/subtitles/{id}.vtt` and render it with our own overlay.
+
+## 2026-09-05 — Playlists carry the query token when the client used one
+
+Players resolve `seg-0.ts` relative to the playlist URL without its query string, so a token passed as `?access_token=` would be lost on segment requests. The server appends it to every URI in playlists it serves when, and only when, the request itself used a query token. Header-authenticated clients see clean playlists.

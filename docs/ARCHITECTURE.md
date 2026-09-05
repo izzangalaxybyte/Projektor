@@ -60,6 +60,12 @@ A transcode encodes H.264 (libx264 `veryfast` CRF 23, or `h264_vaapi` when hardw
 
 `playback/hardware.ts` runs once on startup. With `HARDWARE_ACCEL=auto` it checks that the render node exists and then encodes a single synthetic frame with `h264_vaapi`; success switches every new transcode to the VAAPI path (GPU decode with `-hwaccel vaapi`, `scale_vaapi`, `h264_vaapi`), failure keeps libx264 and logs the ffmpeg error. `vaapi` forces the GPU path without testing and `none` forces software. The outcome is logged and exposed on `/api/health` as `encoder` and `encoderReason` so the deployment check is one curl.
 
+## Subtitles
+
+`subtitles/service.ts` runs during every scan after probing. For each changed file it records embedded text tracks (subrip, ass, ssa, mov_text, webvtt; bitmap formats are skipped) from the `streams` table and sidecar files beside the media whose name is the media's base name plus an optional two or three letter language code and an optional `forced` marker (`Movie.en.srt`, `Movie.de.forced.srt`). Rows are matched on source, stream index, and sidecar path so a rescan keeps existing conversions; OpenSubtitles rows (3.8) are never removed by discovery. `ensureVtt` converts a track to WebVTT with ffmpeg on first request into `DATA_DIR/subtitles/<file>/<subtitle>.vtt`; ffmpeg drops ASS positioning and effects and keeps basic italics.
+
+Tracks surface in three places: `MediaFile.subtitles` on item details, `GET /api/files/{id}/subtitles`, and `PlaybackDecision.subtitles`. HLS sessions add one `EXT-X-MEDIA:TYPE=SUBTITLES` rendition per track to the master playlist, each pointing at a one-segment media playlist whose single "segment" is the whole WebVTT file, so AVPlayer and ExoPlayer render them natively. Because players resolve segment URLs relative to the playlist and drop its query string, a playlist requested with `?access_token=` is rewritten so every URI carries the token too.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.
