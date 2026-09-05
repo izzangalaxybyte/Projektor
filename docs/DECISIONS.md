@@ -257,3 +257,11 @@ The provider moves to a new address every few months and its HTTPS endpoint fail
 ## 2026-09-05 — The guide is replaced wholesale on each refresh
 
 Every six hours the server pulls the full XMLTV document and swaps the `live_programmes` table for it in one transaction, keeping only programmes for channels the provider still lists. Providers rewrite schedules freely and give no change feed, so a merge would keep stale entries. Channels and categories are upserted by provider id and dropped when they disappear, so channel ids stay stable for recordings and favourites. A failed refresh leaves the previous data in place and records the error on `/api/live/status`.
+
+## 2026-09-05 — One provider connection per channel, fanned out
+
+Xtream accounts allow one or two simultaneous connections, so the server never pulls a channel twice. A relay opens the provider stream once and copies each chunk to every subscriber; the direct TS route, the live HLS packager, and the recorder (3.7) are all just subscribers. The connection lingers five seconds after the last subscriber leaves so flipping back to a channel does not reconnect. The limit is enforced server-side with `LIVE_MAX_STREAMS` rather than discovered at play time from the provider's error.
+
+## 2026-09-05 — Live HLS copies video and re-encodes audio to AAC
+
+Browsers' MediaSource takes H.264 and HEVC but not the MP2 or AC-3 audio common on broadcast channels, and the server does not probe a live stream before packaging it. Audio is always re-encoded to stereo AAC at 160 kb/s, which costs a few percent of one core per viewer, while video is copied so no GPU is involved. The playlist is ffmpeg's own sliding window (six 4-second segments), served as written; there is no VOD playlist to precompute and no seek-restart logic, so live sessions have their own small manager rather than a mode inside the VOD one.

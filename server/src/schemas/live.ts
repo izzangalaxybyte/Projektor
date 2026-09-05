@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Timestamp } from './common.js';
+import { DeviceProfile } from './playback.js';
 
 export const LiveCategory = z
   .object({ id: z.string(), name: z.string(), kind: z.enum(['live', 'vod', 'series']) })
@@ -56,3 +57,18 @@ export const GuideQuery = z.object({
   from: Timestamp.optional().meta({ description: 'Defaults to now minus 2 hours' }),
   to: Timestamp.optional().meta({ description: 'Defaults to from plus 24 hours' }),
 });
+
+export const LiveDecideRequest = z
+  .object({ channelId: z.string(), profile: DeviceProfile })
+  .meta({ id: 'LiveDecideRequest' });
+
+export const LivePlaybackDecision = z
+  .object({
+    method: z
+      .enum(['direct', 'hls'])
+      .meta({ description: 'direct: raw MPEG-TS relay; hls: live playlist' }),
+    url: z.string().meta({ description: 'Relative URL of the TS stream or the HLS playlist' }),
+    sessionId: z.string().nullable(),
+    reason: z.string(),
+  })
+  .meta({ id: 'LivePlaybackDecision' });
