@@ -37,13 +37,10 @@ export type Recording = z.infer<typeof Recording>;
 export const CreateRecordingRequest = z
   .object({
     channelId: z.string(),
-    programmeId: z
-      .string()
-      .optional()
-      .meta({
-        description:
-          'Record this guide programme: starts at its start (or now) and ends at its end plus padding',
-      }),
+    programmeId: z.string().optional().meta({
+      description:
+        'Record this guide programme: starts at its start (or now) and ends at its end plus padding',
+    }),
     startAt: Timestamp.optional().meta({
       description: 'When to start; defaults to now (ignored with programmeId)',
     }),
