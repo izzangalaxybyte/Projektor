@@ -50,6 +50,10 @@ Login is rate limited per IP with `@fastify/rate-limit` (registered with `global
 
 `settings/service.ts` is a typed key-value layer over the `settings` table for the TMDB and OpenSubtitles credentials; the API only ever returns secrets masked.
 
+## Playback
+
+`routes/files.ts` is direct play: the original file streamed by id (never by path) with byte-range support so players can seek. `parseRange` handles closed, open-ended, and suffix ranges and rejects unsatisfiable ones with 416. HEAD returns the same headers without a body. Because `<video src>` cannot carry an `Authorization` header, the auth hook also accepts `?access_token=` on GET and HEAD requests only. Remux and transcode paths follow in 1.12 to 1.15.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.

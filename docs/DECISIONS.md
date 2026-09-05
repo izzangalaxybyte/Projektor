@@ -113,3 +113,7 @@ The watcher only tells the runner "this library changed". The scan then walks th
 ## 2026-09-05 — Scans are serialised
 
 One scan at a time across all libraries. ffprobe already runs four wide inside a scan, and two libraries probing at once would only fight for disk. Requests during a run coalesce into a single rerun.
+
+## 2026-09-05 — Token in the query string for read-only media requests
+
+`<video>`, `<img>`, and some TV players cannot set headers, so GET and HEAD under `/api` accept `?access_token=`. It is refused on every other method, so a leaked URL can at most read what the profile could already read. Jellyfin uses the same pattern with `api_key`.

@@ -973,6 +973,57 @@ export interface paths {
     };
     trace?: never;
   };
+  '/api/files/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Direct play: the original file with byte-range support
+     * @description Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        416: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {

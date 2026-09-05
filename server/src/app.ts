@@ -15,6 +15,7 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { filesRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
 import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
@@ -101,6 +102,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(itemsRoutes, { prefix: '/items' });
       await api.register(imagesRoutes, { prefix: '/images' });
       await api.register(settingsRoutes, { prefix: '/settings' });
+      await api.register(filesRoutes, { prefix: '/files' });
     },
     { prefix: '/api' },
   );

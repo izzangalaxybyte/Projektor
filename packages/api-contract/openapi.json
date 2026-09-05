@@ -3057,6 +3057,53 @@
           }
         }
       }
+    },
+    "/api/files/{id}/stream": {
+      "get": {
+        "summary": "Direct play: the original file with byte-range support",
+        "tags": ["playback"],
+        "description": "Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Default Response"
+          }
+        }
+      }
     }
   },
   "servers": [
