@@ -35,6 +35,8 @@ One Gradle project under `android/` builds two apps from shared modules:
 ./gradlew :player:connectedDebugAndroidTest
 ```
 
+The Live tests (`LiveTest`, `TvLiveTest`) need the IPTV login pointed at the fake provider. The quickest host setup is the e2e server: `node e2e/start-server.mjs` starts the API on 8099 with the fake provider on 8098; then create the admin (`POST /api/auth/setup` with Izzan/1234), add and scan the three fixture libraries, and `PATCH /api/settings` with `iptvUrl http://127.0.0.1:8098`, `iptvUsername alice`, `iptvPassword secret`. Run the phone tests with `PROJEKTOR_SERVER_URL=http://10.0.2.2:8099` and the TV tests with `adb reverse tcp:8099 tcp:8099` and `PROJEKTOR_SERVER_URL=http://127.0.0.1:8099`; with two emulators attached, set `ANDROID_SERIAL` to pick one.
+
 The server address defaults to `http://10.0.2.2:8096` (the host as seen from an emulator); set `PROJEKTOR_SERVER_URL` for a physical device. To create an emulator with the SDK tools: install `system-images;android-35;google_apis;arm64-v8a` with `sdkmanager`, `avdmanager create avd -n projektor_phone -k <image> -d pixel_6`, and start it with `emulator -avd projektor_phone` (add `-no-window` for headless runs).
 
 ## Phone app
@@ -45,11 +47,19 @@ The server address defaults to `http://10.0.2.2:8096` (the host as seen from an 
 
 `PlayerScreen` is the fullscreen player. It asks the server for a decision with the device profile, loads the result into `ProjektorPlayer` inside a Media3 `PlayerView` with the built-in controller disabled, and draws its own controls: skip back, play/pause, and skip forward in the centre (double tap on either half of the screen skips too), and a bottom bar with the seek slider, the **skip amount** picker (+3 to +15 seconds), the **speed** picker (0.5× to 2×), and audio and subtitle pickers. The skip and speed choices come from `PlayerPrefs` and persist per device. Changing the audio track asks for a new decision from the current position. Progress reports go through `ProjektorPlayer`; at the end of an episode a "Play next episode" button appears. `PlayerTest` exercises the skip and speed behaviour on an emulator.
 
+## Live TV on the phone
+
+The Live tab (`ui/live/LiveScreen.kt`) lists categories as filter chips over channel rows with logo, number, what is on now with a progress bar, what is next, and a catch-up marker, refreshing every minute; an unconfigured server shows a pointer to Settings. `LivePlayerScreen` asks `POST /api/live/decide` with the device profile, which lists the `ts` container, so channels arrive as the raw MPEG-TS relay and ExoPlayer plays them with the `video/mp2t` MIME type set (`liveMediaSpecFor`). There is no seek bar: channel down and up buttons switch channels in place (the list wraps), the Guide button opens the day's programmes, and finished programmes on a catch-up channel have a Watch button that opens `CatchupPlayerScreen`, the seekable provider player with the same skip-amount and speed pickers as the file player. `LiveRepository` in `:core` wraps the generated `LiveApi`; `LiveGuide` holds the pure helpers (ISO parsing without java.time, since the phone's minSdk is 24; progress, wall clock, neighbour, number lookup, archive window) with unit tests.
+
 ## TV app
 
 `:app-tv` uses Compose for TV (`androidx.tv:tv-material`). Sign-in is the same three steps as the phone but laid out for a 10-foot screen, with the remote in mind: D-pad Down (or the keyboard's Next) leaves a text field, the first profile card and the PIN field take focus on arrival. `TvHome` shows tv-material tabs (Home, Movies, TV Shows, Anime, Search) over rows of `TvTile` cards, which scale and outline on focus; the first tile of the first row requests focus from inside its own composition, so browsing starts on something without hunting. Grids and search sit behind the other tabs. `TvItemScreen` focuses Play on arrival and lists seasons and episodes as rows below the details.
 
 Two TV-specific lessons are baked in: tv-material buttons respond to key events, not to touch-style clicks, so tests drive them with `UiDevice.pressKeyCode`; and the Android TV emulator image does not route `10.0.2.2` to the host, so run `adb reverse tcp:8096 tcp:8096` and point the app (or `PROJEKTOR_SERVER_URL`) at `http://127.0.0.1:8096`. Create the emulator with `sdkmanager --install "system-images;android-34;android-tv;arm64-v8a"` and `avdmanager create avd -n projektor_tv -k <image> -d tv_1080p`.
+
+## Live TV on the TV
+
+The Live tab (`ui/live/TvLive.kt`) shows category buttons over a focusable channel list; the first channel takes focus itself. `TvLivePlayerScreen` is remote-driven: D-pad Up/Down and Channel Up/Down change channel, digits jump to a channel number after a short pause, Right opens the guide as a side list whose finished, archived programmes are buttons that open `TvCatchupScreen`, Centre pauses while the info bar is showing, Back closes the guide then leaves. `TvCatchupScreen` behaves like the TV file player: Left/Right skip by the chosen amount with the bar hidden, Up/Down shows the bar with the skip and speed pickers.
 
 ## TV player
 

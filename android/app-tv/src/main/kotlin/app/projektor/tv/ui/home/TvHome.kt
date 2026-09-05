@@ -33,6 +33,7 @@ import app.projektor.tv.TvContainer
 import app.projektor.tv.ui.UiState
 import app.projektor.tv.ui.components.TvRow
 import app.projektor.tv.ui.components.TvTile
+import app.projektor.tv.ui.live.TvLive
 import app.projektor.tv.ui.userMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -40,11 +41,11 @@ import kotlinx.coroutines.delay
 
 private val KINDS = listOf(LibraryKindInput.MOVIE, LibraryKindInput.TV, LibraryKindInput.ANIME)
 private val LABEL = mapOf(LibraryKindInput.MOVIE to "Movies", LibraryKindInput.TV to "TV Shows", LibraryKindInput.ANIME to "Anime")
-private val TABS = listOf("Home", "Movies", "TV Shows", "Anime", "Search")
+private val TABS = listOf("Home", "Movies", "TV Shows", "Anime", "Live", "Search")
 
 /** Top tabs (D-pad left/right on the tab row) over the selected section. */
 @Composable
-fun TvHome(container: TvContainer, openItem: (String) -> Unit) {
+fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}) {
     var tab by rememberSaveable { mutableStateOf(0) }
     Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
         TabRow(selectedTabIndex = tab, modifier = Modifier.padding(horizontal = 48.dp).testTag("tabs")) {
@@ -60,6 +61,7 @@ fun TvHome(container: TvContainer, openItem: (String) -> Unit) {
                 1 -> KindGrid(container, LibraryKindInput.MOVIE, openItem)
                 2 -> KindGrid(container, LibraryKindInput.TV, openItem)
                 3 -> KindGrid(container, LibraryKindInput.ANIME, openItem)
+                4 -> TvLive(container, openChannel)
                 else -> TvSearch(container, openItem)
             }
         }

@@ -11,6 +11,9 @@ import androidx.navigation.navArgument
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.auth.SignInFlow
 import app.projektor.mobile.ui.item.ItemScreen
+import app.projektor.mobile.ui.live.CatchupPlayerScreen
+import app.projektor.mobile.ui.live.LivePlayerScreen
+import app.projektor.mobile.ui.live.ProviderSource
 import app.projektor.mobile.ui.player.PlayerScreen
 
 object Routes {
@@ -20,6 +23,10 @@ object Routes {
     fun item(id: String) = "item/$id"
     const val PLAYER = "play/{fileId}?item={itemId}&t={startMs}"
     fun player(fileId: String, itemId: String, startMs: Long = 0) = "play/$fileId?item=$itemId&t=$startMs"
+    const val LIVE = "live/{channelId}"
+    fun live(channelId: String) = "live/$channelId"
+    const val CATCHUP = "live/{channelId}/catchup/{programmeId}"
+    fun catchup(channelId: String, programmeId: String) = "live/$channelId/catchup/$programmeId"
 }
 
 /** Signed out shows the sign-in flow; signed in shows the tabs and detail/player destinations. */
@@ -32,7 +39,22 @@ fun AppNav(container: AppContainer) {
     }
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = Routes.MAIN) {
-        composable(Routes.MAIN) { MainScaffold(container, openItem = { nav.navigate(Routes.item(it)) }) }
+        composable(Routes.MAIN) { MainScaffold(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }) }
+        composable(Routes.LIVE, arguments = listOf(navArgument("channelId") { type = NavType.StringType })) { entry ->
+            LivePlayerScreen(
+                container = container,
+                channelId = entry.arguments?.getString("channelId") ?: return@composable,
+                openCatchup = { c, p -> nav.navigate(Routes.catchup(c, p)) },
+                back = { nav.popBackStack() },
+            )
+        }
+        composable(Routes.CATCHUP, arguments = listOf(navArgument("channelId") { type = NavType.StringType }, navArgument("programmeId") { type = NavType.StringType })) { entry ->
+            CatchupPlayerScreen(
+                container = container,
+                source = ProviderSource.Catchup(entry.arguments?.getString("channelId") ?: return@composable, entry.arguments?.getString("programmeId") ?: return@composable),
+                back = { nav.popBackStack() },
+            )
+        }
         composable(Routes.ITEM, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
             ItemScreen(
                 container = container,

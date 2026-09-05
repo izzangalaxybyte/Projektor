@@ -187,11 +187,21 @@ export class LiveRelayManager {
     let relay = this.relays.get(channelId);
     if (!relay) {
       if (!this.live.credentials()) throw new LiveStreamError(503, 'IPTV credentials are not set');
-      if (this.relays.size >= this.options.maxStreams)
-        throw new LiveStreamError(
-          503,
-          'All provider connections are in use; stop another stream first',
-        );
+      if (this.relays.size >= this.options.maxStreams) {
+        // The grace period keeps a channel warm for a quick return; it must never cost a slot
+        // that a new stream needs. Evict an idle relay before refusing.
+        const idle = [...this.relays.entries()].find(([, r]) => r.subscribers.size === 0);
+        if (idle) {
+          this.log.info({ channelId: idle[0] }, 'evicting idle live relay for a new stream');
+          idle[1].abort();
+          this.relays.delete(idle[0]);
+        } else {
+          throw new LiveStreamError(
+            503,
+            'All provider connections are in use; stop another stream first',
+          );
+        }
+      }
       const fetcher = this.options.fetcher ?? ((u, init) => fetch(u, init));
       const created: Relay = new Relay(channelId, url, fetcher, this.log, () => {
         if (this.relays.get(channelId) === created) this.relays.delete(channelId);

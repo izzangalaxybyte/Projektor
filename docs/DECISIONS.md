@@ -289,3 +289,11 @@ IPTV movies and series live in their own tables and their own tabs rather than b
 ## 2026-09-05 — Provider files pass through with ranges; HLS only when the container will not play
 
 A provider VOD file is a plain MP4 or MKV behind HTTP with range support, so the cheapest and most seekable path is to pass it through untouched, forwarding `Range` and the range response headers. That is what browsers get for MP4 and MKV and what ExoPlayer will get for everything. Only when the device cannot play the container does the server remux to an EVENT HLS playlist, and for that ffmpeg reads the provider URL directly instead of going through the relay, because it can seek the HTTP source itself. The URL carries the account password, so ffmpeg's arguments are redacted in the log.
+
+## 2026-09-05 — The relay grace period never costs a slot
+
+Flipping through channels leaves each one connected for five seconds in case the viewer comes back. On the TV emulator that meant two idle channels plus a catch-up request hit the two-connection cap and the catch-up got a 503. Idle relays are now evicted the moment a new stream needs a slot; only relays that still have a viewer can make the server refuse. The web tests had passed by timing luck, which is the kind of flakiness worth removing at the root.
+
+## 2026-09-05 — Android plays live channels as raw MPEG-TS, catch-up as HLS
+
+The Android device profile lists `ts`, so the server hands channels to ExoPlayer as the plain relay with the `video/mp2t` MIME type set, which ExoPlayer treats as an unbounded progressive stream: no packager process on the server, no segment latency. Catch-up and provider files go through the same decision as the web, HLS or a direct file, and reuse the skip-amount and speed controls. The live and catch-up screens are separate from the item player on both phone and TV rather than one player with modes: they share `ProjektorPlayer` and `PlayerPrefs` but not the item-specific state (progress reports, subtitle and audio pickers, next episode), so each stays readable.
