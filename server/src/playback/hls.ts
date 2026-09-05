@@ -9,6 +9,7 @@ import type { Config } from '../config.js';
 import {
   buildRemuxArgs,
   buildTranscodeArgs,
+  fallbackHardware,
   HLS_SEGMENT_SECONDS,
   hlsNaming,
   segmentCount,
@@ -156,7 +157,7 @@ export class HlsManager {
     const args = isTranscode
       ? buildTranscodeArgs(session, outDir, {
           startSegment: segment,
-          hardware: this.options.hardware,
+          hardware: this.hardwareFor(session.id),
           vaapiDevice: this.options.vaapiDevice ?? '/dev/dri/renderD128',
         })
       : buildRemuxArgs(session, outDir);
@@ -186,7 +187,7 @@ export class HlsManager {
       'data',
       (chunk: Buffer) => (run.stderr = (run.stderr + chunk.toString()).slice(-4000)),
     );
-    void child.then((result) => {
+    void child.then(async (result) => {
       run.exited = true;
       run.exitCode = result.exitCode ?? null;
       const level = result.exitCode === 0 || result.isTerminated ? 'info' : 'warn';
@@ -194,7 +195,35 @@ export class HlsManager {
         { sessionId: session.id, exitCode: result.exitCode, stderr: run.stderr },
         'ffmpeg exited',
       );
+      // A transcode that died before writing anything is usually the GPU refusing the source
+      // (10-bit decode, a missing tone-mapping filter). Try the next, more software-heavy path.
+      const failedEarly =
+        isTranscode &&
+        !result.isTerminated &&
+        result.exitCode !== 0 &&
+        this.running.get(session.id) === run &&
+        this.highestSegment(session) < 0;
+      const next = failedEarly ? fallbackHardware(this.hardwareFor(session.id)) : undefined;
+      if (next !== undefined) {
+        this.sessionHardware.set(session.id, next);
+        this.log.warn(
+          { sessionId: session.id, from: this.hardwareFor(session.id), to: next },
+          'transcode failed before its first segment; retrying with a different pipeline',
+        );
+        this.running.delete(session.id);
+        await this.ensureStarted(session, segment).catch((error) =>
+          this.log.warn({ sessionId: session.id, error: String(error) }, 'fallback start failed'),
+        );
+      }
     });
+  }
+
+  /** Per-session pipeline: the configured one until a failure demotes it. */
+  private readonly sessionHardware = new Map<string, HardwareEncoder>();
+  private hardwareFor(sessionId: string): HardwareEncoder {
+    return this.sessionHardware.has(sessionId)
+      ? this.sessionHardware.get(sessionId)!
+      : this.options.hardware;
   }
 
   private readonly starts = new Map<string, number>();
@@ -267,10 +296,12 @@ export class HlsManager {
       }
     }
 
-    const run = this.running.get(session.id)!;
+    let run = this.running.get(session.id)!;
     const deadline = Date.now() + this.options.waitMs;
     while (!existsSync(file)) {
-      if (run.exited)
+      // A failed transcode may have been replaced by a fallback run; follow the newest one.
+      run = this.running.get(session.id) ?? run;
+      if (run.exited && this.running.get(session.id) === run)
         throw new HlsError(
           404,
           run.exitCode === 0
@@ -310,6 +341,7 @@ export class HlsManager {
     const run = this.running.get(sessionId);
     this.running.delete(sessionId);
     this.starts.delete(sessionId);
+    this.sessionHardware.delete(sessionId);
     this.registry.remove(sessionId);
     if (run && !run.exited) {
       run.process.kill('SIGTERM');

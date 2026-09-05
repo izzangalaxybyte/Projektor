@@ -3,6 +3,7 @@ import type { PlaybackSession } from './sessions.js';
 import {
   buildRemuxArgs,
   buildTranscodeArgs,
+  fallbackHardware,
   hlsNaming,
   segmentCount,
   vodPlaylist,
@@ -228,5 +229,53 @@ describe('vodPlaylist', () => {
     const soft = buildTranscodeArgs(hdr, '/out', { startSegment: 0, hardware: null }).join(' ');
     expect(soft).toContain('tonemap=hable');
     expect(soft).toContain('-pix_fmt yuv420p');
+  });
+
+  it('decodes on the CPU and encodes on the GPU in vaapi-encode mode, capping HDR at 1080p', () => {
+    const b = base();
+    const hdr4k: PlaybackSession = {
+      ...b,
+      decision: {
+        ...b.decision,
+        method: 'transcode',
+        video: 'transcode',
+        videoStream: {
+          ...b.decision.videoStream!,
+          width: 3840,
+          height: 2160,
+          hdr: true,
+          bitDepth: 10,
+        },
+      },
+    };
+    const joined = buildTranscodeArgs(hdr4k, '/out', {
+      startSegment: 0,
+      hardware: 'vaapi-encode',
+    }).join(' ');
+    expect(joined).toContain('-init_hw_device vaapi=va:/dev/dri/renderD128 -filter_hw_device va');
+    expect(joined).not.toContain('-hwaccel');
+    expect(joined).toContain('-vf scale=1920:-2,zscale=t=linear:npl=100');
+    expect(joined).toContain('format=nv12,hwupload -c:v h264_vaapi -profile:v high -qp 23');
+    // Full-GPU tone mapping keeps 4K; software paths cap it.
+    expect(
+      buildTranscodeArgs(hdr4k, '/out', { startSegment: 0, hardware: 'vaapi' }).join(' '),
+    ).not.toContain('scale_vaapi=w=');
+    expect(
+      buildTranscodeArgs(hdr4k, '/out', { startSegment: 0, hardware: null }).join(' '),
+    ).toContain('-vf scale=1920:-2,zscale');
+    // Non-HDR 4K is not capped by the pipeline choice.
+    const sdr4k: PlaybackSession = {
+      ...hdr4k,
+      decision: { ...hdr4k.decision, videoStream: { ...hdr4k.decision.videoStream!, hdr: false } },
+    };
+    expect(
+      buildTranscodeArgs(sdr4k, '/out', { startSegment: 0, hardware: 'vaapi-encode' }).join(' '),
+    ).toContain('-vf format=nv12,hwupload');
+  });
+
+  it('degrades vaapi → vaapi-encode → software → nothing', () => {
+    expect(fallbackHardware('vaapi')).toBe('vaapi-encode');
+    expect(fallbackHardware('vaapi-encode')).toBeNull();
+    expect(fallbackHardware(null)).toBeUndefined();
   });
 });
