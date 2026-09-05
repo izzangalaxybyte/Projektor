@@ -204,6 +204,9 @@ export const streams = sqliteTable(
     width: integer('width'),
     height: integer('height'),
     channels: integer('channels'),
+    /** Video only: bits per sample (8, 10, 12); null until probed with a build that records it. */
+    bitDepth: integer('bit_depth'),
+    hdr: integer('hdr', { mode: 'boolean' }).notNull().default(false),
   },
   (t) => [uniqueIndex('streams_file_index_idx').on(t.fileId, t.streamIndex)],
 );

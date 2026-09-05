@@ -10,6 +10,8 @@ export interface DecisionStream {
   channels: number | null;
   isDefault: boolean;
   language: string | null;
+  bitDepth?: number | null;
+  hdr?: boolean;
 }
 
 export interface DecisionFile {
@@ -55,6 +57,14 @@ export function decide(
     if (!has(profile.videoCodecs, video.codec)) {
       videoOk = false;
       reasons.push(`video codec ${video.codec} not supported`);
+    } else if ((video.bitDepth ?? 8) > 8 && !has(profile.videoCodecs, `${video.codec}10`)) {
+      // Browsers say yes to HEVC and then choke on Main 10; only devices that list hevc10 get a copy.
+      videoOk = false;
+      reasons.push(`${video.bitDepth}-bit ${video.codec} not supported`);
+    }
+    if (video.hdr && !profile.hdr) {
+      videoOk = false;
+      reasons.push('HDR source needs tone mapping for this device');
     }
     if (profile.maxWidth !== null && video.width !== null && video.width > profile.maxWidth) {
       videoOk = false;

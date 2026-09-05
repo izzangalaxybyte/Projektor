@@ -24,6 +24,7 @@ import { LiveRefresher } from './live/refresher.js';
 import { ProviderMatcher } from './live/provider-matcher.js';
 import { RecordingManager } from './live/recorder.js';
 import { LiveService } from './live/service.js';
+import { backfillStreamDepth } from './media/probe-service.js';
 import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
@@ -187,6 +188,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (options.config.watchLibraries) await watcher.startAll();
     if (options.config.liveRefresh) app.live.start();
     app.recorder.start();
+    backfillStreamDepth(database.db, app.log);
   });
   app.addHook('onClose', async () => {
     app.live.stop();

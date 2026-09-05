@@ -43,6 +43,13 @@
       "when": 1788604786958,
       "tag": "0005_fearless_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788612854319,
+      "tag": "0006_glamorous_kree",
+      "breakpoints": true
     }
   ]
 }

@@ -592,6 +592,23 @@
                 "type": "null"
               }
             ]
+          },
+          "bitDepth": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Video bits per sample; null when unknown"
+          },
+          "hdr": {
+            "type": "boolean",
+            "description": "PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG)"
           }
         },
         "required": [
@@ -604,7 +621,9 @@
           "isForced",
           "width",
           "height",
-          "channels"
+          "channels",
+          "bitDepth",
+          "hdr"
         ]
       },
       "SubtitleTrackInput": {
@@ -1014,7 +1033,7 @@
             "items": {
               "type": "string"
             },
-            "description": "e.g. h264, hevc, vp9, av1"
+            "description": "e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes"
           },
           "audioCodecs": {
             "type": "array",
@@ -1054,6 +1073,10 @@
               "ts",
               "fmp4"
             ]
+          },
+          "hdr": {
+            "description": "Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2899,6 +2922,23 @@
                 "type": "null"
               }
             ]
+          },
+          "bitDepth": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Video bits per sample; null when unknown"
+          },
+          "hdr": {
+            "type": "boolean",
+            "description": "PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG)"
           }
         },
         "required": [
@@ -2911,7 +2951,9 @@
           "isForced",
           "width",
           "height",
-          "channels"
+          "channels",
+          "bitDepth",
+          "hdr"
         ],
         "additionalProperties": false
       },
@@ -3327,7 +3369,7 @@
             "items": {
               "type": "string"
             },
-            "description": "e.g. h264, hevc, vp9, av1"
+            "description": "e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes"
           },
           "audioCodecs": {
             "type": "array",
@@ -3367,6 +3409,10 @@
               "ts",
               "fmp4"
             ]
+          },
+          "hdr": {
+            "description": "Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR",
+            "type": "boolean"
           }
         },
         "required": [

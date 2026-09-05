@@ -66,6 +66,8 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
             channels: s.channels,
             isDefault: s.isDefault,
             language: s.language,
+            bitDepth: s.bitDepth,
+            hdr: s.hdr,
           })),
         },
         request.body.profile,
