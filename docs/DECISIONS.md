@@ -209,3 +209,7 @@ After a TMDB 401 the matcher used to call `clearQueue()` on its concurrency limi
 ## 2026-09-05 — First remux playlist waits briefly for ENDLIST
 
 hls.js treats a growing EVENT playlist as live and starts near its end unless told otherwise. The player now passes an explicit start position, and the server holds the first `index.m3u8` of a remux for up to 8 seconds so short and fast remuxes present as a finished VOD playlist. Long remuxes still stream as EVENT. Upstream TMDB and AniList requests also gained a 15 second timeout so a slow network can never stall a scan.
+
+## 2026-09-05 — Android builds with Android Studio's JDK, not the system JDK
+
+The Mac has JDK 25, which is newer than the Android Gradle Plugin certifies. The build instructions point `JAVA_HOME` at Android Studio's bundled JDK 21, and Kotlin/Java target 17 in every module so the byte code is unremarkable.
