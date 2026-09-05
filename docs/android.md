@@ -9,6 +9,10 @@ One Gradle project under `android/` builds two apps from shared modules:
 | `:app-mobile` | Phone app, Compose Material 3, `minSdk 24`                                                                              |
 | `:app-tv`     | Android TV app, Compose for TV (`androidx.tv:tv-material`), leanback launcher, `minSdk 26`                              |
 
+## API client
+
+`:core` generates its Kotlin client from `packages/api-contract/openapi.json` at build time with the OpenAPI Generator Gradle plugin (`kotlin` generator, `jvm-ktor` library, kotlinx.serialization). Nothing generated is committed, so the Kotlin types can never drift from the contract; regenerate the contract on the server side and the next Gradle build picks it up. `ProjektorClient` wraps the generated `*Api` classes with one base URL and a bearer token read per request, plus `imageUrl` and `withAccessToken` for URLs a player fetches itself. `SessionStore` keeps server address, token, and profile in SharedPreferences (`MemorySessionStore` for tests); `AuthRepository` does setup, profiles, login, and logout.
+
 ## Building
 
 Requirements: the Android SDK (platform 36 and build tools; Android Studio installs them) and a JDK 17 to 21. Android Studio's bundled JDK works:

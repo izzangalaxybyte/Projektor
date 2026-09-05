@@ -213,3 +213,7 @@ hls.js treats a growing EVENT playlist as live and starts near its end unless to
 ## 2026-09-05 — Android builds with Android Studio's JDK, not the system JDK
 
 The Mac has JDK 25, which is newer than the Android Gradle Plugin certifies. The build instructions point `JAVA_HOME` at Android Studio's bundled JDK 21, and Kotlin/Java target 17 in every module so the byte code is unremarkable.
+
+## 2026-09-05 — The Kotlin client is generated at build time, not committed
+
+`:core` runs the OpenAPI Generator during the Gradle build and compiles the output from `build/`. Committing generated Kotlin would invite hand edits and drift from `openapi.json`; generating on every build costs a few seconds and keeps one source of truth. Requests default to Ktor's OkHttp engine; tests inject a MockEngine.
