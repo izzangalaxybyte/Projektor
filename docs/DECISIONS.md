@@ -341,3 +341,7 @@ The owner's box has a 6th-generation Intel iGPU: it encodes H.264 in hardware, b
 ## 2026-09-05 — Keep ffprobe's whole output, and re-probe when a field is new
 
 The bit-depth backfill did nothing on the box: the stored probe JSON was the zod-validated copy, which strips every field the code did not read at the time, so `pix_fmt` was never saved. ffprobe's raw output is stored from now on. For files probed before, the scanner treats a video stream without bit depth as changed and probes only those files, and the server requests that scan for every affected library at startup, so an update that adds a probed field costs one background pass rather than a manual rescan or a wrong playback decision.
+
+## 2026-09-05 — Sample clips are skipped, and the biggest version plays by default
+
+A release folder carried a one-minute sample next to the film; both files were linked to the movie and the player took the first one. The walker now skips files whose name ends in "-sample", ".sample", or "[sample]", files simply called "sample", and anything inside a `Sample`/`Samples` folder. It does not skip titles that merely contain the word (the fixtures "Sample Movie" and "Sample.Show" caught a first, greedier rule). Independently, an item's files are listed largest first, so when several versions remain the full-size one is the default. Files already in the database drop out on the next scan (they are no longer seen, so they are marked missing).

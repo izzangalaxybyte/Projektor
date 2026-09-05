@@ -48,11 +48,12 @@ export async function* walkVideos(
       if (entry.name.startsWith('.')) continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        pending.push(full);
+        if (!isSampleDir(entry.name)) pending.push(full);
         continue;
       }
       if (!entry.isFile() && !entry.isSymbolicLink()) continue;
       if (!VIDEO_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+      if (isSampleFile(entry.name)) continue;
       try {
         const info = await stat(full);
         if (!info.isFile()) continue;
@@ -67,4 +68,20 @@ export async function* walkVideos(
       }
     }
   }
+}
+
+/**
+ * Release "sample" clips sit beside the film and would otherwise be linked to it and played
+ * first. Only the release conventions count: the whole name is "sample", or it ends in
+ * "-sample", ".sample", or "[sample]", or it lives in a Sample folder. A title that merely
+ * contains the word ("Sample Movie (2019)", "Sample.Show.S01E02") is left alone.
+ */
+export function isSampleFile(fileName: string): boolean {
+  const stem = fileName.replace(/\.[^.]+$/, '');
+  if (/^sample$/i.test(stem)) return true;
+  return /[\s._\-[(]sample[\])]?$/i.test(stem);
+}
+
+export function isSampleDir(dirName: string): boolean {
+  return /^samples?$/i.test(dirName);
 }
