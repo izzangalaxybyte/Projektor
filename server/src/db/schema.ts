@@ -82,6 +82,8 @@ export const movies = sqliteTable(
     posterKey: text('poster_key'),
     backdropKey: text('backdrop_key'),
     needsReview: integer('needs_review', { mode: 'boolean' }).notNull().default(true),
+    /** When metadata matching last ran for this item, so unmatched items are not retried every scan. */
+    matchAttemptedAt: text('match_attempted_at'),
     ...timestamps,
   },
   (t) => [index('movies_library_idx').on(t.libraryId), index('movies_tmdb_idx').on(t.tmdbId)],
@@ -108,6 +110,7 @@ export const shows = sqliteTable(
     needsReview: integer('needs_review', { mode: 'boolean' }).notNull().default(true),
     /** Anime only: shifts absolute episode numbers before mapping onto TMDB seasons. */
     seasonOffset: integer('season_offset').notNull().default(0),
+    matchAttemptedAt: text('match_attempted_at'),
     ...timestamps,
   },
   (t) => [index('shows_library_idx').on(t.libraryId), index('shows_tmdb_idx').on(t.tmdbId)],

@@ -688,6 +688,122 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/images/{key}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Cached artwork, optionally resized */
+    get: {
+      parameters: {
+        query?: {
+          w?: number;
+        };
+        header?: never;
+        path: {
+          key: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Server settings (admin). Secrets are masked. */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SettingsView'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update settings (admin) */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['SettingsUpdateInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SettingsView'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -775,6 +891,10 @@ export interface components {
       filesFailed: number;
       /** @description Files linked to a movie or episode this scan */
       itemsLinked: number;
+      /** @description Items matched to TMDB this scan */
+      itemsMatched: number;
+      /** @description Items TMDB search could not match confidently */
+      itemsUnmatched: number;
       startedAt: string | null;
     };
     ProgressStateInput: {
@@ -900,6 +1020,25 @@ export interface components {
       positionMs: number;
       durationMs: number;
     };
+    SecretStatusInput: {
+      set: boolean;
+      /** @description Last characters of the stored value, for recognition */
+      hint: string | null;
+    };
+    SettingsViewInput: {
+      tmdbApiKey: components['schemas']['SecretStatusInput'];
+      openSubtitlesApiKey: components['schemas']['SecretStatusInput'];
+      openSubtitlesUsername: string | null;
+      openSubtitlesPassword: components['schemas']['SecretStatusInput'];
+    };
+    /** @description Only fields present are changed */
+    SettingsUpdateInput: {
+      /** @description TMDB v3 API key or v4 read access token. Null clears it. */
+      tmdbApiKey?: string | null;
+      openSubtitlesApiKey?: string | null;
+      openSubtitlesUsername?: string | null;
+      openSubtitlesPassword?: string | null;
+    };
     HealthResponseInput: {
       /** @constant */
       status: 'ok';
@@ -989,6 +1128,10 @@ export interface components {
       filesFailed: number;
       /** @description Files linked to a movie or episode this scan */
       itemsLinked: number;
+      /** @description Items matched to TMDB this scan */
+      itemsMatched: number;
+      /** @description Items TMDB search could not match confidently */
+      itemsUnmatched: number;
       startedAt: string | null;
     };
     ProgressState: {
@@ -1113,6 +1256,25 @@ export interface components {
       itemId: string;
       positionMs: number;
       durationMs: number;
+    };
+    SecretStatus: {
+      set: boolean;
+      /** @description Last characters of the stored value, for recognition */
+      hint: string | null;
+    };
+    SettingsView: {
+      tmdbApiKey: components['schemas']['SecretStatus'];
+      openSubtitlesApiKey: components['schemas']['SecretStatus'];
+      openSubtitlesUsername: string | null;
+      openSubtitlesPassword: components['schemas']['SecretStatus'];
+    };
+    /** @description Only fields present are changed */
+    SettingsUpdate: {
+      /** @description TMDB v3 API key or v4 read access token. Null clears it. */
+      tmdbApiKey?: string | null;
+      openSubtitlesApiKey?: string | null;
+      openSubtitlesUsername?: string | null;
+      openSubtitlesPassword?: string | null;
     };
     HealthResponse: {
       /** @constant */
