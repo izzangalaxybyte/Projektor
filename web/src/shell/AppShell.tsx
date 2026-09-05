@@ -6,6 +6,7 @@ const NAV = [
   { to: '/movies', label: 'Movies' },
   { to: '/tv', label: 'TV Shows' },
   { to: '/anime', label: 'Anime' },
+  { to: '/live', label: 'Live TV' },
   { to: '/search', label: 'Search' },
 ];
 

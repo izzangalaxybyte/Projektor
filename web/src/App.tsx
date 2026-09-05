@@ -5,6 +5,8 @@ import { useAuth } from './auth/useAuth.js';
 import { HomePage } from './pages/HomePage.js';
 import { ItemPage } from './pages/ItemPage.js';
 import { LibraryPage } from './pages/LibraryPage.js';
+import { LivePage } from './pages/LivePage.js';
+import { LivePlayerPage } from './pages/LivePlayerPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { SearchPage } from './pages/SearchPage.js';
 import { LibrariesSettings } from './pages/settings/LibrariesSettings.js';
@@ -71,6 +73,14 @@ export function App() {
             }
           />
           <Route
+            path="/live/:channelId/watch"
+            element={
+              <Gate>
+                <LivePlayerPage />
+              </Gate>
+            }
+          />
+          <Route
             element={
               <Gate>
                 <AppShell />
@@ -81,6 +91,7 @@ export function App() {
             <Route path="movies" element={<LibraryPage kind="movie" />} />
             <Route path="tv" element={<LibraryPage kind="tv" />} />
             <Route path="anime" element={<LibraryPage kind="anime" />} />
+            <Route path="live" element={<LivePage />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="items/:id" element={<ItemPage />} />
             <Route path="settings" element={<SettingsLayout />}>
