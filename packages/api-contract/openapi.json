@@ -3,7 +3,7 @@
   "info": {
     "title": "Projektor API",
     "description": "Self-hosted media server for movies, TV shows, and anime.",
-    "version": "0.0.0"
+    "version": "1.0.0"
   },
   "components": {
     "securitySchemes": {
@@ -2783,7 +2783,8 @@
           },
           {
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": ["true", "false"]
             },
             "in": "query",
             "name": "needsReview",

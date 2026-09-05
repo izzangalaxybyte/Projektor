@@ -165,3 +165,7 @@ An item counts as watched once a position at or past 90% of its duration is repo
 ## 2026-09-05 — Stacked PRs must be retargeted by hand before each merge
 
 See DEV.md. GitHub retargets nothing on its own; the catch-up PR #21 was the cost of assuming it would.
+
+## 2026-09-05 — Contract 1.0.0 is frozen; changes are additive
+
+The Android, Tizen, and iPad clients generate their SDKs from `openapi.json`. Freezing it now lets them start without waiting for the web app. A test compares the committed document with the live server so drift cannot ship unnoticed. Booleans in query strings are parsed from the literals `true`/`false`; zod's `coerce.boolean` treats any non-empty string as true, which silently broke `needsReview=false`.

@@ -92,6 +92,10 @@ describe.skipIf(!existsSync(fixtures))('items over the generated fixtures', () =
       await app.inject({ method: 'GET', url: '/api/items?needsReview=true', headers })
     ).json() as Page;
     expect(review.total).toBe(4);
+    const clean = (
+      await app.inject({ method: 'GET', url: '/api/items?needsReview=false', headers })
+    ).json() as Page;
+    expect(clean.total).toBe(0);
     const page = (
       await app.inject({ method: 'GET', url: '/api/items?limit=2&offset=2', headers })
     ).json() as Page & { offset: number; limit: number };

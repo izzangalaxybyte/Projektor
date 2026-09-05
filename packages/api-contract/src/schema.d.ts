@@ -640,7 +640,7 @@ export interface paths {
           /** @description Opaque identifier */
           parentId?: string;
           search?: string;
-          needsReview?: boolean;
+          needsReview?: 'true' | 'false';
           sort?: 'title' | 'year' | 'added' | 'lastPlayed';
           offset?: number;
           limit?: number;

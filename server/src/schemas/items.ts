@@ -91,7 +91,11 @@ export const ItemsQuery = z.object({
   kind: ItemKind.optional(),
   parentId: Id.optional(),
   search: z.string().optional(),
-  needsReview: z.coerce.boolean().optional(),
+  // z.coerce.boolean() would turn the string 'false' into true; parse the two literals instead.
+  needsReview: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
   sort: z.enum(['title', 'year', 'added', 'lastPlayed']).default('title'),
 });
 

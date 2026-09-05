@@ -30,7 +30,8 @@ import { subtitlesRoutes } from './routes/subtitles.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
 
-export const API_VERSION = '0.0.0';
+/** Frozen at 1.0.0 for the v1 clients. Changes from here are additive only (see docs/API.md). */
+export const API_VERSION = '1.0.0';
 
 export type HttpFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
