@@ -1493,6 +1493,20 @@
                 "type": "null"
               }
             ]
+          },
+          "movies": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "series": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "matching": {
+            "type": "boolean",
+            "description": "TMDB matching of provider titles is running"
           }
         },
         "required": [
@@ -1503,17 +1517,29 @@
           "channels",
           "programmes",
           "accountStatus",
-          "accountExpiresAt"
+          "accountExpiresAt",
+          "movies",
+          "series",
+          "matching"
         ]
       },
       "LiveDecideRequestInput": {
         "type": "object",
         "properties": {
           "channelId": {
+            "description": "Required unless vodId or episodeId is given",
             "type": "string"
           },
           "profile": {
             "$ref": "#/components/schemas/DeviceProfileInput"
+          },
+          "vodId": {
+            "description": "An IPTV movie",
+            "type": "string"
+          },
+          "episodeId": {
+            "description": "An IPTV series episode",
+            "type": "string"
           },
           "programmeId": {
             "description": "A past programme on a catch-up channel; omit for the live stream",
@@ -1521,7 +1547,6 @@
           }
         },
         "required": [
-          "channelId",
           "profile"
         ]
       },
@@ -1553,7 +1578,8 @@
             "type": "string",
             "enum": [
               "live",
-              "catchup"
+              "catchup",
+              "vod"
             ]
           },
           "durationMs": {
@@ -1585,6 +1611,459 @@
           "kind",
           "durationMs",
           "title"
+        ]
+      },
+      "IptvMovieInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "posterKey": {
+            "description": "Cached TMDB artwork; null when unmatched",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logoUrl": {
+            "description": "The provider's own cover image URL",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "containerExtension": {
+            "type": "string"
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "runtimeMs",
+          "posterKey",
+          "backdropKey",
+          "logoUrl",
+          "categoryId",
+          "containerExtension",
+          "needsReview",
+          "tmdbId",
+          "addedAt"
+        ]
+      },
+      "IptvMoviePageInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IptvMovieInput"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset"
+        ]
+      },
+      "IptvSeriesInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "posterKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "posterKey",
+          "backdropKey",
+          "coverUrl",
+          "categoryId",
+          "needsReview",
+          "tmdbId"
+        ]
+      },
+      "IptvSeriesPageInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IptvSeriesInput"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset"
+        ]
+      },
+      "IptvEpisodeInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "seriesId": {
+            "type": "string"
+          },
+          "seasonNumber": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "episodeNumber": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "containerExtension": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seasonNumber",
+          "episodeNumber",
+          "title",
+          "overview",
+          "imageUrl",
+          "durationMs",
+          "containerExtension"
+        ]
+      },
+      "IptvSeriesDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "posterKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "episodes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IptvEpisodeInput"
+                  }
+                }
+              },
+              "required": [
+                "number",
+                "episodes"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "posterKey",
+          "backdropKey",
+          "coverUrl",
+          "categoryId",
+          "needsReview",
+          "tmdbId",
+          "seasons"
         ]
       },
       "HealthResponseInput": {
@@ -3152,6 +3631,20 @@
                 "type": "null"
               }
             ]
+          },
+          "movies": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "series": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "matching": {
+            "type": "boolean",
+            "description": "TMDB matching of provider titles is running"
           }
         },
         "required": [
@@ -3162,7 +3655,10 @@
           "channels",
           "programmes",
           "accountStatus",
-          "accountExpiresAt"
+          "accountExpiresAt",
+          "movies",
+          "series",
+          "matching"
         ],
         "additionalProperties": false
       },
@@ -3170,10 +3666,19 @@
         "type": "object",
         "properties": {
           "channelId": {
+            "description": "Required unless vodId or episodeId is given",
             "type": "string"
           },
           "profile": {
             "$ref": "#/components/schemas/DeviceProfile"
+          },
+          "vodId": {
+            "description": "An IPTV movie",
+            "type": "string"
+          },
+          "episodeId": {
+            "description": "An IPTV series episode",
+            "type": "string"
           },
           "programmeId": {
             "description": "A past programme on a catch-up channel; omit for the live stream",
@@ -3181,7 +3686,6 @@
           }
         },
         "required": [
-          "channelId",
           "profile"
         ],
         "additionalProperties": false
@@ -3214,7 +3718,8 @@
             "type": "string",
             "enum": [
               "live",
-              "catchup"
+              "catchup",
+              "vod"
             ]
           },
           "durationMs": {
@@ -3246,6 +3751,466 @@
           "kind",
           "durationMs",
           "title"
+        ],
+        "additionalProperties": false
+      },
+      "IptvMovie": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "posterKey": {
+            "description": "Cached TMDB artwork; null when unmatched",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logoUrl": {
+            "description": "The provider's own cover image URL",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "containerExtension": {
+            "type": "string"
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "runtimeMs",
+          "posterKey",
+          "backdropKey",
+          "logoUrl",
+          "categoryId",
+          "containerExtension",
+          "needsReview",
+          "tmdbId",
+          "addedAt"
+        ],
+        "additionalProperties": false
+      },
+      "IptvMoviePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IptvMovie"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "IptvSeries": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "posterKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "posterKey",
+          "backdropKey",
+          "coverUrl",
+          "categoryId",
+          "needsReview",
+          "tmdbId"
+        ],
+        "additionalProperties": false
+      },
+      "IptvSeriesPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IptvSeries"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "IptvEpisode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "seriesId": {
+            "type": "string"
+          },
+          "seasonNumber": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "episodeNumber": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "containerExtension": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seasonNumber",
+          "episodeNumber",
+          "title",
+          "overview",
+          "imageUrl",
+          "durationMs",
+          "containerExtension"
+        ],
+        "additionalProperties": false
+      },
+      "IptvSeriesDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "posterKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdropKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsReview": {
+            "type": "boolean"
+          },
+          "tmdbId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "episodes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IptvEpisode"
+                  }
+                }
+              },
+              "required": [
+                "number",
+                "episodes"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "overview",
+          "genres",
+          "rating",
+          "posterKey",
+          "backdropKey",
+          "coverUrl",
+          "categoryId",
+          "needsReview",
+          "tmdbId",
+          "seasons"
         ],
         "additionalProperties": false
       },
@@ -5271,7 +6236,7 @@
     },
     "/api/live/decide": {
       "post": {
-        "summary": "Choose a raw TS relay or live HLS for a channel and device profile",
+        "summary": "Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode",
         "tags": [
           "live"
         ],
@@ -5505,6 +6470,434 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/live/vod/categories": {
+      "get": {
+        "summary": "IPTV movie categories",
+        "tags": [
+          "live"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LiveCategory"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/vod": {
+      "get": {
+        "summary": "IPTV movies, paged",
+        "tags": [
+          "live"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "search",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added"
+              ]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 60,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IptvMoviePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/vod/{id}": {
+      "get": {
+        "summary": "One IPTV movie",
+        "tags": [
+          "live"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IptvMovie"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/vod/{id}/stream": {
+      "get": {
+        "summary": "The movie file, passed through from the provider with byte ranges",
+        "tags": [
+          "live"
+        ],
+        "description": "Send `Range` to seek. Players that cannot set headers may pass `?access_token=`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/series/categories": {
+      "get": {
+        "summary": "IPTV series categories",
+        "tags": [
+          "live"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LiveCategory"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/series": {
+      "get": {
+        "summary": "IPTV series, paged",
+        "tags": [
+          "live"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "search",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added"
+              ]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 60,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IptvSeriesPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/series/{id}": {
+      "get": {
+        "summary": "One IPTV series with its seasons and episodes",
+        "tags": [
+          "live"
+        ],
+        "description": "Episodes are pulled from the provider on first open and refreshed after a day.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IptvSeriesDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live/series/episodes/{id}/stream": {
+      "get": {
+        "summary": "The episode file, passed through from the provider with byte ranges",
+        "tags": [
+          "live"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

@@ -24,6 +24,8 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
   const live = { open: 0, opened: 0 };
   /** Every catch-up request: stream id, duration in minutes, start stamp as the provider saw it. */
   const timeshiftCalls: Array<{ streamId: string; duration: number; start: string }> = [];
+  /** Every VOD/series file request with the Range header it carried. */
+  const fileRequests: Array<{ path: string; range: string | null; method: string }> = [];
   const state = {
     categories: [
       { category_id: '10', category_name: 'Sports', parent_id: 0 },
@@ -62,6 +64,70 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
     ] as Array<Record<string, unknown>>,
     /** Programmes as XMLTV strings; defaults are built around `now`. */
     xmltv: null as string | null,
+    vodCategories: [{ category_id: '30', category_name: 'Movies EN', parent_id: 0 }],
+    vod: [
+      {
+        num: 1,
+        name: 'EN - Sample Movie (2019)',
+        stream_id: 5001,
+        stream_icon: 'http://logo.test/m5001.jpg',
+        rating: '7',
+        category_id: '30',
+        container_extension: 'mp4',
+        added: '1700000000',
+      },
+      {
+        num: 2,
+        name: 'Obscure Film 1999',
+        stream_id: 5002,
+        stream_icon: '',
+        rating: '',
+        category_id: '30',
+        container_extension: 'mkv',
+        added: '1700000100',
+      },
+    ] as Array<Record<string, unknown>>,
+    seriesCategories: [{ category_id: '40', category_name: 'Series EN', parent_id: 0 }],
+    series: [
+      {
+        num: 1,
+        name: 'EN - Sample Show',
+        series_id: 7001,
+        cover: 'http://logo.test/s7001.jpg',
+        plot: 'A show.',
+        releaseDate: '2018-01-10',
+        rating: '8',
+        category_id: '40',
+      },
+    ] as Array<Record<string, unknown>>,
+    seriesInfo: {
+      '7001': {
+        info: { plot: 'A show about samples.' },
+        episodes: {
+          '1': [
+            {
+              id: '70011',
+              episode_num: 1,
+              title: 'Pilot',
+              container_extension: 'mp4',
+              info: { duration_secs: 30, plot: 'It begins.' },
+            },
+            {
+              id: '70012',
+              episode_num: 2,
+              title: 'Second',
+              container_extension: 'mp4',
+              info: { duration_secs: 30 },
+            },
+          ],
+          '2': [
+            { id: '70021', episode_num: 1, title: 'Return', container_extension: 'mkv', info: {} },
+          ],
+        },
+      },
+    } as Record<string, unknown>,
+    /** Bytes served for /movie/ and /series/ files; the fake honours Range requests. */
+    vodBytes: syntheticFile(96 * 1024),
   };
 
   const guide = () => {
@@ -107,6 +173,29 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
           return json(state.categories);
         case 'get_live_streams':
           return json(state.streams);
+        case 'get_vod_categories':
+          return json(state.vodCategories);
+        case 'get_vod_streams':
+          return json(state.vod);
+        case 'get_vod_info': {
+          const v = state.vod.find(
+            (x) => String(x['stream_id']) === url.searchParams.get('vod_id'),
+          );
+          return v
+            ? json({
+                info: { plot: `Plot of ${String(v['name'])}`, duration_secs: 30 },
+                movie_data: v,
+              })
+            : json({ info: {}, movie_data: {} });
+        }
+        case 'get_series_categories':
+          return json(state.seriesCategories);
+        case 'get_series':
+          return json(state.series);
+        case 'get_series_info':
+          return json(
+            state.seriesInfo[url.searchParams.get('series_id') ?? ''] ?? { info: {}, episodes: {} },
+          );
         default:
           return json([]);
       }
@@ -139,6 +228,24 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
       );
       return new Response(counted, { status: 200, headers: { 'content-type': 'video/mp2t' } });
     }
+    const file = /^\/(movie|series)\/([^/]+)\/([^/]+)\/(\d+)\.(\w+)$/.exec(url.pathname);
+    if (file) {
+      if (decodeURIComponent(file[2]!) !== username || decodeURIComponent(file[3]!) !== password)
+        return new Response('', { status: 401 });
+      const known =
+        file[1] === 'movie'
+          ? state.vod.some((v) => String(v['stream_id']) === file[4])
+          : Object.values(state.seriesInfo).some((info) =>
+              JSON.stringify(info).includes(`"id":"${file[4]}"`),
+            );
+      if (!known) return new Response('', { status: 404 });
+      fileRequests.push({
+        path: url.pathname,
+        range: init?.headers ? headerOf(init.headers, 'range') : null,
+        method: init?.method ?? 'GET',
+      });
+      return rangeResponse(state.vodBytes, init, file[5]!);
+    }
     const shift = /^\/timeshift\/([^/]+)\/([^/]+)\/(\d+)\/([^/]+)\/(\d+)\.ts$/.exec(url.pathname);
     if (shift) {
       if (decodeURIComponent(shift[1]!) !== username || decodeURIComponent(shift[2]!) !== password)
@@ -158,7 +265,62 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
     return new Response('not found', { status: 404 });
   };
 
-  return { base, username, password, calls, state, live, timeshiftCalls, fetch };
+  return { base, username, password, calls, state, live, timeshiftCalls, fileRequests, fetch };
+}
+
+/** Deterministic bytes: byte i is (i * 7) & 0xff, so a range test can check exact content. */
+export function syntheticFile(size: number): Uint8Array {
+  const out = new Uint8Array(size);
+  for (let i = 0; i < size; i++) out[i] = (i * 7) & 0xff;
+  return out;
+}
+
+function headerOf(headers: NonNullable<RequestInit['headers']>, name: string): string | null {
+  if (headers instanceof Headers) return headers.get(name);
+  if (Array.isArray(headers)) return headers.find(([k]) => k.toLowerCase() === name)?.[1] ?? null;
+  const hit = Object.entries(headers).find(([k]) => k.toLowerCase() === name);
+  return hit ? String(hit[1]) : null;
+}
+
+const FILE_MIME: Record<string, string> = {
+  mp4: 'video/mp4',
+  mkv: 'video/x-matroska',
+  avi: 'video/x-msvideo',
+  ts: 'video/mp2t',
+};
+
+/** Serves `bytes` like a static file server: HEAD, full GET, and single byte ranges (206). */
+export function rangeResponse(
+  bytes: Uint8Array,
+  init: RequestInit | undefined,
+  ext: string,
+): Response {
+  const range = init?.headers ? headerOf(init.headers, 'range') : null;
+  const base = {
+    'content-type': FILE_MIME[ext] ?? 'application/octet-stream',
+    'accept-ranges': 'bytes',
+  };
+  const m = range ? /^bytes=(\d*)-(\d*)$/.exec(range) : null;
+  if (m && (m[1] || m[2])) {
+    const size = bytes.length;
+    const start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2]));
+    const end = m[1] ? (m[2] ? Math.min(Number(m[2]), size - 1) : size - 1) : size - 1;
+    if (start >= size)
+      return new Response('', { status: 416, headers: { 'content-range': `bytes */${size}` } });
+    const body = init?.method === 'HEAD' ? null : bytes.slice(start, end + 1);
+    return new Response(body, {
+      status: 206,
+      headers: {
+        ...base,
+        'content-length': String(end - start + 1),
+        'content-range': `bytes ${start}-${end}/${size}`,
+      },
+    });
+  }
+  return new Response(init?.method === 'HEAD' ? null : bytes, {
+    status: 200,
+    headers: { ...base, 'content-length': String(bytes.length) },
+  });
 }
 
 /** A finite burst of synthetic TS packets, the shape of a catch-up download. */

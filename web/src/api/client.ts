@@ -19,6 +19,10 @@ export type LiveCategory = Schemas['LiveCategory'];
 export type LiveProgramme = Schemas['LiveProgramme'];
 export type LiveStatus = Schemas['LiveStatus'];
 export type LivePlaybackDecision = Schemas['LivePlaybackDecision'];
+export type IptvMovie = Schemas['IptvMovie'];
+export type IptvSeries = Schemas['IptvSeries'];
+export type IptvEpisode = Schemas['IptvEpisode'];
+export type IptvSeriesDetail = Schemas['IptvSeriesDetail'];
 
 /** One client for the whole app. Same-origin when served by the server; the baked-in address otherwise. */
 export const API_BASE = apiBaseUrl();

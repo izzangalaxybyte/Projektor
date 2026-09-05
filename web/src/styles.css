@@ -812,3 +812,25 @@ select {
 .player-controls.catchup {
   grid-template-columns: auto auto auto auto 1fr auto auto auto auto;
 }
+
+.catalog-tools {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  grid-gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.episode-list li {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  grid-gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--surface-2);
+}
+.tile-badge.provider {
+  left: 0.4rem;
+  right: auto;
+  background: var(--surface-2);
+}

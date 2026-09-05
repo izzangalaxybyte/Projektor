@@ -131,3 +131,47 @@ test('catch-up: a past programme plays, and skip amount and speed apply', async 
     .toBe(1.5);
   await expect(page.getByTestId('seek')).toBeVisible();
 });
+
+test('IPTV movies and series: listed from the provider, a movie plays with exact skips, an episode plays', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto('/live');
+  await page.getByTestId('live-tab-movies').click();
+  await expect(page).toHaveURL(/\/live\/movies$/);
+  await expect(page.getByTestId('movie-count')).toHaveText('2 movies');
+  // No TMDB key in the e2e server, so titles come from the provider names, parsed.
+  const tile = page.getByTestId('tile-iptv-movie').filter({ hasText: 'Sample Movie' });
+  await expect(tile).toContainText('2019');
+  await page.getByLabel('Search IPTV movies').fill('obscure');
+  await expect(page.getByTestId('movie-count')).toHaveText('1 movies');
+  await page.getByLabel('Search IPTV movies').fill('');
+  await tile.click();
+  await expect(page.getByTestId('iptv-title')).toHaveText('Sample Movie');
+  await page.getByTestId('play').click();
+  await expect(page).toHaveURL(/\/live\/movies\/5001\/watch$/);
+  await expect(page.getByTestId('decision')).toHaveText('Direct play');
+  await expect(page.getByTestId('catchup-title')).toHaveText('Sample Movie');
+  await expect.poll(() => currentTime(page), { timeout: 30_000 }).toBeGreaterThan(0.5);
+  await page.getByTestId('toggle').click();
+  await expect(page.getByTestId('toggle')).toHaveAttribute('aria-label', 'Play');
+  await page.getByTestId('video').evaluate((v: HTMLVideoElement) => (v.currentTime = 1));
+  await page.getByTestId('skip-select').selectOption('4');
+  await page.getByTestId('skip-forward').click();
+  await expect.poll(() => currentTime(page)).toBeCloseTo(5, 0);
+  await page.getByTestId('skip-back').click();
+  await expect.poll(() => currentTime(page)).toBeCloseTo(1, 0);
+
+  await page.goto('/live/series');
+  await expect(page.getByTestId('series-count')).toHaveText('1 series');
+  await page.getByTestId('tile-iptv-series').first().click();
+  await expect(page.getByTestId('iptv-title')).toHaveText('Sample Show');
+  await expect(page.getByTestId('episode-70011')).toContainText('Pilot');
+  await page.getByTestId('season-2').click();
+  await expect(page.getByTestId('episode-70021')).toContainText('Return');
+  await page.getByTestId('season-1').click();
+  await page.getByTestId('episode-70011').getByRole('link', { name: 'Play' }).click();
+  await expect(page).toHaveURL(/\/live\/series\/7001\/episodes\/70011\/watch$/);
+  await expect(page.getByTestId('catchup-title')).toHaveText('Sample Show · S1 E1 Pilot');
+  await expect.poll(() => currentTime(page), { timeout: 30_000 }).toBeGreaterThan(0.5);
+});

@@ -1912,7 +1912,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Choose a raw TS relay or live HLS for a channel and device profile
+         * Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode
          * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.
          */
         post: {
@@ -2135,6 +2135,378 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/vod/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPTV movie categories */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveCategory"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/vod": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPTV movies, paged */
+        get: {
+            parameters: {
+                query?: {
+                    category?: string;
+                    search?: string;
+                    sort?: "title" | "added";
+                    offset?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IptvMoviePage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/vod/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One IPTV movie */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IptvMovie"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/vod/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The movie file, passed through from the provider with byte ranges
+         * @description Send `Range` to seek. Players that cannot set headers may pass `?access_token=`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/series/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPTV series categories */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveCategory"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPTV series, paged */
+        get: {
+            parameters: {
+                query?: {
+                    category?: string;
+                    search?: string;
+                    sort?: "title" | "added";
+                    offset?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IptvSeriesPage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/series/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One IPTV series with its seasons and episodes
+         * @description Episodes are pulled from the provider on first open and refreshed after a day.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IptvSeriesDetail"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/series/episodes/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The episode file, passed through from the provider with byte ranges */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2457,10 +2829,19 @@ export interface components {
             /** @description Provider's account status, e.g. Active */
             accountStatus: string | null;
             accountExpiresAt: string | null;
+            movies: number;
+            series: number;
+            /** @description TMDB matching of provider titles is running */
+            matching: boolean;
         };
         LiveDecideRequestInput: {
-            channelId: string;
+            /** @description Required unless vodId or episodeId is given */
+            channelId?: string;
             profile: components["schemas"]["DeviceProfileInput"];
+            /** @description An IPTV movie */
+            vodId?: string;
+            /** @description An IPTV series episode */
+            episodeId?: string;
             /** @description A past programme on a catch-up channel; omit for the live stream */
             programmeId?: string;
         };
@@ -2475,11 +2856,83 @@ export interface components {
             sessionId: string | null;
             reason: string;
             /** @enum {string} */
-            kind: "live" | "catchup";
+            kind: "live" | "catchup" | "vod";
             /** @description Programme length for catch-up (seekable); null while live */
             durationMs: number | null;
             /** @description Programme title for catch-up */
             title: string | null;
+        };
+        IptvMovieInput: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            runtimeMs: number | null;
+            /** @description Cached TMDB artwork; null when unmatched */
+            posterKey: string | null;
+            backdropKey: string | null;
+            /** @description The provider's own cover image URL */
+            logoUrl: string | null;
+            categoryId: string | null;
+            containerExtension: string;
+            needsReview: boolean;
+            tmdbId: number | null;
+            addedAt: string | null;
+        };
+        IptvMoviePageInput: {
+            items: components["schemas"]["IptvMovieInput"][];
+            total: number;
+            offset: number;
+        };
+        IptvSeriesInput: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            posterKey: string | null;
+            backdropKey: string | null;
+            coverUrl: string | null;
+            categoryId: string | null;
+            needsReview: boolean;
+            tmdbId: number | null;
+        };
+        IptvSeriesPageInput: {
+            items: components["schemas"]["IptvSeriesInput"][];
+            total: number;
+            offset: number;
+        };
+        IptvEpisodeInput: {
+            id: string;
+            seriesId: string;
+            seasonNumber: number;
+            episodeNumber: number;
+            title: string;
+            overview: string | null;
+            imageUrl: string | null;
+            durationMs: number | null;
+            containerExtension: string;
+        };
+        IptvSeriesDetailInput: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            posterKey: string | null;
+            backdropKey: string | null;
+            coverUrl: string | null;
+            categoryId: string | null;
+            needsReview: boolean;
+            tmdbId: number | null;
+            seasons: {
+                number: number;
+                episodes: components["schemas"]["IptvEpisodeInput"][];
+            }[];
         };
         HealthResponseInput: {
             /** @constant */
@@ -2813,10 +3266,19 @@ export interface components {
             /** @description Provider's account status, e.g. Active */
             accountStatus: string | null;
             accountExpiresAt: string | null;
+            movies: number;
+            series: number;
+            /** @description TMDB matching of provider titles is running */
+            matching: boolean;
         };
         LiveDecideRequest: {
-            channelId: string;
+            /** @description Required unless vodId or episodeId is given */
+            channelId?: string;
             profile: components["schemas"]["DeviceProfile"];
+            /** @description An IPTV movie */
+            vodId?: string;
+            /** @description An IPTV series episode */
+            episodeId?: string;
             /** @description A past programme on a catch-up channel; omit for the live stream */
             programmeId?: string;
         };
@@ -2831,11 +3293,83 @@ export interface components {
             sessionId: string | null;
             reason: string;
             /** @enum {string} */
-            kind: "live" | "catchup";
+            kind: "live" | "catchup" | "vod";
             /** @description Programme length for catch-up (seekable); null while live */
             durationMs: number | null;
             /** @description Programme title for catch-up */
             title: string | null;
+        };
+        IptvMovie: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            runtimeMs: number | null;
+            /** @description Cached TMDB artwork; null when unmatched */
+            posterKey: string | null;
+            backdropKey: string | null;
+            /** @description The provider's own cover image URL */
+            logoUrl: string | null;
+            categoryId: string | null;
+            containerExtension: string;
+            needsReview: boolean;
+            tmdbId: number | null;
+            addedAt: string | null;
+        };
+        IptvMoviePage: {
+            items: components["schemas"]["IptvMovie"][];
+            total: number;
+            offset: number;
+        };
+        IptvSeries: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            posterKey: string | null;
+            backdropKey: string | null;
+            coverUrl: string | null;
+            categoryId: string | null;
+            needsReview: boolean;
+            tmdbId: number | null;
+        };
+        IptvSeriesPage: {
+            items: components["schemas"]["IptvSeries"][];
+            total: number;
+            offset: number;
+        };
+        IptvEpisode: {
+            id: string;
+            seriesId: string;
+            seasonNumber: number;
+            episodeNumber: number;
+            title: string;
+            overview: string | null;
+            imageUrl: string | null;
+            durationMs: number | null;
+            containerExtension: string;
+        };
+        IptvSeriesDetail: {
+            id: string;
+            title: string;
+            year: number | null;
+            overview: string | null;
+            genres: string[];
+            rating: number | null;
+            posterKey: string | null;
+            backdropKey: string | null;
+            coverUrl: string | null;
+            categoryId: string | null;
+            needsReview: boolean;
+            tmdbId: number | null;
+            seasons: {
+                number: number;
+                episodes: components["schemas"]["IptvEpisode"][];
+            }[];
         };
         HealthResponse: {
             /** @constant */

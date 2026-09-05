@@ -57,7 +57,58 @@ const Series = z.object({
   category_id: str.nullable().optional(),
 });
 
+const VodInfo = z.object({
+  info: z
+    .object({
+      movie_image: str.nullable().optional(),
+      plot: str.nullable().optional(),
+      duration_secs: num.nullable().optional(),
+      releasedate: str.nullable().optional(),
+      rating: str.nullable().optional(),
+      genre: str.nullable().optional(),
+      tmdb_id: str.nullable().optional(),
+    })
+    .passthrough()
+    .optional(),
+  movie_data: z
+    .object({
+      stream_id: num.optional(),
+      name: str.optional(),
+      container_extension: str.optional(),
+    })
+    .passthrough()
+    .optional(),
+});
+const SeriesEpisode = z.object({
+  id: str,
+  episode_num: num,
+  title: str.optional(),
+  container_extension: str.optional(),
+  season: num.optional(),
+  info: z
+    .object({
+      duration_secs: num.nullable().optional(),
+      plot: str.nullable().optional(),
+      movie_image: str.nullable().optional(),
+    })
+    .passthrough()
+    .optional(),
+});
+const SeriesInfo = z.object({
+  info: z
+    .object({ plot: str.nullable().optional(), cover: str.nullable().optional() })
+    .passthrough()
+    .optional(),
+  /** Keyed by season number, or (some providers) an array of arrays. */
+  episodes: z
+    .union([z.record(z.string(), SeriesEpisode.array()), SeriesEpisode.array().array()])
+    .optional(),
+});
+
 export type XtreamAccount = z.infer<typeof UserInfo>['user_info'];
+export type XtreamVodInfo = z.infer<typeof VodInfo>;
+export type XtreamSeriesEpisode = z.infer<typeof SeriesEpisode>;
+export type XtreamSeriesInfo = z.infer<typeof SeriesInfo>;
 export type XtreamAccountInfo = z.infer<typeof UserInfo>;
 export type XtreamCategory = z.infer<typeof Category>;
 export type XtreamLiveStream = z.infer<typeof LiveStream>;
@@ -152,6 +203,12 @@ export class XtreamClient {
   series() {
     return this.getJson(this.apiUrl('get_series'), Series.array());
   }
+  vodInfo(vodId: string) {
+    return this.getJson(this.apiUrl('get_vod_info', { vod_id: vodId }), VodInfo);
+  }
+  seriesInfo(seriesId: string) {
+    return this.getJson(this.apiUrl('get_series_info', { series_id: seriesId }), SeriesInfo);
+  }
 
   /** The XMLTV guide. Large; parsed in one go, which is fine for a week of a few hundred channels. */
   async guide(): Promise<GuideProgramme[]> {
@@ -177,6 +234,9 @@ export class XtreamClient {
   }
   vodUrl(streamId: string, ext: string): string {
     return `${this.base}/movie/${enc(this.creds.username)}/${enc(this.creds.password)}/${streamId}.${ext}`;
+  }
+  seriesEpisodeUrl(episodeId: string, ext: string): string {
+    return `${this.base}/series/${enc(this.creds.username)}/${enc(this.creds.password)}/${episodeId}.${ext}`;
   }
   /**
    * Catch-up: the programme start as YYYY-MM-DD:HH-MM in the provider's own timezone (from
@@ -262,4 +322,57 @@ function text(node: unknown): string {
   if (typeof node === 'object' && '#text' in (node as object))
     return String((node as Record<string, unknown>)['#text'] ?? '').trim();
   return '';
+}
+
+/** Flattens a series_info episode map (by season) or array-of-arrays into one list with seasons. */
+export function flattenSeriesEpisodes(
+  info: XtreamSeriesInfo,
+): Array<XtreamSeriesEpisode & { seasonNumber: number }> {
+  const out: Array<XtreamSeriesEpisode & { seasonNumber: number }> = [];
+  const eps = info.episodes;
+  if (!eps) return out;
+  if (Array.isArray(eps)) {
+    eps.forEach((list, i) =>
+      list.forEach((e) => out.push({ ...e, seasonNumber: e.season ?? i + 1 })),
+    );
+    return out;
+  }
+  for (const [season, list] of Object.entries(eps)) {
+    const n = Number(season);
+    for (const e of list)
+      out.push({ ...e, seasonNumber: e.season ?? (Number.isFinite(n) ? n : 1) });
+  }
+  return out;
+}
+
+/**
+ * Provider names look like "EN - Sample Movie (2019) 4K" or "|FR| Film 1999 MULTI". Strip the
+ * language prefix and quality tags, pull the year, and keep the rest as the title to search for.
+ */
+export function parseProviderTitle(name: string): { title: string; year: number | null } {
+  let s = name.trim();
+  // "EN - ", "|EN| ", "[EN] ", "EN: " and the like.
+  s = s.replace(/^(?:[[|(]\s*[A-Z]{2,3}\s*[\]|)]\s*[-:|]?\s*|[A-Z]{2,3}\s*[-:|]\s*)/, '');
+  let year: number | null = null;
+  const paren = /\((19|20)\d{2}\)/.exec(s);
+  if (paren) {
+    year = Number(paren[0].slice(1, 5));
+    s = s.slice(0, paren.index) + s.slice(paren.index + paren[0].length);
+  } else {
+    const trailing = /\b((?:19|20)\d{2})\b(?!.*\b(?:19|20)\d{2}\b)/.exec(s);
+    if (trailing && trailing.index > 0) {
+      year = Number(trailing[1]);
+      s = s.slice(0, trailing.index) + s.slice(trailing.index + trailing[0].length);
+    }
+  }
+  s = s.replace(
+    /\b(4k|uhd|fhd|hd|sd|1080p|720p|2160p|hdr|dolby|multi(-?sub)?|dual(-?audio)?|vostfr|vf|latino|dubbed)\b/gi,
+    ' ',
+  );
+  s = s
+    .replace(/[[\]()|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[\s\-:]+$/, '')
+    .trim();
+  return { title: s || name.trim(), year };
 }

@@ -296,3 +296,84 @@ export const liveProgrammes = sqliteTable(
   },
   (t) => [index('live_programmes_channel_start_idx').on(t.epgChannelId, t.startAt)],
 );
+
+/** Provider VOD titles ("IPTV Movies"), matched against TMDB like local movies. */
+export const iptvMovies = sqliteTable(
+  'iptv_movies',
+  {
+    /** Provider stream id. */
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    categoryId: text('category_id'),
+    logoUrl: text('logo_url'),
+    containerExtension: text('container_extension').notNull().default('mp4'),
+    addedAt: text('added_at'),
+    parsedTitle: text('parsed_title').notNull(),
+    parsedYear: integer('parsed_year'),
+    tmdbId: integer('tmdb_id'),
+    title: text('title').notNull(),
+    year: integer('year'),
+    overview: text('overview'),
+    genresJson: text('genres_json').notNull().default('[]'),
+    rating: integer('rating', { mode: 'number' }),
+    runtimeMs: integer('runtime_ms'),
+    posterKey: text('poster_key'),
+    backdropKey: text('backdrop_key'),
+    needsReview: integer('needs_review', { mode: 'boolean' }).notNull().default(true),
+    matchAttemptedAt: text('match_attempted_at'),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    index('iptv_movies_category_idx').on(t.categoryId),
+    index('iptv_movies_title_idx').on(t.title),
+  ],
+);
+
+export const iptvSeries = sqliteTable(
+  'iptv_series',
+  {
+    /** Provider series id. */
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    categoryId: text('category_id'),
+    coverUrl: text('cover_url'),
+    parsedTitle: text('parsed_title').notNull(),
+    parsedYear: integer('parsed_year'),
+    tmdbId: integer('tmdb_id'),
+    title: text('title').notNull(),
+    year: integer('year'),
+    overview: text('overview'),
+    genresJson: text('genres_json').notNull().default('[]'),
+    rating: integer('rating', { mode: 'number' }),
+    posterKey: text('poster_key'),
+    backdropKey: text('backdrop_key'),
+    needsReview: integer('needs_review', { mode: 'boolean' }).notNull().default(true),
+    matchAttemptedAt: text('match_attempted_at'),
+    /** When the episode list was last pulled from the provider; null means never. */
+    episodesFetchedAt: text('episodes_fetched_at'),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    index('iptv_series_category_idx').on(t.categoryId),
+    index('iptv_series_title_idx').on(t.title),
+  ],
+);
+
+export const iptvEpisodes = sqliteTable(
+  'iptv_episodes',
+  {
+    /** Provider episode id. */
+    id: text('id').primaryKey(),
+    seriesId: text('series_id')
+      .notNull()
+      .references(() => iptvSeries.id, { onDelete: 'cascade' }),
+    seasonNumber: integer('season_number').notNull(),
+    episodeNumber: integer('episode_number').notNull(),
+    title: text('title').notNull(),
+    containerExtension: text('container_extension').notNull().default('mp4'),
+    durationMs: integer('duration_ms'),
+    overview: text('overview'),
+    imageUrl: text('image_url'),
+  },
+  (t) => [index('iptv_episodes_series_idx').on(t.seriesId)],
+);

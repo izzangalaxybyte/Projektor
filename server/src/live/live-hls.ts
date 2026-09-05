@@ -23,12 +23,12 @@ interface FfmpegProcess extends Promise<{
   stdin?: NodeJS.WritableStream | null;
 }
 
-export type LiveSessionKind = 'live' | 'catchup';
+export type LiveSessionKind = 'live' | 'catchup' | 'vod';
 
 export interface LiveSessionInput {
   channelId: string;
   kind: LiveSessionKind;
-  /** Relay key: the channel id for live, `catchup:<programmeId>` for catch-up. */
+  /** Relay key: the channel id for live, `catchup:<programmeId>` for catch-up, unused for vod. */
   sourceKey: string;
   /** Provider URL the relay pulls from. */
   sourceUrl: string;
@@ -44,7 +44,8 @@ export interface LiveSession extends LiveSessionInput {
 
 interface Running {
   process: FfmpegProcess;
-  subscription: Subscription;
+  /** Null for vod sessions, where ffmpeg reads the provider URL itself (seekable HTTP). */
+  subscription: Subscription | null;
   exited: boolean;
   exitCode: number | null;
   stderr: string;
@@ -55,7 +56,11 @@ export interface LiveHlsOptions {
   waitMs: number;
 }
 
-export function buildLiveHlsArgs(outDir: string, kind: LiveSessionKind = 'live'): string[] {
+export function buildLiveHlsArgs(
+  outDir: string,
+  kind: LiveSessionKind = 'live',
+  input = 'pipe:0',
+): string[] {
   // Live: a sliding window. Catch-up: a growing EVENT playlist that keeps every segment so the
   // viewer can seek anywhere already fetched, ending with ENDLIST when the provider is done.
   const playlist =
@@ -78,10 +83,11 @@ export function buildLiveHlsArgs(outDir: string, kind: LiveSessionKind = 'live')
     '-hide_banner',
     '-loglevel',
     'warning',
-    '-fflags',
-    '+genpts+discardcorrupt',
+    ...(input === 'pipe:0'
+      ? ['-fflags', '+genpts+discardcorrupt']
+      : ['-user_agent', 'VLC/3.0.20 LibVLC/3.0.20']),
     '-i',
-    'pipe:0',
+    input,
     '-map',
     '0:v:0',
     '-map',
@@ -154,11 +160,14 @@ export class LiveHlsManager {
     if (existing) return existing;
     const outDir = this.dir(session.id);
     await mkdir(outDir, { recursive: true });
-    const subscription = this.relays.subscribeUrl(session.sourceKey, session.sourceUrl);
-    const args = buildLiveHlsArgs(outDir, session.kind);
+    const isVod = session.kind === 'vod';
+    const subscription = isVod
+      ? null
+      : this.relays.subscribeUrl(session.sourceKey, session.sourceUrl);
+    const args = buildLiveHlsArgs(outDir, session.kind, isVod ? session.sourceUrl : 'pipe:0');
     const child = execa(this.config.ffmpegPath, args, {
       reject: false,
-      stdin: 'pipe',
+      stdin: isVod ? 'ignore' : 'pipe',
       stdout: 'ignore',
       stderr: 'pipe',
     }) as unknown as FfmpegProcess;
@@ -171,7 +180,13 @@ export class LiveHlsManager {
     };
     this.running.set(session.id, run);
     this.log.info(
-      { sessionId: session.id, channelId: session.channelId, kind: session.kind, args },
+      {
+        sessionId: session.id,
+        channelId: session.channelId,
+        kind: session.kind,
+        // The vod URL carries the provider password; never log it.
+        args: args.map((a) => (a === session.sourceUrl ? '<provider url>' : a)),
+      },
       'live ffmpeg started',
     );
     child.stderr?.on(
@@ -179,14 +194,14 @@ export class LiveHlsManager {
       (chunk: Buffer) => (run.stderr = (run.stderr + chunk.toString()).slice(-4000)),
     );
     const stdin = child.stdin;
-    if (stdin) {
+    if (stdin && subscription) {
       stdin.on('error', () => undefined); // EPIPE when ffmpeg quits first
       subscription.stream.pipe(stdin);
     }
     void child.then((result) => {
       run.exited = true;
       run.exitCode = result.exitCode ?? null;
-      subscription.close();
+      subscription?.close();
       const level = result.exitCode === 0 || result.isTerminated ? 'info' : 'warn';
       this.log[level](
         { sessionId: session.id, exitCode: result.exitCode, stderr: run.stderr },
@@ -201,7 +216,7 @@ export class LiveHlsManager {
     if (!/^(index\.m3u8|seg-\d+\.ts)$/.test(name)) throw new HlsError(404, 'No such segment');
     const run = await this.ensureStarted(session);
     try {
-      await run.subscription.ready;
+      await run.subscription?.ready;
     } catch (error) {
       await this.stop(session.id);
       throw error instanceof LiveStreamError ? error : new LiveStreamError(502, String(error));
@@ -232,7 +247,7 @@ export class LiveHlsManager {
     this.running.delete(sessionId);
     this.sessions.delete(sessionId);
     if (run) {
-      run.subscription.close();
+      run.subscription?.close();
       if (!run.exited) {
         run.process.kill('SIGTERM');
         await Promise.race([run.process, sleep(3000)]);

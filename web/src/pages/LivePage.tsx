@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
+import { LiveTabs } from '../components/LiveTabs.js';
 import type { LiveChannel } from '../api/client.js';
 import {
   fmtClock,
@@ -44,6 +45,7 @@ export function LivePage() {
           </span>
         </div>
       </header>
+      <LiveTabs active="channels" />
       <div className="chips" role="tablist" aria-label="Categories">
         <button
           type="button"

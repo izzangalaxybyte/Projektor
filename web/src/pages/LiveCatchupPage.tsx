@@ -17,15 +17,30 @@ import {
 import { buildDeviceProfile } from '../player/profile.js';
 import { fmt } from './ItemPage.js';
 
+export type ProviderSource = 'catchup' | 'movie' | 'episode';
+
 /**
- * Catch-up: a finished programme from a channel's archive. It is a seekable stream, so this
- * player has the same skip-amount and speed controls as the file player.
+ * Seekable provider content: a catch-up programme, an IPTV movie, or a series episode. Unlike the
+ * live player this one has the same skip-amount and speed controls as the file player.
  */
-export function LiveCatchupPage() {
-  const { channelId = '', programmeId = '' } = useParams();
+export function LiveCatchupPage({ source = 'catchup' }: { source?: ProviderSource }) {
+  const {
+    channelId = '',
+    programmeId = '',
+    vodId = '',
+    seriesId = '',
+    episodeId = '',
+  } = useParams();
   const navigate = useNavigate();
   const channels = useLiveChannels();
   const channel = channels.data?.find((c) => c.id === channelId);
+  const sourceKey = source === 'catchup' ? programmeId : source === 'movie' ? vodId : episodeId;
+  const backTo =
+    source === 'catchup'
+      ? `/live/${channelId}/watch`
+      : source === 'movie'
+        ? `/live/movies/${vodId}`
+        : `/live/series/${seriesId}`;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HtmlVideoPlayer | null>(null);
@@ -50,13 +65,22 @@ export function LiveCatchupPage() {
 
   const profile = useMemo(() => buildDeviceProfile(), []);
   const decision = useQuery({
-    queryKey: ['live', 'catchup', channelId, programmeId, profile.name],
-    enabled: !!channelId && !!programmeId,
+    queryKey: ['live', 'decide', source, sourceKey, profile.name],
+    enabled: !!sourceKey,
     staleTime: Infinity,
     gcTime: 0,
     retry: false,
     queryFn: async () =>
-      unwrap(await api.POST('/api/live/decide', { body: { channelId, profile, programmeId } })),
+      unwrap(
+        await api.POST('/api/live/decide', {
+          body:
+            source === 'catchup'
+              ? { channelId, profile, programmeId }
+              : source === 'movie'
+                ? { profile, vodId }
+                : { profile, episodeId },
+        }),
+      ),
   });
 
   useEffect(() => {
@@ -84,7 +108,7 @@ export function LiveCatchupPage() {
     if (!d || !player) return;
     setError(null);
     player.knownDurationMs = d.durationMs ?? 0;
-    player.load(withAccessToken(d.url), { hls: true, startMs: 0 });
+    player.load(withAccessToken(d.url), { hls: d.method === 'hls', startMs: 0 });
     player.setRate(prefsRef.current.rate);
     return () => {
       if (d.sessionId)
@@ -102,8 +126,7 @@ export function LiveCatchupPage() {
       } else if (e.key === 'ArrowRight') skip(1);
       else if (e.key === 'ArrowLeft') skip(-1);
       else if (e.key === 'f') void document.documentElement.requestFullscreen?.();
-      else if (e.key === 'Escape' && !document.fullscreenElement)
-        navigate(`/live/${channelId}/watch`);
+      else if (e.key === 'Escape' && !document.fullscreenElement) navigate(backTo);
       setShowControls(true);
     };
     window.addEventListener('keydown', onKey);
@@ -119,7 +142,16 @@ export function LiveCatchupPage() {
   // EVENT playlists report an infinite duration until they end; the guide knows the real length.
   const knownDurationMs = decision.data?.durationMs ?? 0;
   const effectiveDurationMs = durationMs > 0 ? durationMs : knownDurationMs;
-  const title = `${channel?.name ?? ''}${decision.data?.title ? ` · ${decision.data.title}` : ''}`;
+  const title =
+    source === 'catchup'
+      ? `${channel?.name ?? ''}${decision.data?.title ? ` · ${decision.data.title}` : ''}`
+      : (decision.data?.title ?? '');
+  const badge =
+    source === 'catchup'
+      ? 'Catch-up'
+      : decision.data?.method === 'direct'
+        ? 'Direct play'
+        : 'Remux';
 
   return (
     <div
@@ -138,7 +170,7 @@ export function LiveCatchupPage() {
         <button
           type="button"
           className="link-button"
-          onClick={() => navigate(`/live/${channelId}/watch`)}
+          onClick={() => navigate(backTo)}
           aria-label="Back"
         >
           ← Back
@@ -146,8 +178,8 @@ export function LiveCatchupPage() {
         <span className="player-title" data-testid="catchup-title">
           {title}
         </span>
-        <span className="decision-badge" data-testid="decision">
-          Catch-up
+        <span className="decision-badge" data-testid="decision" title={decision.data?.reason}>
+          {badge}
         </span>
       </div>
       <div className="player-controls catchup">
