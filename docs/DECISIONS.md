@@ -217,3 +217,11 @@ The Mac has JDK 25, which is newer than the Android Gradle Plugin certifies. The
 ## 2026-09-05 — The Kotlin client is generated at build time, not committed
 
 `:core` runs the OpenAPI Generator during the Gradle build and compiles the output from `build/`. Committing generated Kotlin would invite hand edits and drift from `openapi.json`; generating on every build costs a few seconds and keeps one source of truth. Requests default to Ktor's OkHttp engine; tests inject a MockEngine.
+
+## 2026-09-05 — Media source construction is a pure function over strings
+
+`mediaSpecFor` returns URIs and MIME types as strings so it is unit tested without Android; a one-line extension turns it into a `MediaItem`. Direct play sideloads WebVTT tracks, HLS relies on the master playlist's renditions, both with the token in the query because ExoPlayer's data source cannot be given per-request headers from the decision alone.
+
+## 2026-09-05 — Nulls are sent explicitly from the Android client
+
+The contract marks nullable fields as required. Omitting `maxWidth: null` made zod reject the decision request with a 400 that the generated client then tried to parse as a decision. `explicitNulls` stays on, and `bodyOrThrow()` surfaces the server's error message for every non-2xx response.

@@ -7,7 +7,13 @@ plugins {
 android {
     namespace = "app.projektor.player"
     compileSdk = libs.versions.compileSdk.get().toInt()
-    defaultConfig { minSdk = libs.versions.minSdkMobile.get().toInt() }
+    defaultConfig {
+        minSdk = libs.versions.minSdkMobile.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Where the instrumented test finds the API. 10.0.2.2 is the host from an emulator.
+        testInstrumentationRunnerArguments["serverUrl"] = System.getenv("PROJEKTOR_SERVER_URL") ?: "http://10.0.2.2:8096"
+    }
+    testOptions.unitTests.isReturnDefaultValues = true
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -19,7 +25,15 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 
 dependencies {
     implementation(project(":core"))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.common)
+    implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.ktor.client.okhttp)
 }

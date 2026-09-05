@@ -1,6 +1,7 @@
 package app.projektor.core.auth
 
 import app.projektor.core.ProjektorClient
+import app.projektor.core.bodyOrThrow
 import app.projektor.core.api.models.LoginRequestInput
 import app.projektor.core.api.models.Profile
 import app.projektor.core.api.models.SetupRequestInput
@@ -16,17 +17,17 @@ class AuthRepository(
     fun client(serverUrl: String = requireNotNull(store.serverUrl.value) { "No server configured" }): ProjektorClient =
         ProjektorClient(serverUrl, { store.session.value?.token }, engine)
 
-    suspend fun needsSetup(serverUrl: String): Boolean = client(serverUrl).auth.apiAuthSetupGet().body().needsSetup
+    suspend fun needsSetup(serverUrl: String): Boolean = client(serverUrl).auth.apiAuthSetupGet().bodyOrThrow().needsSetup
 
-    suspend fun profiles(serverUrl: String): List<Profile> = client(serverUrl).auth.apiAuthProfilesGet().body()
+    suspend fun profiles(serverUrl: String): List<Profile> = client(serverUrl).auth.apiAuthProfilesGet().bodyOrThrow()
 
     suspend fun setup(serverUrl: String, name: String, pin: String): Session {
-        val res = client(serverUrl).auth.apiAuthSetupPost(SetupRequestInput(name = name, pin = pin)).body()
+        val res = client(serverUrl).auth.apiAuthSetupPost(SetupRequestInput(name = name, pin = pin)).bodyOrThrow()
         return signIn(serverUrl, res.token, res.profile)
     }
 
     suspend fun login(serverUrl: String, profileId: String, pin: String): Session {
-        val res = client(serverUrl).auth.apiAuthLoginPost(LoginRequestInput(profileId = profileId, pin = pin, deviceName = deviceName)).body()
+        val res = client(serverUrl).auth.apiAuthLoginPost(LoginRequestInput(profileId = profileId, pin = pin, deviceName = deviceName)).bodyOrThrow()
         return signIn(serverUrl, res.token, res.profile)
     }
 

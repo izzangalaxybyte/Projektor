@@ -3,27 +3,15 @@ package app.projektor.mobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import app.projektor.core.API_VERSION
+import androidx.activity.enableEdgeToEdge
+import app.projektor.mobile.ui.AppNav
+import app.projektor.mobile.ui.ProjektorTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Text("Projektor · API $API_VERSION")
-                    }
-                }
-            }
-        }
+        enableEdgeToEdge()
+        val container = (application as ProjektorApp).container
+        setContent { ProjektorTheme { AppNav(container) } }
     }
 }

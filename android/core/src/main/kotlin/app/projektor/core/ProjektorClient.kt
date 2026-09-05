@@ -17,6 +17,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.json.Json
 
 /** API version this client was built against (packages/api-contract/openapi.json). */
@@ -31,7 +32,9 @@ class ProjektorClient(
     private val tokenProvider: () -> String?,
     engine: HttpClientEngine? = null,
 ) {
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false; isLenient = true }
+    // explicitNulls stays on: the contract marks nullable fields as required, so `maxWidth: null`
+    // must be sent as null, not omitted, or zod rejects the request.
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     // The generated ApiClient installs ContentNegotiation without a serializer; add ours, a timeout,
     // and the bearer header. Ktor merges repeated install() blocks for the same plugin.
     private val configure: (HttpClientConfig<*>) -> Unit = { config ->
@@ -62,4 +65,18 @@ class ProjektorClient(
         val sep = if (path.contains('?')) '&' else '?'
         return "$base$path${sep}access_token=$token"
     }
+}
+
+/** The server's error shape, used when a call is not 2xx. */
+class ApiException(val status: Int, val error: String, message: String) : Exception("$status $error: $message")
+
+/**
+ * Reads the body of a successful response, or throws [ApiException] built from the server's
+ * ErrorResponse. The generated client would otherwise try to parse the error as the model.
+ */
+suspend fun <T : Any> app.projektor.core.api.infrastructure.HttpResponse<T>.bodyOrThrow(): T {
+    if (success) return body()
+    val text = runCatching { response.bodyAsText() }.getOrDefault("")
+    val parsed = runCatching { Json { ignoreUnknownKeys = true }.decodeFromString<app.projektor.core.api.models.ErrorResponse>(text) }.getOrNull()
+    throw ApiException(status, parsed?.error ?: "HTTP $status", parsed?.message ?: text.take(200))
 }
