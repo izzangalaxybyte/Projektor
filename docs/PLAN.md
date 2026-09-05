@@ -14,7 +14,7 @@ Decisions already made with the user:
 - iPad installs via a free Apple ID from Xcode (7-day resign cycle).
 - Artwork and fetched subtitles live in the server data directory, never beside the media files. Media folders are mounted read-only.
 - Household users log in by picking a profile and entering a numeric PIN.
-- Client order after the MVP: Android phone + TV, then Samsung TV, then iPad.
+- Client order after the MVP: Android phone + TV, then Live TV (IPTV), then Samsung TV, then iPad.
 
 The design borrows the proven approach of Jellyfin: ffmpeg-driven HLS with on-demand segment generation, TMDB for metadata, OpenSubtitles for subtitles, and a per-device capability profile that the server uses to choose direct play, remux, or transcode.
 
@@ -27,7 +27,7 @@ The owner's main reason for building this: skipping should move by an amount the
 
 Both choices persist per device across sessions.
 
-Every client also ships with the server's fixed LAN address (`http://192.168.100.20:8096`) baked in as the default, so a fresh install never needs it typed; the address stays editable. The web player has them from Phase 1; the Android, Tizen, and iPad players must ship with them, not add them later.
+Every client also ships with the server's fixed LAN address (`http://192.168.100.20:8096`) baked in as the default, so a fresh install never needs it typed; the address stays editable. The web player has them from Phase 1; the Android, Tizen, and iPad players must ship with them, not add them later. Live TV catch-up playback uses the same controls.
 
 ## Scope boundaries
 
@@ -175,26 +175,39 @@ Server first, one capability at a time, each proven with integration tests again
 - **2.7 TV browse.** Compose for TV rows, leanback launcher, banner, D-pad focus. Check: Android TV emulator navigates Home to detail by D-pad.
 - **2.8 TV player.** Remote-key controls and pickers; left/right jump by the chosen skip amount; speed selector. Check: full episode on the Android TV emulator with subtitles.
 
-### Phase 3 — TV shell + Tizen
+### Phase 3 — Live TV (IPTV)
 
-- **3.1 TV shell scaffold.** `?tv=1` switch, spatial navigation provider, focusable tile and row primitives, back-key handling. Check: Playwright with arrow keys moves focus across a row and into detail.
-- **3.2 TV screens.** Home, Movies, TV Shows, Anime, detail, on-screen keyboard search. Check: every pointer-shell route has a TV equivalent reachable by keys only.
-- **3.3 TV player controls.** Remote-key transport (play/pause, seek by the chosen skip amount, back), track pickers and the skip/speed selectors as focusable menus, resume prompt. Check: keyboard-only Playwright playback test passes.
-- **3.4 Tizen build target.** Vite config with `chrome63` target and core-js, style lint forbidding flex `gap`, `:has`, container queries, list virtualization, small image widths. Check: bundle builds and the lint rule catches a deliberate flex `gap`.
-- **3.5 Tizen packaging.** `tizen/config.xml`, icons, static device profile with `ts` segments, `.wgt` build script, `docs/tizen.md` for developer mode and certificates. Check: `.wgt` installs and launches on the Q70B and reaches Home.
-- **3.6 AVPlay adapter.** `AvPlayPlayer` implementing the `Player` interface, HTML5 video fallback flag. Check: h264 mp4 direct and hevc mkv transcode both play on the Q70B with seek and subtitles.
-- **3.7 RU7100 bring-up.** Install on the RU7100, fix Chromium 63 breakages, profile memory. Check: 15 minutes of browsing and one full episode without a crash.
-- **3.8 OpenSubtitles.** API key and login settings, moviehash computation, search by hash + TMDB id, on-demand download from the player menu, cache to `DATA_DIR/subtitles`. Check: a fixture with no subtitles gets one from the player menu on both TVs.
+The owner has an IPTV subscription at `https://playshare.co:8080/` (Xtream Codes API: server URL, username, password). It is integrated server-side so credentials live once in Settings, devices stay provider-agnostic, and streams can be remuxed for browsers. Live channels get their own section in every client, separate from Movies, TV Shows, and Anime.
 
-### Phase 4 — iPad
+- **3.1 Provider client + settings.** Xtream client for `player_api.php` (login/account info, live categories, live streams, VOD categories/streams, series) and `xmltv.php` (guide); credentials under Settings → Metadata, masked like TMDB, default URL `https://playshare.co:8080/`. New tables `live_channels`, `live_categories`, `live_programmes`; a refresh job on start and every 6 hours. Routes `GET /api/live/categories`, `GET /api/live/channels?category=`, `GET /api/live/guide?channel=&from=&to=`. Check: unit tests against a fake Xtream server; with real credentials entered, the channel list and today's guide load.
+- **3.2 Stream relay.** `GET /api/live/{id}/stream` relays the provider's live stream through the server (credentials never reach the client), with the decision endpoint extended for live: `direct` (raw MPEG-TS for Android, Tizen, ExoPlayer) or `hls` (ffmpeg copy into a sliding-window live playlist for browsers and AVPlayer). Reuses the HLS manager with a live mode. Check: a channel plays in Chrome through HLS and the relay drops when the client disconnects.
+- **3.3 Web Live section.** A Live tab: categories, channel list with now/next from the guide, a guide grid for the selected channel, and playback in the existing player with channel up/down and number-key entry; no seek bar while live. Check: Playwright against the fake provider: pick a category, open a channel, see now/next, switch channel with the keyboard.
+- **3.4 Catch-up.** Where the provider marks a channel as having archive, past programmes in the guide play via `timeshift.php` through the same relay; these are seekable, so the skip-amount and speed controls work exactly as for files. Check: a past programme from the fake provider plays and +N skipping moves by the chosen amount.
+- **3.5 Provider movies and series.** Xtream VOD and series appear as "IPTV Movies" and "IPTV Series" sections, matched through TMDB by title and year like local files, and playable through the relay (remux or direct). Check: fake provider VOD shows up matched with artwork and plays.
+- **3.6 Android Live tab.** Phone and TV apps gain Live: categories, channels with now/next, playback via ExoPlayer taking raw TS; catch-up uses the same player with skip and speed. Check: emulator UI test opens a channel from the fake provider.
 
-- **4.1 Xcode project.** SwiftUI app, iOS 15.0 deployment target, free-ID signing, `docs/ipad.md`. Check: empty app installs and launches on the iPad.
-- **4.2 API client + auth.** Generated or hand-written `Codable` client, keychain token store, login. Check: unit test lists libraries from a local server.
-- **4.3 Browse screens.** `NavigationView` based Home, Movies, TV Shows, Anime, detail. Check: reach an episode detail on the device.
-- **4.4 Player.** AVPlayer with HLS subtitle renditions, direct play for mp4, remux for mkv, track pickers, skip-amount and speed selectors, PiP, progress on timer and background. Check: mkv fixture plays with subtitles and PiP; progress shows in the web app.
-- **4.5 Cross-client pass.** Start on web, resume on Android TV, finish on iPad. Check: watched state matches everywhere.
+Nothing here is written to the frozen contract's existing shapes; new routes and schemas are added alongside (additive, per API.md).
 
-Phases 2 to 4 depend only on the frozen contract from 1.18. Order was chosen by the user: Android, then Samsung TV, then iPad.
+### Phase 4 — TV shell + Tizen
+
+- **4.1 TV shell scaffold.** `?tv=1` switch, spatial navigation provider, focusable tile and row primitives, back-key handling. Check: Playwright with arrow keys moves focus across a row and into detail.
+- **4.2 TV screens.** Home, Movies, TV Shows, Anime, detail, on-screen keyboard search. Check: every pointer-shell route has a TV equivalent reachable by keys only.
+- **4.3 TV player controls.** Remote-key transport (play/pause, seek by the chosen skip amount, back), track pickers and the skip/speed selectors as focusable menus, resume prompt. Check: keyboard-only Playwright playback test passes.
+- **4.4 Tizen build target.** Vite config with `chrome63` target and core-js, style lint forbidding flex `gap`, `:has`, container queries, list virtualization, small image widths. Check: bundle builds and the lint rule catches a deliberate flex `gap`.
+- **4.5 Tizen packaging.** `tizen/config.xml`, icons, static device profile with `ts` segments, `.wgt` build script, `docs/tizen.md` for developer mode and certificates. Check: `.wgt` installs and launches on the Q70B and reaches Home.
+- **4.6 AVPlay adapter.** `AvPlayPlayer` implementing the `Player` interface, HTML5 video fallback flag. Check: h264 mp4 direct and hevc mkv transcode both play on the Q70B with seek and subtitles.
+- **4.7 RU7100 bring-up.** Install on the RU7100, fix Chromium 63 breakages, profile memory. Check: 15 minutes of browsing and one full episode without a crash.
+- **4.8 OpenSubtitles.** API key and login settings, moviehash computation, search by hash + TMDB id, on-demand download from the player menu, cache to `DATA_DIR/subtitles`. Check: a fixture with no subtitles gets one from the player menu on both TVs.
+
+### Phase 5 — iPad
+
+- **5.1 Xcode project.** SwiftUI app, iOS 15.0 deployment target, free-ID signing, `docs/ipad.md`. Check: empty app installs and launches on the iPad.
+- **5.2 API client + auth.** Generated or hand-written `Codable` client, keychain token store, login. Check: unit test lists libraries from a local server.
+- **5.3 Browse screens.** `NavigationView` based Home, Movies, TV Shows, Anime, detail. Check: reach an episode detail on the device.
+- **5.4 Player.** AVPlayer with HLS subtitle renditions, direct play for mp4, remux for mkv, track pickers, skip-amount and speed selectors, PiP, progress on timer and background. Check: mkv fixture plays with subtitles and PiP; progress shows in the web app.
+- **5.5 Cross-client pass.** Start on web, resume on Android TV, finish on iPad. Check: watched state matches everywhere.
+
+Phases 2 to 5 depend on the frozen contract from 1.18; Phase 3 extends it additively. Order was chosen by the user: Android, then Live TV, then Samsung TV, then iPad.
 
 ## Verification
 
@@ -220,5 +233,5 @@ Phases 2 to 4 depend only on the frozen contract from 1.18. Order was chosen by 
 ## Resolved questions
 
 1. Artwork and fetched subtitles: server data directory.
-2. Client order after the MVP: Android, then Samsung TV, then iPad.
+2. Client order after the MVP: Android, then Live TV, then Samsung TV, then iPad.
 3. Login: numeric PIN per profile, with rate limiting and lockout.
