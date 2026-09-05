@@ -22,6 +22,7 @@ const EnvSchema = z.object({
   AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   RECORDINGS_DIR: z.string().optional(),
   RECORDING_PADDING_MS: z.coerce.number().int().nonnegative().default(120_000),
+  HDR_TONEMAP_MAX_WIDTH: z.coerce.number().int().positive().default(1280),
   LIVE_REFRESH: z
     .enum(['true', 'false'])
     .default('true')
@@ -72,6 +73,8 @@ export interface Config {
   recordingsDir: string;
   /** Extra time recorded after a programme's guide end. */
   recordingPaddingMs: number;
+  /** Output width when HDR is tone-mapped on the CPU; 1280 keeps a four-core box real-time. */
+  hdrTonemapMaxWidth: number;
 }
 
 /** Builds a Config from environment variables and creates the data directory layout. */
@@ -96,6 +99,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     liveMaxStreams: parsed.LIVE_MAX_STREAMS,
     authRateLimitPerMinute: parsed.AUTH_RATE_LIMIT,
     recordingPaddingMs: parsed.RECORDING_PADDING_MS,
+    hdrTonemapMaxWidth: parsed.HDR_TONEMAP_MAX_WIDTH,
     ...(parsed.RECORDINGS_DIR ? { recordingsDir: path.resolve(parsed.RECORDINGS_DIR) } : {}),
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
@@ -127,6 +131,7 @@ export function configForDataDir(
     liveMaxStreams: 2,
     authRateLimitPerMinute: 20,
     recordingPaddingMs: 120_000,
+    hdrTonemapMaxWidth: 1280,
     watchLibraries: true,
     ...overrides,
     dataDir,

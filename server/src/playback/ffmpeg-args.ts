@@ -107,10 +107,16 @@ export interface TranscodeOptions {
   startSegment: number;
   hardware: HardwareEncoder;
   vaapiDevice?: string;
+  /** Overrides SOFTWARE_HDR_MAX_WIDTH for CPU-side tone mapping. */
+  hdrTonemapMaxWidth?: number;
 }
 
-/** Widest output when HDR has to be tone-mapped on the CPU. */
-export const SOFTWARE_HDR_MAX_WIDTH = 1920;
+/**
+ * Widest output when HDR has to be tone-mapped on the CPU. On a four-core Skylake the float
+ * tone-mapping chain manages 20 fps at 1080p and comfortably more at 720p; HDR_TONEMAP_MAX_WIDTH
+ * raises it on a stronger box.
+ */
+export const SOFTWARE_HDR_MAX_WIDTH = 1280;
 
 /** ffmpeg's own playlist, written but never served; ours is generated from the duration. */
 export const FFMPEG_PLAYLIST = 'ffmpeg.m3u8';
@@ -133,9 +139,10 @@ export function buildTranscodeArgs(
   const width = decision.videoStream?.width ?? null;
   const hdr = decision.videoStream?.hdr === true;
   // CPU-side HDR tone mapping cannot keep up at 4K, so those paths cap the output at 1080p.
+  const tonemapCap = options.hdrTonemapMaxWidth ?? SOFTWARE_HDR_MAX_WIDTH;
   const capWidth =
     hdr && options.hardware !== 'vaapi'
-      ? Math.min(profile.maxWidth ?? SOFTWARE_HDR_MAX_WIDTH, SOFTWARE_HDR_MAX_WIDTH)
+      ? Math.min(profile.maxWidth ?? tonemapCap, tonemapCap)
       : profile.maxWidth;
   const targetWidth = capWidth !== null && width !== null && width > capWidth ? capWidth : null;
   const maxBitrate = profile.maxBitrate;
