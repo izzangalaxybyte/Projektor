@@ -10,6 +10,9 @@ import app.projektor.core.api.models.LiveDecideRequestInput
 import app.projektor.core.api.models.LivePlaybackDecision
 import app.projektor.core.api.models.LiveProgramme
 import app.projektor.core.api.models.LiveStatus
+import app.projektor.core.api.models.CreateRecordingRequestInput
+import app.projektor.core.api.models.Recording
+import app.projektor.core.api.models.RecordingStateInput
 import app.projektor.core.bodyOrThrow
 
 /** Live TV, catch-up, and provider VOD calls over the generated client. */
@@ -29,4 +32,10 @@ class LiveRepository(private val client: ProjektorClient) {
     suspend fun series(category: String? = null, search: String? = null, offset: Int = 0, limit: Int = 60): List<IptvSeries> =
         client.live.apiLiveSeriesGet(category, search, null, offset, limit).bodyOrThrow().items
     suspend fun seriesDetail(id: String): IptvSeriesDetail = client.live.apiLiveSeriesIdGet(id).bodyOrThrow()
+
+    suspend fun recordings(state: RecordingStateInput? = null): List<Recording> = client.recordings.apiRecordingsGet(state).bodyOrThrow()
+    suspend fun recording(id: String): Recording = client.recordings.apiRecordingsIdGet(id).bodyOrThrow()
+    suspend fun record(request: CreateRecordingRequestInput): Recording = client.recordings.apiRecordingsPost(request).bodyOrThrow()
+    suspend fun stopRecording(id: String): Recording = client.recordings.apiRecordingsIdStopPost(id).bodyOrThrow()
+    suspend fun deleteRecording(id: String) { client.recordings.apiRecordingsIdDelete(id) }
 }

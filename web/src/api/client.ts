@@ -23,6 +23,7 @@ export type IptvMovie = Schemas['IptvMovie'];
 export type IptvSeries = Schemas['IptvSeries'];
 export type IptvEpisode = Schemas['IptvEpisode'];
 export type IptvSeriesDetail = Schemas['IptvSeriesDetail'];
+export type Recording = Schemas['Recording'];
 
 /** One client for the whole app. Same-origin when served by the server; the baked-in address otherwise. */
 export const API_BASE = apiBaseUrl();

@@ -135,3 +135,21 @@ export function useIptvSeries(id: string | undefined) {
       unwrap(await api.GET('/api/live/series/{id}', { params: { path: { id: id! } } })),
   });
 }
+
+/** Recordings, polled quickly while any is scheduled or running. */
+export function useRecordings() {
+  return useQuery({
+    queryKey: ['recordings'],
+    queryFn: async () => unwrap(await api.GET('/api/recordings')),
+    refetchInterval: (q) =>
+      q.state.data?.some((r) => r.state === 'scheduled' || r.state === 'recording')
+        ? 3_000
+        : 30_000,
+  });
+}
+
+export function fmtBytes(n: number): string {
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}

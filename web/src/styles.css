@@ -834,3 +834,49 @@ select {
   right: auto;
   background: var(--surface-2);
 }
+
+.ctl.rec {
+  color: var(--danger);
+}
+.player-notice {
+  position: absolute;
+  top: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 17, 21, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+}
+.rec-state {
+  font-size: 0.75rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--surface-2);
+  color: var(--muted);
+}
+.rec-state.recording {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.rec-state.scheduled {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.rec-state.failed {
+  color: var(--danger);
+}
+.recording-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-gap: 0.75rem;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+}
+.recording-row .actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 0.5rem;
+}

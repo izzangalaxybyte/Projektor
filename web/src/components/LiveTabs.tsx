@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
 
 /** Channels, IPTV Movies, IPTV Series: the three sections of Live TV. */
-export function LiveTabs({ active }: { active: 'channels' | 'movies' | 'series' }) {
+export function LiveTabs({ active }: { active: 'channels' | 'movies' | 'series' | 'recordings' }) {
   const tabs = [
     { key: 'channels', to: '/live', label: 'Channels' },
     { key: 'movies', to: '/live/movies', label: 'IPTV Movies' },
     { key: 'series', to: '/live/series', label: 'IPTV Series' },
+    { key: 'recordings', to: '/live/recordings', label: 'Recordings' },
   ] as const;
   return (
     <nav className="tabs" aria-label="Live TV sections">

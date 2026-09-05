@@ -51,6 +51,10 @@ The server address defaults to `http://10.0.2.2:8096` (the host as seen from an 
 
 The Live tab (`ui/live/LiveScreen.kt`) lists categories as filter chips over channel rows with logo, number, what is on now with a progress bar, what is next, and a catch-up marker, refreshing every minute; an unconfigured server shows a pointer to Settings. `LivePlayerScreen` asks `POST /api/live/decide` with the device profile, which lists the `ts` container, so channels arrive as the raw MPEG-TS relay and ExoPlayer plays them with the `video/mp2t` MIME type set (`liveMediaSpecFor`). There is no seek bar: channel down and up buttons switch channels in place (the list wraps), the Guide button opens the day's programmes, and finished programmes on a catch-up channel have a Watch button that opens `CatchupPlayerScreen`, the seekable provider player with the same skip-amount and speed pickers as the file player. `LiveRepository` in `:core` wraps the generated `LiveApi`; `LiveGuide` holds the pure helpers (ISO parsing without java.time, since the phone's minSdk is 24; progress, wall clock, neighbour, number lookup, archive window) with unit tests.
 
+## Recording on the phone
+
+The live player's bottom bar has ● Rec (record this channel until stopped) and each guide programme that has not ended has ● Record or ● Schedule; a short notice confirms what the server did. The Recordings button on the Live tab opens `ui/live/RecordingsScreen.kt`: state, channel, times, size, Play (done, running, or a failed recording with bytes), Stop, Cancel, Delete, polling every three seconds while anything is active. Recordings play in `CatchupPlayerScreen` with `ProviderSource.Recording`, so the skip-amount and speed controls apply. `RecordingTest` records from the player, stops it under Recordings, plays it, and deletes it.
+
 ## TV app
 
 `:app-tv` uses Compose for TV (`androidx.tv:tv-material`). Sign-in is the same three steps as the phone but laid out for a 10-foot screen, with the remote in mind: D-pad Down (or the keyboard's Next) leaves a text field, the first profile card and the PIN field take focus on arrival. `TvHome` shows tv-material tabs (Home, Movies, TV Shows, Anime, Search) over rows of `TvTile` cards, which scale and outline on focus; the first tile of the first row requests focus from inside its own composition, so browsing starts on something without hunting. Grids and search sit behind the other tabs. `TvItemScreen` focuses Play on arrival and lists seasons and episodes as rows below the details.
@@ -60,6 +64,10 @@ Two TV-specific lessons are baked in: tv-material buttons respond to key events,
 ## Live TV on the TV
 
 The Live tab (`ui/live/TvLive.kt`) shows category buttons over a focusable channel list; the first channel takes focus itself. `TvLivePlayerScreen` is remote-driven: D-pad Up/Down and Channel Up/Down change channel, digits jump to a channel number after a short pause, Right opens the guide as a side list whose finished, archived programmes are buttons that open `TvCatchupScreen`, Centre pauses while the info bar is showing, Back closes the guide then leaves. `TvCatchupScreen` behaves like the TV file player: Left/Right skip by the chosen amount with the bar hidden, Up/Down shows the bar with the skip and speed pickers.
+
+## Recording on the TV
+
+The remote's record key (`KEYCODE_MEDIA_RECORD`) starts recording the current channel until stopped, or stops the recording already running on it; a ● REC mark shows while one runs. In the guide, Centre on a programme that has not ended records or schedules it. The Recordings button on the Live tab opens `ui/live/TvRecordings.kt`, a focusable list where Centre opens Play / Stop / Cancel / Delete for the row; playback goes through `TvCatchupScreen` with a `recordingId`. `TvRecordTest` records for 15 seconds with the record key, stops, finds the recording under Recordings, and plays it.
 
 ## TV player
 

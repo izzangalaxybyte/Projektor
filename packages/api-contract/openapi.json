@@ -7276,7 +7276,7 @@
         }
       }
     },
-    "/api/recordings/": {
+    "/api/recordings": {
       "get": {
         "summary": "Recordings, newest first",
         "tags": [

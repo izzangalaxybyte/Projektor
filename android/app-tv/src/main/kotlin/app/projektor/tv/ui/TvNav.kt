@@ -14,6 +14,7 @@ import app.projektor.tv.ui.home.TvHome
 import app.projektor.tv.ui.item.TvItemScreen
 import app.projektor.tv.ui.live.TvCatchupScreen
 import app.projektor.tv.ui.live.TvLivePlayerScreen
+import app.projektor.tv.ui.live.TvRecordings
 import app.projektor.tv.ui.player.TvPlayerScreen
 
 object Routes {
@@ -26,6 +27,9 @@ object Routes {
     fun live(channelId: String) = "live/$channelId"
     const val CATCHUP = "live/{channelId}/catchup/{programmeId}"
     fun catchup(channelId: String, programmeId: String) = "live/$channelId/catchup/$programmeId"
+    const val RECORDINGS = "recordings"
+    const val RECORDING_PLAYER = "recordings/{id}/watch"
+    fun recordingPlayer(id: String) = "recordings/$id/watch"
 }
 
 @Composable
@@ -37,7 +41,11 @@ fun TvNav(container: TvContainer) {
     }
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = Routes.HOME) {
-        composable(Routes.HOME) { TvHome(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }) }
+        composable(Routes.HOME) { TvHome(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }, openRecordings = { nav.navigate(Routes.RECORDINGS) }) }
+        composable(Routes.RECORDINGS) { TvRecordings(container, play = { nav.navigate(Routes.recordingPlayer(it)) }, back = { nav.popBackStack() }) }
+        composable(Routes.RECORDING_PLAYER, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            TvCatchupScreen(container = container, channelId = "", programmeId = "", back = { nav.popBackStack() }, recordingId = entry.arguments?.getString("id") ?: return@composable)
+        }
         composable(Routes.LIVE, arguments = listOf(navArgument("channelId") { type = NavType.StringType })) { entry ->
             TvLivePlayerScreen(
                 container = container,

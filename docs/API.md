@@ -8,6 +8,8 @@ The contract is frozen at **1.0.0** (git tag `api-v1.0.0`) for the v1 clients. F
 
 ## Conventions
 
+A POST without a request body may be sent with `Content-Type: application/json` and an empty body; the server treats that as no body rather than rejecting it.
+
 - Base path `/api`. JSON in and out. Errors use `ErrorResponse` (`statusCode`, `error`, `message`).
 - Authentication is a bearer token from `POST /api/auth/login` or `POST /api/auth/setup`, sent as `Authorization: Bearer <token>`. Every `/api` route requires it except the ones marked public below. Missing or unknown token returns 401.
 - Admin-only routes return 403 for non-admin profiles.

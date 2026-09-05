@@ -48,7 +48,7 @@ private data class LiveData(val configured: Boolean, val categories: List<LiveCa
 
 /** Live tab on the TV: a row of category buttons over a focusable channel list with now/next. */
 @Composable
-fun TvLive(container: TvContainer, openChannel: (String) -> Unit) {
+fun TvLive(container: TvContainer, openChannel: (String) -> Unit, openRecordings: () -> Unit = {}) {
     val live = container.live() ?: return
     var state by remember { mutableStateOf<UiState<LiveData>>(UiState.Loading) }
     var category by rememberSaveable { mutableStateOf<String?>(null) }
@@ -78,6 +78,7 @@ fun TvLive(container: TvContainer, openChannel: (String) -> Unit) {
             Column {
                 LazyRow(contentPadding = PaddingValues(horizontal = 48.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     item { Button(onClick = { category = null }, modifier = Modifier.testTag("category-all")) { Text(if (category == null) "• All" else "All") } }
+                    item { Button(onClick = openRecordings, modifier = Modifier.testTag("open-recordings")) { Text("Recordings") } }
                     items(s.value.categories, key = { it.id }) { c ->
                         Button(onClick = { category = c.id }, modifier = Modifier.testTag("category-${c.id}")) { Text(if (category == c.id) "• ${c.name}" else c.name) }
                     }

@@ -74,7 +74,7 @@ Phase 2 is complete as of 2026-09-05 on emulators (Android 15 phone, Android 14 
 | 3.5 Provider movies and series | done   | #47       | Server: catalogue refresh, TMDB matching of provider titles, range pass-through, HLS fallback (7 tests). e2e: IPTV Movies tab, movie plays direct with exact skips, series episodes fetched on open and play                                    |
 | 3.6 Android Live tab           | done   | #48       | Phone and TV emulator UI tests against the fake provider: channel plays as raw TS, Up/Down and digits switch channels, catch-up plays with exact +4 s skips (phone)                                                                             |
 | 3.7 Recording engine           | done   | #49       | 5 tests: timed and manual recordings with file, sidecar and ranged stream; scheduled start and automatic stop; programme recording with padding; restart marks failed and keeps the file; ffprobe-verified playable file, direct and HLS decide |
-| 3.8 Recording UI               | todo   |           |                                                                                                                                                                                                                                                 |
+| 3.8 Recording UI               | done   | #50       | Web e2e: record from the guide, scheduled → recording → done, play, cancel, delete. Phone: record, stop, play, delete. TV: record key for 15 s, stop, play from Recordings                                                                      |
 
 ## Phase 4 — TV shell + Tizen
 

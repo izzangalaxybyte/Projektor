@@ -45,7 +45,7 @@ private val TABS = listOf("Home", "Movies", "TV Shows", "Anime", "Live", "Search
 
 /** Top tabs (D-pad left/right on the tab row) over the selected section. */
 @Composable
-fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}) {
+fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}, openRecordings: () -> Unit = {}) {
     var tab by rememberSaveable { mutableStateOf(0) }
     Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
         TabRow(selectedTabIndex = tab, modifier = Modifier.padding(horizontal = 48.dp).testTag("tabs")) {
@@ -61,7 +61,7 @@ fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (Str
                 1 -> KindGrid(container, LibraryKindInput.MOVIE, openItem)
                 2 -> KindGrid(container, LibraryKindInput.TV, openItem)
                 3 -> KindGrid(container, LibraryKindInput.ANIME, openItem)
-                4 -> TvLive(container, openChannel)
+                4 -> TvLive(container, openChannel, openRecordings)
                 else -> TvSearch(container, openItem)
             }
         }

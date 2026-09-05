@@ -2512,7 +2512,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/recordings/": {
+    "/api/recordings": {
         parameters: {
             query?: never;
             header?: never;

@@ -9,6 +9,7 @@ import { LivePage } from './pages/LivePage.js';
 import { IptvMoviePage, IptvMoviesPage } from './pages/IptvMoviesPage.js';
 import { IptvSeriesDetailPage, IptvSeriesPage } from './pages/IptvSeriesPage.js';
 import { LiveCatchupPage } from './pages/LiveCatchupPage.js';
+import { RecordingsPage } from './pages/RecordingsPage.js';
 import { LivePlayerPage } from './pages/LivePlayerPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { SearchPage } from './pages/SearchPage.js';
@@ -84,6 +85,14 @@ export function App() {
             }
           />
           <Route
+            path="/live/recordings/:recordingId/watch"
+            element={
+              <Gate>
+                <LiveCatchupPage source="recording" />
+              </Gate>
+            }
+          />
+          <Route
             path="/live/movies/:vodId/watch"
             element={
               <Gate>
@@ -123,6 +132,7 @@ export function App() {
             <Route path="live/movies/:vodId" element={<IptvMoviePage />} />
             <Route path="live/series" element={<IptvSeriesPage />} />
             <Route path="live/series/:seriesId" element={<IptvSeriesDetailPage />} />
+            <Route path="live/recordings" element={<RecordingsPage />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="items/:id" element={<ItemPage />} />
             <Route path="settings" element={<SettingsLayout />}>

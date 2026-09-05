@@ -49,7 +49,7 @@ fun liveMediaSpecFor(decision: LivePlaybackDecision, client: ProjektorClient): M
     val uri = client.withAccessToken(decision.url)
     val mime = when {
         decision.method == LivePlaybackDecision.Method.HLS -> MIME_HLS
-        decision.kind == LivePlaybackDecision.Kind.LIVE -> MIME_TS
+        decision.kind == LivePlaybackDecision.Kind.LIVE || decision.kind == LivePlaybackDecision.Kind.RECORDING -> MIME_TS
         else -> null
     }
     return MediaSpec(uri = uri, mimeType = mime, subtitles = emptyList())

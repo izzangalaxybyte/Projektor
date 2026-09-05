@@ -42,7 +42,10 @@ import androidx.media3.ui.PlayerView
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import app.projektor.core.api.models.CreateRecordingRequestInput
 import app.projektor.core.api.models.LiveChannel
+import app.projektor.core.api.models.Recording
+import app.projektor.core.api.models.RecordingStateInput
 import app.projektor.core.api.models.LiveDecideRequestInput
 import app.projektor.core.api.models.LivePlaybackDecision
 import app.projektor.core.api.models.LiveProgramme
@@ -78,6 +81,33 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
     var error by remember { mutableStateOf<String?>(null) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     val channel = channels.firstOrNull { it.id == current }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var activeRecording by remember { mutableStateOf<Recording?>(null) }
+    LaunchedEffect(current) {
+        while (true) {
+            activeRecording = runCatching { live.recordings(RecordingStateInput.RECORDING) }.getOrDefault(emptyList()).firstOrNull { it.channelId == current }
+            delay(5_000)
+        }
+    }
+    LaunchedEffect(notice) { if (notice != null) { delay(4_000); notice = null } }
+    /** The remote's record key: start recording this channel, or stop the one running on it. */
+    fun toggleRecord() {
+        scope.launch {
+            notice = try {
+                val running = activeRecording
+                if (running != null) { live.stopRecording(running.id); activeRecording = null; "Recording stopped: ${running.title}" }
+                else { val r = live.record(CreateRecordingRequestInput(channelId = current)); activeRecording = r; "Recording: ${r.title}" }
+            } catch (e: Exception) { e.userMessage() }
+        }
+    }
+    fun schedule(programmeId: String) {
+        scope.launch {
+            notice = try {
+                val r = live.record(CreateRecordingRequestInput(channelId = current, programmeId = programmeId))
+                if (r.state.value == "scheduled") "Scheduled: ${r.title}" else "Recording: ${r.title}"
+            } catch (e: Exception) { e.userMessage() }
+        }
+    }
 
     val player = remember { ProjektorPlayer(context) }
     val state by player.state.collectAsState()
@@ -152,6 +182,7 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
                     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> { player.togglePlayPause(); touched(); return@onPreviewKeyEvent true }
                     KeyEvent.KEYCODE_CHANNEL_UP -> { step(1); return@onPreviewKeyEvent true }
                     KeyEvent.KEYCODE_CHANNEL_DOWN -> { step(-1); return@onPreviewKeyEvent true }
+                    KeyEvent.KEYCODE_MEDIA_RECORD -> { toggleRecord(); touched(); return@onPreviewKeyEvent true }
                 }
                 if (code in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
                     digits = (digits + (code - KeyEvent.KEYCODE_0)).takeLast(4)
@@ -172,6 +203,8 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
         Text(state.positionMs.toString(), Modifier.width(1.dp).height(1.dp).testTag("position-ms"), color = Color.Transparent)
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(32.dp), color = MaterialTheme.colorScheme.error) }
         if (state.isBuffering && error == null) Text("…", Modifier.align(Alignment.Center), style = MaterialTheme.typography.displayMedium)
+        notice?.let { Text(it, Modifier.align(Alignment.TopCenter).padding(top = 40.dp).background(Color.Black.copy(alpha = 0.8f)).padding(horizontal = 20.dp, vertical = 10.dp).testTag("notice"), style = MaterialTheme.typography.titleMedium) }
+        activeRecording?.let { Text("● REC", Modifier.align(Alignment.TopStart).padding(40.dp).testTag("rec-indicator"), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) }
         if (digits.isNotEmpty()) {
             Text(digits, Modifier.align(Alignment.TopEnd).padding(40.dp).background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 24.dp, vertical = 8.dp).testTag("number-entry"), style = MaterialTheme.typography.displayMedium)
         }
@@ -187,7 +220,7 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
                         Box(Modifier.fillMaxWidth(LiveGuide.progress(now.startAt, now.endAt)).fillMaxHeight().background(MaterialTheme.colorScheme.primary))
                     }
                 } else Text("No guide information", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Up/Down: channel · digits: channel number · Right: guide · Centre: pause", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Up/Down: channel · digits: channel number · Right: guide · Centre: pause · Record key: record", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (showGuide) {
@@ -201,11 +234,11 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
                         val ended = LiveGuide.hasEnded(p.endAt)
                         val playable = ended && channel != null && LiveGuide.inArchive(p.startAt, channel.hasArchive, channel.archiveDays)
                         Button(
-                            onClick = { if (playable) openCatchup(current, p.id) },
-                            modifier = Modifier.fillMaxWidth().testTag(if (playable) "catchup-play" else "guide-row").let { if (i == 0) it.focusRequester(guideFocus) else it },
+                            onClick = { if (playable) openCatchup(current, p.id) else if (!ended) schedule(p.id) },
+                            modifier = Modifier.fillMaxWidth().testTag(if (playable) "catchup-play" else if (!ended) "record-programme" else "guide-row").let { if (i == 0) it.focusRequester(guideFocus) else it },
                         ) {
                             Column {
-                                Text("${LiveGuide.clock(p.startAt)}  ${p.title}${if (playable) "  ▶" else ""}", style = MaterialTheme.typography.bodyLarge)
+                                Text("${LiveGuide.clock(p.startAt)}  ${p.title}${if (playable) "  ▶" else if (!ended) "  ●" else ""}", style = MaterialTheme.typography.bodyLarge)
                                 p.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
                             }
                         }
