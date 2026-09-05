@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.auth.SignInFlow
 import app.projektor.mobile.ui.item.ItemScreen
+import app.projektor.mobile.ui.player.PlayerScreen
 
 object Routes {
     const val SIGN_IN = "sign-in"
@@ -49,9 +50,12 @@ fun AppNav(container: AppContainer) {
                 navArgument("startMs") { type = NavType.LongType; defaultValue = 0L },
             ),
         ) { entry ->
-            // 2.6 adds the fullscreen player here.
-            PlayerPlaceholder(
-                fileId = entry.arguments?.getString("fileId") ?: "",
+            PlayerScreen(
+                container = container,
+                fileId = entry.arguments?.getString("fileId") ?: return@composable,
+                itemId = entry.arguments?.getString("itemId") ?: return@composable,
+                startMs = entry.arguments?.getLong("startMs") ?: 0L,
+                playNext = { fileId, itemId -> nav.navigate(Routes.player(fileId, itemId)) { popUpTo(Routes.MAIN) } },
                 back = { nav.popBackStack() },
             )
         }

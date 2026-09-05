@@ -37,6 +37,10 @@ The server address defaults to `http://10.0.2.2:8096` (the host as seen from an 
 
 `:app-mobile` is Compose Material 3 with Compose Navigation. `AppNav` shows the sign-in flow (server address, first-run setup or profile picker, PIN) until a session exists, then a bottom-tab scaffold: Home (continue watching and recently added per library kind, so anime never mixes with TV), Movies, TV, Anime (adaptive poster grids), Search (debounced), and an item detail destination with Play/Resume, next episode, seasons and episodes, and file details. Dependencies are wired by hand in `AppContainer` on the `Application`; screens fetch through `ItemsRepository` in `LaunchedEffect`s and render a small `UiState`. Artwork loads with Coil from the public image route. `BrowseTest` is a Compose UI test that walks the whole flow on an emulator against a real server (`./gradlew :app-mobile:connectedDebugAndroidTest`).
 
+## Phone player
+
+`PlayerScreen` is the fullscreen player. It asks the server for a decision with the device profile, loads the result into `ProjektorPlayer` inside a Media3 `PlayerView` with the built-in controller disabled, and draws its own controls: skip back, play/pause, and skip forward in the centre (double tap on either half of the screen skips too), and a bottom bar with the seek slider, the **skip amount** picker (+3 to +15 seconds), the **speed** picker (0.5× to 2×), and audio and subtitle pickers. The skip and speed choices come from `PlayerPrefs` and persist per device. Changing the audio track asks for a new decision from the current position. Progress reports go through `ProjektorPlayer`; at the end of an episode a "Play next episode" button appears. `PlayerTest` exercises the skip and speed behaviour on an emulator.
+
 ## Building
 
 Requirements: the Android SDK (platform 36 and build tools; Android Studio installs them) and a JDK 17 to 21. Android Studio's bundled JDK works:
