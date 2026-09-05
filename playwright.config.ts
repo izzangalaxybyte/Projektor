@@ -14,6 +14,9 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:8099',
     trace: 'retain-on-failure',
     ...devices['Desktop Chrome'],
+    // Playwright's Chromium ships without H.264/AAC; branded Chrome plays the fixtures for real.
+    channel: 'chrome',
+    launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
   },
   webServer: {
     command: 'node e2e/start-server.mjs',

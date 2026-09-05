@@ -177,3 +177,15 @@ The plan said React 18; React 19 is current, `@vitejs/plugin-react` and TanStack
 ## 2026-09-05 — End-to-end tests run the real server, not mocks
 
 Playwright drives the built app against the actual API with a temporary data directory and the fixture media. Mocking the API in the browser would have missed the wiring bugs this project has actually had (auth hooks, playlist tokens, serializer schemas).
+
+## 2026-09-05 — Subtitles are rendered by our own overlay, not native tracks
+
+The web player fetches the WebVTT and draws the active cues itself. Native `<track>` rendering differs between browsers, is poor on the 2019 Samsung TV, and cannot be styled consistently; one overlay component gives identical results everywhere and doubles as the TV implementation.
+
+## 2026-09-05 — Playback tests run in branded Chrome
+
+Playwright's Chromium has no proprietary codecs, so a passing test there would prove nothing about H.264 playback. The e2e config uses `channel: 'chrome'`.
+
+## 2026-09-05 — HEVC remuxes are tagged hvc1
+
+ffmpeg writes `hev1` sample entries for copied HEVC by default. Safari and browsers' MediaSource want `hvc1`, so remuxes add `-tag:v hvc1`. Found while getting the web player to play the HEVC fixture in Chrome.
