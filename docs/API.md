@@ -2,6 +2,10 @@
 
 The source of truth is [`packages/api-contract/openapi.json`](../packages/api-contract/openapi.json), regenerated from the server's zod schemas (see [DEV.md](DEV.md)). This page is the short prose version.
 
+## Versioning
+
+The contract is frozen at **1.0.0** (git tag `api-v1.0.0`) for the v1 clients. From here changes are additive: new routes, new optional fields, new enum values that clients can ignore. Renaming or removing anything, or making an optional field required, needs a new major version and a migration plan for the native clients. `server/src/contract.test.ts` fails whenever `openapi.json` no longer matches the running server, so regenerate and commit it with every schema change.
+
 ## Conventions
 
 - Base path `/api`. JSON in and out. Errors use `ErrorResponse` (`statusCode`, `error`, `message`).
