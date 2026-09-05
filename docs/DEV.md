@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 20 or newer (24 is what development uses) and pnpm 11. The repo pins `packageManager` in `package.json`, so `corepack enable` is enough.
+- Node 22.13 or newer (24 is what development uses) and pnpm 11, which refuses older Node. The repo pins `packageManager` in `package.json`, so `corepack enable` is enough.
 - ffmpeg and ffprobe on `PATH`. On macOS: `brew install ffmpeg`.
 - TypeScript stays on the 6.x line. typescript-eslint does not support 7.x yet; do not bump it.
 

@@ -79,7 +79,7 @@ Projektor/
 
 **API surface (summary).** `/api/auth/*`, `/api/libraries`, `/api/items` (browse, search, details, fix-match), `/api/items/:id/next` (next episode), `/api/playback/decide`, `/api/playback/sessions/:id/{master.m3u8,index.m3u8,seg-N.ts}`, `/api/files/:id/stream`, `/api/subtitles/*`, `/api/images/:key`, `/api/progress`, `/api/users`, `/api/settings`. The OpenAPI document is emitted at build time to `packages/api-contract/openapi.json` and is the source of truth for all client SDKs.
 
-**Deployment.** Multi-stage Dockerfile on `debian:bookworm-slim` with Node 20, ffmpeg, `intel-media-va-driver-non-free`, and `vainfo`. compose file maps `/dev/dri`, the media folders read-only, and `DATA_DIR`. Startup runs a VAAPI self-test and logs which encoder path is active.
+**Deployment.** Multi-stage Dockerfile on `debian:bookworm-slim` with Node 22, ffmpeg, `intel-media-va-driver-non-free`, and `vainfo`. compose file maps `/dev/dri`, the media folders read-only, and `DATA_DIR`. Startup runs a VAAPI self-test and logs which encoder path is active.
 
 ## Web app (`web/`)
 
