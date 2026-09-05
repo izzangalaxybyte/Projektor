@@ -101,3 +101,7 @@ The plan assumed AniList exposes a TMDB id. It does not (only a MyAnimeList id),
 ## 2026-09-05 — Season offset is added to the absolute number
 
 `shows.season_offset` is a plain integer added before mapping. Offset 12 makes a sequel entry whose fansub numbering restarts at 1 land on TMDB season 2 of a 12-episode first season. Simple to reason about and enough for the fix-match UI to expose as one field.
+
+## 2026-09-05 — One injectable outbound fetch on the app
+
+`app.httpFetch` is the only way server code reaches TMDB, AniList, or artwork. Tests inject a router over the fake servers and exercise real routes end to end. Mocking modules or spying on `globalThis.fetch` would have been more fragile and would not have covered the wiring in the scan route.

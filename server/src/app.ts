@@ -23,16 +23,21 @@ import './schemas/index.js';
 
 export const API_VERSION = '0.0.0';
 
+export type HttpFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
 declare module 'fastify' {
   interface FastifyInstance {
     config: Config;
     db: Db;
+    /** Outbound HTTP for TMDB, AniList, and artwork. Injectable so tests never hit the network. */
+    httpFetch: HttpFetch;
   }
 }
 
 export interface AppOptions {
   config: Config;
   logger?: boolean;
+  fetch?: HttpFetch;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
@@ -45,6 +50,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const database = openDatabase(options.config.dbPath);
   app.decorate('config', options.config);
   app.decorate('db', database.db);
+  app.decorate('httpFetch', options.fetch ?? ((url, init) => fetch(url, init)));
   app.addHook('onClose', () => database.close());
 
   await app.register(sensible);

@@ -44,6 +44,8 @@ Login is rate limited per IP with `@fastify/rate-limit` (registered with `global
 
 `images/store.ts` caches artwork under `DATA_DIR/images/<2-char prefix>/<sha1 of source url>.jpg`. Originals are downloaded once at TMDB's `w780` (posters, stills) or `w1280` (backdrops) and normalised to JPEG with sharp; `/api/images/{key}?w=` resizes to 300, 780, or 1280 on first request and caches the variant next to the original. The route is public because `<img>` tags cannot send headers and the keys are unguessable.
 
+`metadata/deps.ts` builds the TMDB client (if a key is set), the AniList client, the image store, and both matchers from current settings and `app.httpFetch`, the app's single outbound fetch. Tests pass a fake through `buildApp({ fetch })`, so the whole scan-and-match path runs against canned TMDB and AniList responses without touching the network. `metadata/fix-match.ts` powers manual correction: `candidates` searches the sources that apply to the item and ranks them with the same scorer, `apply` writes a chosen TMDB or AniList id through the matchers' `apply*` methods, and for anime a changed `seasonOffset` remaps the absolute episodes against the attached TMDB show.
+
 `settings/service.ts` is a typed key-value layer over the `settings` table for the TMDB and OpenSubtitles credentials; the API only ever returns secrets masked.
 
 ## Data model

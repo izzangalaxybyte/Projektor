@@ -80,6 +80,29 @@ export const ItemsQuery = z.object({
   sort: z.enum(['title', 'year', 'added', 'lastPlayed']).default('title'),
 });
 
+export const MatchCandidate = z
+  .object({
+    source: z.enum(['tmdb', 'anilist']),
+    id: z.number().int(),
+    title: z.string(),
+    year: z.number().int().nullable(),
+    overview: z.string().nullable(),
+    posterUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'Remote poster URL for preview; not cached' }),
+    score: z
+      .number()
+      .meta({ description: 'Ranking score, higher is better; 0.85 is the auto-accept threshold' }),
+  })
+  .meta({ id: 'MatchCandidate' });
+export type MatchCandidate = z.infer<typeof MatchCandidate>;
+
+export const CandidatesQuery = z.object({
+  query: z.string().optional().meta({ description: 'Defaults to the item title' }),
+  year: z.coerce.number().int().optional(),
+});
+
 export const FixMatchRequest = z
   .object({
     tmdbId: z.number().int().optional(),

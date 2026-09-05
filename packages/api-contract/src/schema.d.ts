@@ -688,6 +688,140 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/items/{id}/candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search TMDB (and AniList for anime) for possible matches (admin) */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Defaults to the item title */
+          query?: string;
+          year?: number;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['MatchCandidate'][];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}/match': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a chosen match and refetch metadata (admin)
+     * @description Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['FixMatchRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemDetail'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/images/{key}': {
     parameters: {
       query?: never;
@@ -971,6 +1105,18 @@ export interface components {
       /** @description Seasons of a show, episodes of a season */
       children: components['schemas']['ItemSummaryInput'][];
     };
+    MatchCandidateInput: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
+    };
     FixMatchRequestInput: {
       tmdbId?: number;
       anilistId?: number;
@@ -1207,6 +1353,18 @@ export interface components {
       files: components['schemas']['MediaFile'][];
       /** @description Seasons of a show, episodes of a season */
       children: components['schemas']['ItemSummary'][];
+    };
+    MatchCandidate: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
     };
     FixMatchRequest: {
       tmdbId?: number;

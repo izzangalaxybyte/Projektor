@@ -707,6 +707,47 @@
           "children"
         ]
       },
+      "MatchCandidateInput": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["tmdb", "anilist"]
+          },
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": ["string", "null"]
+          },
+          "posterUrl": {
+            "description": "Remote poster URL for preview; not cached",
+            "type": ["string", "null"]
+          },
+          "score": {
+            "type": "number",
+            "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
+          }
+        },
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"]
+      },
       "FixMatchRequestInput": {
         "type": "object",
         "properties": {
@@ -1688,6 +1729,48 @@
         ],
         "additionalProperties": false
       },
+      "MatchCandidate": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": ["tmdb", "anilist"]
+          },
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overview": {
+            "type": ["string", "null"]
+          },
+          "posterUrl": {
+            "description": "Remote poster URL for preview; not cached",
+            "type": ["string", "null"]
+          },
+          "score": {
+            "type": "number",
+            "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
+          }
+        },
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"],
+        "additionalProperties": false
+      },
       "FixMatchRequest": {
         "type": "object",
         "properties": {
@@ -2595,6 +2678,159 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ItemDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/candidates": {
+      "get": {
+        "summary": "Search TMDB (and AniList for anime) for possible matches (admin)",
+        "tags": ["items"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "description": "Defaults to the item title"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "year",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchCandidate"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/match": {
+      "post": {
+        "summary": "Apply a chosen match and refetch metadata (admin)",
+        "tags": ["items"],
+        "description": "Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixMatchRequestInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

@@ -2,13 +2,8 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { scanLibrary } from '../library/scanner.js';
 import { identifyFiles } from '../identify/identifier.js';
-import { ImageStore } from '../images/store.js';
 import { probeFiles } from '../media/probe-service.js';
-import { AniListClient } from '../metadata/anilist.js';
-import { AnimeMatcher } from '../metadata/anime-matcher.js';
-import { Matcher } from '../metadata/matcher.js';
-import { TmdbClient } from '../metadata/tmdb.js';
-import { SettingsService } from '../settings/service.js';
+import { metadataDeps } from '../metadata/deps.js';
 import { LibraryError, LibraryService } from '../library/service.js';
 import { CreateLibraryRequest, ErrorResponse, Id, Library, ScanStatus } from '../schemas/index.js';
 
@@ -110,22 +105,11 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
         log: request.log,
       });
       const identified = identifyFiles(app.db, result.changedFileIds, request.log);
-      const tmdbKey = new SettingsService(app.db).get('tmdb.apiKey');
-      const matched = tmdbKey
-        ? await new Matcher({
-            db: app.db,
-            tmdb: new TmdbClient(tmdbKey),
-            images: new ImageStore(app.config.imagesDir),
-            log: request.log,
-          }).matchPending()
+      const deps = metadataDeps(app, request.log);
+      const matched = deps.matcher
+        ? await deps.matcher.matchPending()
         : { matched: 0, unmatched: 0, failed: 0 };
-      const anime = await new AnimeMatcher({
-        db: app.db,
-        anilist: new AniListClient(),
-        tmdb: tmdbKey ? new TmdbClient(tmdbKey) : null,
-        images: new ImageStore(app.config.imagesDir),
-        log: request.log,
-      }).matchPending();
+      const anime = await deps.animeMatcher.matchPending();
       return {
         libraryId: request.params.id,
         state: 'idle' as const,
