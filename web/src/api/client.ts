@@ -19,7 +19,8 @@ export const api = createProjektorClient({ baseUrl: '', getToken: () => authStor
 
 /** Turns an openapi-fetch result into data or a thrown Error with the server's message. */
 export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
-  if (result.error !== undefined || !result.data) {
+  // 204 responses carry no body; only a non-OK status or a returned error object is a failure.
+  if (result.error !== undefined || !result.response.ok) {
     const message =
       (result.error as { message?: string } | undefined)?.message ??
       `Request failed (${result.response.status})`;
@@ -27,7 +28,7 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
     error.status = result.response.status;
     throw error;
   }
-  return result.data;
+  return result.data as T;
 }
 
 /** URL for cached artwork at a given width. */

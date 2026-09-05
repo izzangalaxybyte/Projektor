@@ -7,6 +7,11 @@ import { ItemPage } from './pages/ItemPage.js';
 import { LibraryPage } from './pages/LibraryPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { SearchPage } from './pages/SearchPage.js';
+import { LibrariesSettings } from './pages/settings/LibrariesSettings.js';
+import { MetadataSettings } from './pages/settings/MetadataSettings.js';
+import { ReviewSettings } from './pages/settings/ReviewSettings.js';
+import { SettingsLayout } from './pages/settings/SettingsLayout.js';
+import { UsersSettings } from './pages/settings/UsersSettings.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { SetupPage } from './pages/SetupPage.js';
 import { AppShell } from './shell/AppShell.js';
@@ -78,6 +83,12 @@ export function App() {
             <Route path="anime" element={<LibraryPage kind="anime" />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="items/:id" element={<ItemPage />} />
+            <Route path="settings" element={<SettingsLayout />}>
+              <Route index element={<LibrariesSettings />} />
+              <Route path="metadata" element={<MetadataSettings />} />
+              <Route path="users" element={<UsersSettings />} />
+              <Route path="review" element={<ReviewSettings />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
