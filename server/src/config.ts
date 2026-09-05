@@ -17,6 +17,11 @@ const EnvSchema = z.object({
   VAAPI_DEVICE: z.string().default('/dev/dri/renderD128'),
   HARDWARE_ACCEL: z.enum(['auto', 'vaapi', 'none']).default('auto'),
   WEB_DIST: z.string().optional(),
+  IPTV_URL: z.string().default('http://playshare.co:8080/'),
+  LIVE_REFRESH: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
   WATCH_LIBRARIES: z
     .enum(['true', 'false'])
     .default('true')
@@ -43,6 +48,10 @@ export interface Config {
   hardwareAccel: 'auto' | 'vaapi' | 'none';
   /** Built web app to serve at /; unset means API only. */
   webDist: string | null;
+  /** Whether to refresh the IPTV guide on a schedule. */
+  liveRefresh: boolean;
+  /** Provider URL used until an admin sets one in Settings. */
+  iptvUrl: string;
   /** Whether to watch library folders for changes. */
   watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
@@ -70,6 +79,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     vaapiDevice: parsed.VAAPI_DEVICE,
     hardwareAccel: parsed.HARDWARE_ACCEL,
     webDist: parsed.WEB_DIST ? path.resolve(parsed.WEB_DIST) : null,
+    liveRefresh: parsed.LIVE_REFRESH,
+    iptvUrl: parsed.IPTV_URL,
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
@@ -95,6 +106,8 @@ export function configForDataDir(
     vaapiDevice: '/dev/dri/renderD128',
     hardwareAccel: 'none',
     webDist: null,
+    liveRefresh: false,
+    iptvUrl: 'http://playshare.co:8080/',
     watchLibraries: true,
     ...overrides,
     dataDir,

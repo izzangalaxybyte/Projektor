@@ -7,6 +7,9 @@ export const SETTING_KEYS = [
   'opensubtitles.apiKey',
   'opensubtitles.username',
   'opensubtitles.password',
+  'iptv.url',
+  'iptv.username',
+  'iptv.password',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 

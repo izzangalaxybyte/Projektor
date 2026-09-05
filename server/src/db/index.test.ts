@@ -4,6 +4,9 @@ import { makeTestConfig } from '../test-utils.js';
 import { openDatabase } from './index.js';
 
 const EXPECTED_TABLES = [
+  'live_categories',
+  'live_channels',
+  'live_programmes',
   'users',
   'sessions',
   'libraries',

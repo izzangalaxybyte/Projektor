@@ -16,6 +16,9 @@ export const SettingsView = z
     openSubtitlesApiKey: SecretStatus,
     openSubtitlesUsername: z.string().nullable(),
     openSubtitlesPassword: SecretStatus,
+    iptvUrl: z.string().meta({ description: 'Xtream Codes server URL; defaults to the owner\'s provider' }),
+    iptvUsername: z.string().nullable(),
+    iptvPassword: SecretStatus,
   })
   .meta({ id: 'SettingsView' });
 
@@ -29,5 +32,8 @@ export const SettingsUpdate = z
     openSubtitlesApiKey: z.string().nullable().optional(),
     openSubtitlesUsername: z.string().nullable().optional(),
     openSubtitlesPassword: z.string().nullable().optional(),
+    iptvUrl: z.string().nullable().optional(),
+    iptvUsername: z.string().nullable().optional(),
+    iptvPassword: z.string().nullable().optional(),
   })
   .meta({ id: 'SettingsUpdate', description: 'Only fields present are changed' });
