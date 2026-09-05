@@ -14,6 +14,8 @@ export interface LiveState {
   lastError: string | null;
   accountStatus: string | null;
   accountExpiresAt: string | null;
+  /** IANA zone the provider expresses catch-up start times in. */
+  providerTimezone: string | null;
 }
 
 export class LiveRefresher {
@@ -23,6 +25,7 @@ export class LiveRefresher {
     lastError: null,
     accountStatus: null,
     accountExpiresAt: null,
+    providerTimezone: null,
   };
   private timer: NodeJS.Timeout | null = null;
   private inFlight: Promise<void> | null = null;
@@ -80,7 +83,9 @@ export class LiveRefresher {
     }
     this.state.refreshing = true;
     try {
-      const account = await client.account();
+      const info = await client.accountInfo();
+      const account = info.user_info;
+      this.state.providerTimezone = info.server_info?.timezone ?? null;
       this.state.accountStatus = account.status ?? null;
       this.state.accountExpiresAt =
         account.exp_date && /^\d+$/.test(account.exp_date)

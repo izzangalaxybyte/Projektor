@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage.js';
 import { ItemPage } from './pages/ItemPage.js';
 import { LibraryPage } from './pages/LibraryPage.js';
 import { LivePage } from './pages/LivePage.js';
+import { LiveCatchupPage } from './pages/LiveCatchupPage.js';
 import { LivePlayerPage } from './pages/LivePlayerPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { SearchPage } from './pages/SearchPage.js';
@@ -69,6 +70,14 @@ export function App() {
             element={
               <Gate>
                 <PlayerPage />
+              </Gate>
+            }
+          />
+          <Route
+            path="/live/:channelId/catchup/:programmeId"
+            element={
+              <Gate>
+                <LiveCatchupPage />
               </Gate>
             }
           />

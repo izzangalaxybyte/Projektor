@@ -59,7 +59,14 @@ export const GuideQuery = z.object({
 });
 
 export const LiveDecideRequest = z
-  .object({ channelId: z.string(), profile: DeviceProfile })
+  .object({
+    channelId: z.string(),
+    profile: DeviceProfile,
+    programmeId: z
+      .string()
+      .optional()
+      .meta({ description: 'A past programme on a catch-up channel; omit for the live stream' }),
+  })
   .meta({ id: 'LiveDecideRequest' });
 
 export const LivePlaybackDecision = z
@@ -70,5 +77,12 @@ export const LivePlaybackDecision = z
     url: z.string().meta({ description: 'Relative URL of the TS stream or the HLS playlist' }),
     sessionId: z.string().nullable(),
     reason: z.string(),
+    kind: z.enum(['live', 'catchup']),
+    durationMs: z
+      .number()
+      .int()
+      .nullable()
+      .meta({ description: 'Programme length for catch-up (seekable); null while live' }),
+    title: z.string().nullable().meta({ description: 'Programme title for catch-up' }),
   })
   .meta({ id: 'LivePlaybackDecision' });

@@ -89,8 +89,14 @@ export class HtmlVideoPlayer {
     if (this.video.paused) this.play();
     else this.pause();
   }
+  /**
+   * Length the caller knows from elsewhere (the guide, ffprobe). A growing EVENT playlist reports
+   * only what has been written so far, which would otherwise clamp a forward skip.
+   */
+  knownDurationMs = 0;
+
   seek(ms: number): void {
-    const duration = this.durationMs;
+    const duration = Math.max(this.durationMs, this.knownDurationMs);
     const clamped = Math.max(0, duration > 0 ? Math.min(ms, duration - 500) : ms);
     this.video.currentTime = clamped / 1000;
   }

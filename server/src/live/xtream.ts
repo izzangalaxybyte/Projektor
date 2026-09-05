@@ -58,6 +58,7 @@ const Series = z.object({
 });
 
 export type XtreamAccount = z.infer<typeof UserInfo>['user_info'];
+export type XtreamAccountInfo = z.infer<typeof UserInfo>;
 export type XtreamCategory = z.infer<typeof Category>;
 export type XtreamLiveStream = z.infer<typeof LiveStream>;
 export type XtreamVodStream = z.infer<typeof VodStream>;
@@ -122,10 +123,15 @@ export class XtreamClient {
 
   /** Checks the credentials. Xtream answers 200 with auth: 0 for a bad login. */
   async account(): Promise<XtreamAccount> {
+    return (await this.accountInfo()).user_info;
+  }
+
+  /** Account plus server details; `server_info.timezone` is what timeshift URLs are expressed in. */
+  async accountInfo(): Promise<XtreamAccountInfo> {
     const info = await this.getJson(this.apiUrl(), UserInfo);
     if (info.user_info.auth !== 1)
       throw new XtreamError('Provider rejected the username or password', 'auth');
-    return info.user_info;
+    return info;
   }
 
   liveCategories() {
@@ -172,15 +178,42 @@ export class XtreamClient {
   vodUrl(streamId: string, ext: string): string {
     return `${this.base}/movie/${enc(this.creds.username)}/${enc(this.creds.password)}/${streamId}.${ext}`;
   }
-  /** Catch-up: start time as YYYY-MM-DD:HH-MM in the provider's timezone, duration in minutes. */
-  timeshiftUrl(streamId: string, start: Date, durationMinutes: number): string {
-    const p = (n: number) => String(n).padStart(2, '0');
-    const stamp = `${start.getUTCFullYear()}-${p(start.getUTCMonth() + 1)}-${p(start.getUTCDate())}:${p(start.getUTCHours())}-${p(start.getUTCMinutes())}`;
+  /**
+   * Catch-up: the programme start as YYYY-MM-DD:HH-MM in the provider's own timezone (from
+   * server_info) and its length in minutes.
+   */
+  timeshiftUrl(
+    streamId: string,
+    start: Date,
+    durationMinutes: number,
+    timeZone: string = 'UTC',
+  ): string {
+    const stamp = formatTimeshiftStart(start, timeZone);
     return `${this.base}/timeshift/${enc(this.creds.username)}/${enc(this.creds.password)}/${durationMinutes}/${stamp}/${streamId}.ts`;
   }
 }
 
 const enc = encodeURIComponent;
+
+/** "2026-09-05:18-30" for the instant in the given IANA timezone; falls back to UTC for a bad zone. */
+export function formatTimeshiftStart(start: Date, timeZone: string): string {
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(start);
+  } catch {
+    return formatTimeshiftStart(start, 'UTC');
+  }
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}:${get('hour')}-${get('minute')}`;
+}
 
 /** XMLTV timestamps look like "20260905183000 +0000". */
 export function parseXmltvTime(value: string): string | null {

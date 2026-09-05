@@ -30,6 +30,8 @@ const child = spawn('npx', ['tsx', 'src/main.ts'], {
     HARDWARE_ACCEL: 'none',
     LOG_LEVEL: 'warn',
     HLS_IDLE_MS: '120000',
+    // Sixteen UI sign-ins plus API logins in under a minute would trip the default 20/min.
+    AUTH_RATE_LIMIT: '1000',
   },
 });
 for (const signal of ['SIGINT', 'SIGTERM'])
