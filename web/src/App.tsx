@@ -1,0 +1,70 @@
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { api, unwrap } from './api/client.js';
+import { useAuth } from './auth/useAuth.js';
+import { HomePage } from './pages/HomePage.js';
+import { LoginPage } from './pages/LoginPage.js';
+import { SetupPage } from './pages/SetupPage.js';
+import { AppShell } from './shell/AppShell.js';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 10_000, refetchOnWindowFocus: false } },
+});
+
+/** Sends first-run visitors to setup, signed-out visitors to login, and everyone else through. */
+function Gate({ children }: { children: React.ReactNode }) {
+  const { token } = useAuth();
+  const location = useLocation();
+  const setup = useQuery({
+    queryKey: ['setup'],
+    queryFn: async () => unwrap(await api.GET('/api/auth/setup')),
+    enabled: !token,
+  });
+  if (token) return <>{children}</>;
+  if (setup.isPending) return <main className="auth-page muted">Loading…</main>;
+  if (setup.data?.needsSetup) return <Navigate to="/setup" replace />;
+  return <Navigate to="/login" replace state={{ from: location }} />;
+}
+
+/** Once signed in, the auth pages bounce to home. */
+function PublicOnly({ children }: { children: React.ReactNode }) {
+  const { token } = useAuth();
+  return token ? <Navigate to="/" replace /> : <>{children}</>;
+}
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/setup"
+            element={
+              <PublicOnly>
+                <SetupPage />
+              </PublicOnly>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <PublicOnly>
+                <LoginPage />
+              </PublicOnly>
+            }
+          />
+          <Route
+            element={
+              <Gate>
+                <AppShell />
+              </Gate>
+            }
+          >
+            <Route index element={<HomePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}

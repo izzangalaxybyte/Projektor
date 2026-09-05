@@ -6,7 +6,7 @@ Describes what exists now. Planned components are in [PLAN.md](PLAN.md) and move
 
 - `server` — Fastify 5 API. Requests and responses are validated with zod through `fastify-type-provider-zod`, which also produces the OpenAPI 3.1 document at runtime via `@fastify/swagger`. Entry points: `src/main.ts` (listen), `src/app.ts` (`buildApp`, used by both main and tests), `src/openapi.ts` (writes the document to the contract package).
 - `packages/api-contract` — `openapi.json` emitted by the server, `src/schema.d.ts` generated from it by `openapi-typescript`, and `createProjektorClient`, a thin wrapper over `openapi-fetch` that injects a bearer token on every request. This is the only way clients written in TypeScript talk to the server; Kotlin and Swift clients will be generated from the same `openapi.json`.
-- `web` — placeholder until sub-phase 1.19.
+- `web` — React 19 + Vite + TypeScript. TanStack Query for server state, react-router for routes, the generated `@projektor/api-contract` client for every call. Same-origin in production (the server serves `web/dist`), proxied through Vite in development. See Web app below.
 
 ## Configuration and data directory
 
@@ -69,6 +69,12 @@ Tracks surface in three places: `MediaFile.subtitles` on item details, `GET /api
 ## Progress
 
 `progress/service.ts` keeps one `playback_state` row per user and item (movies and episodes only). `update` stores the position and marks the item watched once it passes 90% of the duration; the flag is sticky so a rewatch from the start does not un-watch it. `setWatched` sets the position to the end or deletes the row. `continueWatching` lists unwatched rows by recency. `nextEpisode` orders a show's episodes season-major with specials first and season-less anime by absolute number at the end, and returns the following one. `ItemsService` takes the caller's user id and stamps `progress` onto every summary and detail it returns, so clients never fetch progress separately.
+
+## Web app
+
+`web/src/App.tsx` mounts the router inside a QueryClient. `Gate` sends first-run visitors to `/setup`, signed-out visitors to `/login`, and everyone else into `AppShell`, the top-nav layout (Home, Movies, TV Shows, Anime, Search, and Settings for admins). `auth/store.ts` keeps the bearer token and profile in localStorage and notifies React through `useSyncExternalStore`; `api/client.ts` wraps `createProjektorClient` with that token, exposes `unwrap` to turn openapi-fetch results into thrown errors with the server's message, `imageUrl` for artwork, and `withAccessToken` for URLs the browser fetches on its own (video, subtitles). `PinPad` is the one input component that must work with a mouse, a keyboard, and later a TV remote. Styles are a single stylesheet with CSS variables; layout uses grid gap only because the Tizen 5 browser predates flexbox gap.
+
+The end-to-end suite (`e2e/`, Playwright) runs the built app against the real server: `e2e/start-server.mjs` boots the API with a temporary data directory and `WEB_DIST`, specs seed libraries from the fixtures through the API, then drive the UI.
 
 ## Data model
 

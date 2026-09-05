@@ -2,6 +2,9 @@ import fastify, { type FastifyInstance } from 'fastify';
 import swagger from '@fastify/swagger';
 import sensible from '@fastify/sensible';
 import rateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import {
   jsonSchemaTransform,
   jsonSchemaTransformObject,
@@ -138,6 +141,28 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     },
     { prefix: '/api' },
   );
+
+  // Serve the built web app when configured: static assets, then index.html for any other
+  // non-API path so client-side routes deep-link correctly.
+  if (options.config.webDist && existsSync(path.join(options.config.webDist, 'index.html'))) {
+    await app.register(fastifyStatic, {
+      root: options.config.webDist,
+      prefix: '/',
+      wildcard: false,
+      index: ['index.html'],
+    });
+    app.setNotFoundHandler((request, reply) => {
+      if (request.url.startsWith('/api/') || request.method !== 'GET') {
+        return reply.code(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: `Route ${request.method}:${request.url} not found`,
+        });
+      }
+      return reply.type('text/html').sendFile('index.html');
+    });
+    app.log.info({ webDist: options.config.webDist }, 'serving web app');
+  }
 
   return app;
 }

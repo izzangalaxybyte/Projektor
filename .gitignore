@@ -21,3 +21,7 @@ ios/**/xcuserdata/
 ios/**/DerivedData/
 tizen/.buildResult/
 tizen/*.wgt
+
+# playwright
+test-results/
+playwright-report/

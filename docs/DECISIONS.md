@@ -169,3 +169,11 @@ See DEV.md. GitHub retargets nothing on its own; the catch-up PR #21 was the cos
 ## 2026-09-05 — Contract 1.0.0 is frozen; changes are additive
 
 The Android, Tizen, and iPad clients generate their SDKs from `openapi.json`. Freezing it now lets them start without waiting for the web app. A test compares the committed document with the live server so drift cannot ship unnoticed. Booleans in query strings are parsed from the literals `true`/`false`; zod's `coerce.boolean` treats any non-empty string as true, which silently broke `needsReview=false`.
+
+## 2026-09-05 — React 19, one server in production
+
+The plan said React 18; React 19 is current, `@vitejs/plugin-react` and TanStack Query support it, and there is no code to migrate. The server serves the built web app itself (`WEB_DIST`) so the Linux box runs one process and one port, and the browser talks to the API same-origin with no CORS.
+
+## 2026-09-05 — End-to-end tests run the real server, not mocks
+
+Playwright drives the built app against the actual API with a temporary data directory and the fixture media. Mocking the API in the browser would have missed the wiring bugs this project has actually had (auth hooks, playlist tokens, serializer schemas).
