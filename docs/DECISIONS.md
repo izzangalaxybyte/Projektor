@@ -117,3 +117,11 @@ One scan at a time across all libraries. ffprobe already runs four wide inside a
 ## 2026-09-05 — Token in the query string for read-only media requests
 
 `<video>`, `<img>`, and some TV players cannot set headers, so GET and HEAD under `/api` accept `?access_token=`. It is refused on every other method, so a leaked URL can at most read what the profile could already read. Jellyfin uses the same pattern with `api_key`.
+
+## 2026-09-05 — Device profiles are declared by the client, not sniffed by the server
+
+Each client sends what it can play. User-agent sniffing is unreliable on TVs and the client is the only place that can ask the platform (MediaCapabilities, MediaCodecList, AVPlayer) what it supports. Profiles for our own clients live in the client code.
+
+## 2026-09-05 — Subtitles never influence the playback decision
+
+Text subtitles are delivered as WebVTT beside the stream (1.16), so the choice between direct, remux, and transcode depends only on container, video, and audio. Burn-in is out of scope for v1.

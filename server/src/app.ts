@@ -15,11 +15,13 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { SessionRegistry } from './playback/sessions.js';
 import { filesRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
 import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
+import { playbackRoutes } from './routes/playback.js';
 import { settingsRoutes } from './routes/settings.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
@@ -36,6 +38,7 @@ declare module 'fastify' {
     httpFetch: HttpFetch;
     scans: ScanRunner;
     watcher: LibraryWatcher;
+    playback: SessionRegistry;
   }
 }
 
@@ -61,6 +64,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     debounceMs: options.config.scanDebounceMs,
   });
   app.decorate('scans', scans);
+  app.decorate('playback', new SessionRegistry());
   app.decorate('watcher', watcher);
   app.addHook('onReady', async () => {
     if (options.config.watchLibraries) await watcher.startAll();
@@ -103,6 +107,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(imagesRoutes, { prefix: '/images' });
       await api.register(settingsRoutes, { prefix: '/settings' });
       await api.register(filesRoutes, { prefix: '/files' });
+      await api.register(playbackRoutes, { prefix: '/playback' });
     },
     { prefix: '/api' },
   );

@@ -27,10 +27,13 @@ export const PlaybackDecideRequest = z
 export const PlaybackMethod = z
   .enum(['direct', 'remux', 'transcode'])
   .meta({ id: 'PlaybackMethod' });
+export type PlaybackMethod = z.infer<typeof PlaybackMethod>;
 
 export const PlaybackDecision = z
   .object({
     method: PlaybackMethod,
+    video: z.enum(['copy', 'transcode']),
+    audio: z.enum(['copy', 'transcode', 'none']),
     url: z.string().meta({ description: 'Relative URL of the media or HLS master playlist' }),
     sessionId: Id.nullable(),
     reason: z.string(),

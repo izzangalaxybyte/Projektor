@@ -1024,6 +1024,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/playback/decide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Choose direct play, remux, or transcode for a file and device profile
+     * @description Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['PlaybackDecideRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['PlaybackDecision'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1240,6 +1292,10 @@ export interface components {
     PlaybackMethodInput: 'direct' | 'remux' | 'transcode';
     PlaybackDecisionInput: {
       method: components['schemas']['PlaybackMethodInput'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
       /** @description Relative URL of the media or HLS master playlist */
       url: string;
       sessionId: string | null;
@@ -1493,6 +1549,10 @@ export interface components {
     PlaybackMethod: 'direct' | 'remux' | 'transcode';
     PlaybackDecision: {
       method: components['schemas']['PlaybackMethod'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
       /** @description Relative URL of the media or HLS master playlist */
       url: string;
       sessionId: string | null;

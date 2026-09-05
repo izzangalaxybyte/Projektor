@@ -909,6 +909,14 @@
           "method": {
             "$ref": "#/components/schemas/PlaybackMethodInput"
           },
+          "video": {
+            "type": "string",
+            "enum": ["copy", "transcode"]
+          },
+          "audio": {
+            "type": "string",
+            "enum": ["copy", "transcode", "none"]
+          },
           "url": {
             "type": "string",
             "description": "Relative URL of the media or HLS master playlist"
@@ -949,7 +957,7 @@
             }
           }
         },
-        "required": ["method", "url", "sessionId", "reason", "subtitleUrls"]
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitleUrls"]
       },
       "ProgressUpdateRequestInput": {
         "type": "object",
@@ -1966,6 +1974,14 @@
           "method": {
             "$ref": "#/components/schemas/PlaybackMethod"
           },
+          "video": {
+            "type": "string",
+            "enum": ["copy", "transcode"]
+          },
+          "audio": {
+            "type": "string",
+            "enum": ["copy", "transcode", "none"]
+          },
           "url": {
             "type": "string",
             "description": "Relative URL of the media or HLS master playlist"
@@ -2007,7 +2023,7 @@
             }
           }
         },
-        "required": ["method", "url", "sessionId", "reason", "subtitleUrls"],
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitleUrls"],
         "additionalProperties": false
       },
       "ProgressUpdateRequest": {
@@ -3101,6 +3117,50 @@
           },
           "416": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/playback/decide": {
+      "post": {
+        "summary": "Choose direct play, remux, or transcode for a file and device profile",
+        "tags": ["playback"],
+        "description": "Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackDecideRequestInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackDecision"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
