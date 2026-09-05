@@ -16,7 +16,9 @@ export const SettingsView = z
     openSubtitlesApiKey: SecretStatus,
     openSubtitlesUsername: z.string().nullable(),
     openSubtitlesPassword: SecretStatus,
-    iptvUrl: z.string().meta({ description: 'Xtream Codes server URL; defaults to the owner\'s provider' }),
+    iptvUrl: z
+      .string()
+      .meta({ description: "Xtream Codes server URL; defaults to the owner's provider" }),
     iptvUsername: z.string().nullable(),
     iptvPassword: SecretStatus,
   })

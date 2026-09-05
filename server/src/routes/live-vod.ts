@@ -29,13 +29,11 @@ export const liveVodRoutes: FastifyPluginAsyncZod = async (app) => {
   } as const;
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HlsError || error instanceof LiveStreamError)
-      return reply
-        .code(error.statusCode)
-        .send({
-          statusCode: error.statusCode,
-          error: NAMES[error.statusCode],
-          message: error.message,
-        });
+      return reply.code(error.statusCode).send({
+        statusCode: error.statusCode,
+        error: NAMES[error.statusCode],
+        message: error.message,
+      });
     throw error;
   });
   const streamSchema = {
