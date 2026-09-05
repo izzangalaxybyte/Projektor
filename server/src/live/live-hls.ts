@@ -23,9 +23,21 @@ interface FfmpegProcess extends Promise<{
   stdin?: NodeJS.WritableStream | null;
 }
 
-export interface LiveSession {
-  id: string;
+export type LiveSessionKind = 'live' | 'catchup';
+
+export interface LiveSessionInput {
   channelId: string;
+  kind: LiveSessionKind;
+  /** Relay key: the channel id for live, `catchup:<programmeId>` for catch-up. */
+  sourceKey: string;
+  /** Provider URL the relay pulls from. */
+  sourceUrl: string;
+  /** Known length for catch-up, null for live. */
+  durationMs: number | null;
+}
+
+export interface LiveSession extends LiveSessionInput {
+  id: string;
   createdAt: number;
   lastAccessAt: number;
 }
@@ -43,7 +55,25 @@ export interface LiveHlsOptions {
   waitMs: number;
 }
 
-export function buildLiveHlsArgs(outDir: string): string[] {
+export function buildLiveHlsArgs(outDir: string, kind: LiveSessionKind = 'live'): string[] {
+  // Live: a sliding window. Catch-up: a growing EVENT playlist that keeps every segment so the
+  // viewer can seek anywhere already fetched, ending with ENDLIST when the provider is done.
+  const playlist =
+    kind === 'live'
+      ? [
+          '-hls_list_size',
+          String(LIVE_WINDOW_SEGMENTS),
+          '-hls_flags',
+          'delete_segments+independent_segments+temp_file',
+        ]
+      : [
+          '-hls_list_size',
+          '0',
+          '-hls_playlist_type',
+          'event',
+          '-hls_flags',
+          'independent_segments+temp_file',
+        ];
   return [
     '-hide_banner',
     '-loglevel',
@@ -70,10 +100,7 @@ export function buildLiveHlsArgs(outDir: string): string[] {
     'hls',
     '-hls_time',
     String(LIVE_SEGMENT_SECONDS),
-    '-hls_list_size',
-    String(LIVE_WINDOW_SEGMENTS),
-    '-hls_flags',
-    'delete_segments+independent_segments+temp_file',
+    ...playlist,
     '-hls_segment_type',
     'mpegts',
     '-hls_segment_filename',
@@ -104,9 +131,9 @@ export class LiveHlsManager {
     return path.join(this.config.transcodeDir, `live-${sessionId}`);
   }
 
-  create(channelId: string): LiveSession {
+  create(input: LiveSessionInput): LiveSession {
     const now = Date.now();
-    const session: LiveSession = { id: randomUUID(), channelId, createdAt: now, lastAccessAt: now };
+    const session: LiveSession = { ...input, id: randomUUID(), createdAt: now, lastAccessAt: now };
     this.sessions.set(session.id, session);
     return session;
   }
@@ -127,8 +154,8 @@ export class LiveHlsManager {
     if (existing) return existing;
     const outDir = this.dir(session.id);
     await mkdir(outDir, { recursive: true });
-    const subscription = this.relays.subscribe(session.channelId);
-    const args = buildLiveHlsArgs(outDir);
+    const subscription = this.relays.subscribeUrl(session.sourceKey, session.sourceUrl);
+    const args = buildLiveHlsArgs(outDir, session.kind);
     const child = execa(this.config.ffmpegPath, args, {
       reject: false,
       stdin: 'pipe',
@@ -144,7 +171,7 @@ export class LiveHlsManager {
     };
     this.running.set(session.id, run);
     this.log.info(
-      { sessionId: session.id, channelId: session.channelId, args },
+      { sessionId: session.id, channelId: session.channelId, kind: session.kind, args },
       'live ffmpeg started',
     );
     child.stderr?.on(

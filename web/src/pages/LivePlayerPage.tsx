@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, unwrap, withAccessToken } from '../api/client.js';
 import { fmtClock, programmeProgress, useLiveChannels, useLiveGuide } from '../hooks/useLive.js';
 import {
@@ -248,6 +248,9 @@ export function LivePlayerPage() {
                 new Date(p.startAt).getTime() <= Date.now() &&
                 new Date(p.endAt).getTime() > Date.now();
               const past = new Date(p.endAt).getTime() <= Date.now();
+              const inArchive =
+                !!channel?.hasArchive &&
+                new Date(p.startAt).getTime() >= Date.now() - channel.archiveDays * 86_400_000;
               return (
                 <li key={p.id} className={`guide-row ${live ? 'live' : past ? 'past' : ''}`}>
                   <span className="muted small">{fmtClock(p.startAt)}</span>
@@ -255,6 +258,15 @@ export function LivePlayerPage() {
                     <span className="guide-title">{p.title}</span>
                     {p.description && (
                       <span className="muted small guide-desc">{p.description}</span>
+                    )}
+                    {past && inArchive && (
+                      <Link
+                        to={`/live/${channelId}/catchup/${p.id}`}
+                        className="button small"
+                        data-testid="catchup-play"
+                      >
+                        Watch
+                      </Link>
                     )}
                   </span>
                 </li>

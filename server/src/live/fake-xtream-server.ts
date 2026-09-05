@@ -3,7 +3,12 @@
 import http from 'node:http';
 import { Readable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
-import { fakeXtream, ffmpegLoopSource, type FakeXtreamOptions } from './fake-xtream.js';
+import {
+  fakeXtream,
+  ffmpegFileSource,
+  ffmpegLoopSource,
+  type FakeXtreamOptions,
+} from './fake-xtream.js';
 
 export async function startFakeXtreamServer(
   opts: { port: number; host?: string } & Omit<FakeXtreamOptions, 'base'>,
@@ -40,7 +45,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const file = process.env['FAKE_XTREAM_FILE'];
   const started = await startFakeXtreamServer({
     port,
-    ...(file ? { liveSource: ffmpegLoopSource(process.env['FFMPEG_PATH'] ?? 'ffmpeg', file) } : {}),
+    ...(file
+      ? {
+          liveSource: ffmpegLoopSource(process.env['FFMPEG_PATH'] ?? 'ffmpeg', file),
+          catchupSource: ffmpegFileSource(process.env['FFMPEG_PATH'] ?? 'ffmpeg', file),
+        }
+      : {}),
   });
   console.log(
     `fake Xtream provider at ${started.url} (user ${started.provider.username}, password ${started.provider.password})`,

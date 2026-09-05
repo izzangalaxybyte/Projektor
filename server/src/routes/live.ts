@@ -26,13 +26,11 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
   } as const;
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HlsError || error instanceof LiveStreamError) {
-      return reply
-        .code(error.statusCode)
-        .send({
-          statusCode: error.statusCode,
-          error: NAMES[error.statusCode],
-          message: error.message,
-        });
+      return reply.code(error.statusCode).send({
+        statusCode: error.statusCode,
+        error: NAMES[error.statusCode],
+        message: error.message,
+      });
     }
     throw error;
   });
@@ -135,29 +133,83 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
         ...sec,
         summary: 'Choose a raw TS relay or live HLS for a channel and device profile',
         description:
-          'Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC.',
+          'Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.',
         body: LiveDecideRequest,
-        response: { 200: LivePlaybackDecision, 404: ErrorResponse, 503: ErrorResponse },
+        response: {
+          200: LivePlaybackDecision,
+          400: ErrorResponse,
+          404: ErrorResponse,
+          503: ErrorResponse,
+        },
       },
     },
     async (request, reply) => {
       const channel = live.channel(request.body.channelId);
       if (!channel) return reply.notFound('No such channel');
-      if (!app.live.credentials()) throw new LiveStreamError(503, 'IPTV credentials are not set');
+      const client = app.live.client();
+      if (!client) throw new LiveStreamError(503, 'IPTV credentials are not set');
+
+      if (request.body.programmeId !== undefined) {
+        const found = live.programme(request.body.programmeId);
+        if (!found || found.channel.id !== channel.id)
+          return reply.notFound('No such programme on this channel');
+        const { programme } = found;
+        const start = new Date(programme.startAt).getTime();
+        const end = new Date(programme.endAt).getTime();
+        if (!channel.hasArchive) return reply.badRequest('This channel has no catch-up');
+        if (end > Date.now()) return reply.badRequest('That programme has not finished yet');
+        if (start < Date.now() - channel.archiveDays * 86_400_000)
+          return reply.badRequest(`Catch-up on this channel keeps ${channel.archiveDays} days`);
+        const durationMinutes = Math.max(1, Math.ceil((end - start) / 60_000));
+        const session = app.liveHls.create({
+          channelId: channel.id,
+          kind: 'catchup',
+          sourceKey: `catchup:${programme.id}`,
+          sourceUrl: client.timeshiftUrl(
+            channel.id,
+            new Date(start),
+            durationMinutes,
+            app.live.state.providerTimezone ?? 'UTC',
+          ),
+          durationMs: end - start,
+        });
+        return {
+          method: 'hls' as const,
+          url: `/api/live/sessions/${session.id}/index.m3u8`,
+          sessionId: session.id,
+          reason: 'catch-up is packaged as seekable HLS',
+          kind: 'catchup' as const,
+          durationMs: end - start,
+          title: programme.title,
+        };
+      }
+
       if (request.body.profile.containers.includes('ts')) {
         return {
           method: 'direct' as const,
           url: `/api/live/channels/${channel.id}/stream`,
           sessionId: null,
           reason: 'device plays MPEG-TS',
+          kind: 'live' as const,
+          durationMs: null,
+          title: null,
         };
       }
-      const session = app.liveHls.create(channel.id);
+      const session = app.liveHls.create({
+        channelId: channel.id,
+        kind: 'live',
+        sourceKey: channel.id,
+        sourceUrl: client.liveUrl(channel.id),
+        durationMs: null,
+      });
       return {
         method: 'hls' as const,
         url: `/api/live/sessions/${session.id}/index.m3u8`,
         sessionId: session.id,
         reason: 'device needs HLS; video copied, audio to AAC',
+        kind: 'live' as const,
+        durationMs: null,
+        title: null,
       };
     },
   );

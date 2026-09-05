@@ -11,6 +11,8 @@ export interface FakeXtreamOptions {
   expiresAtUnix?: number;
   /** Bytes for /live/{u}/{p}/{id}.ts; defaults to synthetic TS packets forever. */
   liveSource?: (streamId: string, signal: AbortSignal) => ReadableStream<Uint8Array>;
+  /** Bytes for /timeshift/…; defaults to a short finite burst of synthetic TS packets. */
+  catchupSource?: (streamId: string, signal: AbortSignal) => ReadableStream<Uint8Array>;
 }
 
 export function fakeXtream(opts: FakeXtreamOptions = {}) {
@@ -20,6 +22,8 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
   const calls: string[] = [];
   /** Open provider stream connections, so tests can see a relay drop. */
   const live = { open: 0, opened: 0 };
+  /** Every catch-up request: stream id, duration in minutes, start stamp as the provider saw it. */
+  const timeshiftCalls: Array<{ streamId: string; duration: number; start: string }> = [];
   const state = {
     categories: [
       { category_id: '10', category_name: 'Sports', parent_id: 0 },
@@ -135,6 +139,18 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
       );
       return new Response(counted, { status: 200, headers: { 'content-type': 'video/mp2t' } });
     }
+    const shift = /^\/timeshift\/([^/]+)\/([^/]+)\/(\d+)\/([^/]+)\/(\d+)\.ts$/.exec(url.pathname);
+    if (shift) {
+      if (decodeURIComponent(shift[1]!) !== username || decodeURIComponent(shift[2]!) !== password)
+        return new Response('', { status: 401 });
+      const streamId = shift[5]!;
+      if (!state.streams.some((s) => String(s['stream_id']) === streamId))
+        return new Response('', { status: 404 });
+      timeshiftCalls.push({ streamId, duration: Number(shift[3]), start: shift[4]! });
+      const signal = init?.signal ?? new AbortController().signal;
+      const source = (opts.catchupSource ?? finiteSyntheticTs)(streamId, signal);
+      return new Response(source, { status: 200, headers: { 'content-type': 'video/mp2t' } });
+    }
     if (url.pathname === '/xmltv.php') {
       if (!authed) return new Response('', { status: 401 });
       return new Response(guide(), { status: 200, headers: { 'content-type': 'text/xml' } });
@@ -142,7 +158,27 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
     return new Response('not found', { status: 404 });
   };
 
-  return { base, username, password, calls, state, live, fetch };
+  return { base, username, password, calls, state, live, timeshiftCalls, fetch };
+}
+
+/** A finite burst of synthetic TS packets, the shape of a catch-up download. */
+export function finiteSyntheticTs(
+  _streamId: string,
+  _signal: AbortSignal,
+): ReadableStream<Uint8Array> {
+  const chunk = new Uint8Array(188 * 200);
+  for (let i = 0; i < 200; i++) {
+    chunk[i * 188] = 0x47;
+    chunk[i * 188 + 1] = 0x01;
+    chunk[i * 188 + 3] = 0x10 | (i & 0x0f);
+    chunk.fill(0xff, i * 188 + 4, (i + 1) * 188);
+  }
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(chunk);
+      controller.close();
+    },
+  });
 }
 
 /** Endless 188-byte MPEG-TS packets (sync byte, PID 0x100, rolling counter), 20 per 25 ms. */
@@ -219,6 +255,40 @@ export function ffmpegLoopSource(ffmpegPath: string, file: string) {
         'veryfast',
         '-tune',
         'zerolatency',
+        '-g',
+        '48',
+        '-keyint_min',
+        '48',
+        '-sc_threshold',
+        '0',
+        '-c:a',
+        'copy',
+        '-f',
+        'mpegts',
+        'pipe:1',
+      ],
+      { reject: false, stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' },
+    );
+    signal.addEventListener('abort', () => child.kill('SIGKILL'), { once: true });
+    return Readable.toWeb(child.stdout!) as ReadableStream<Uint8Array>;
+  };
+}
+
+/** The whole file once, as fast as the reader takes it, the way a provider serves catch-up. */
+export function ffmpegFileSource(ffmpegPath: string, file: string) {
+  return (_id: string, signal: AbortSignal): ReadableStream<Uint8Array> => {
+    const child = execa(
+      ffmpegPath,
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        file,
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
         '-g',
         '48',
         '-keyint_min',

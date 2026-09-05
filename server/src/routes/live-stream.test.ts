@@ -2,7 +2,7 @@ import { execa } from 'execa';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
-import { fakeXtream, ffmpegLoopSource } from '../live/fake-xtream.js';
+import { fakeXtream, ffmpegFileSource, ffmpegLoopSource } from '../live/fake-xtream.js';
 import { fixturesDir, makeTestConfig, setupAdmin } from '../test-utils.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -15,9 +15,14 @@ describe('live streaming routes', () => {
   let provider: ReturnType<typeof fakeXtream>;
   let base: string;
 
-  const start = async (liveSource?: ReturnType<typeof ffmpegLoopSource>) => {
+  const start = async (
+    sources: {
+      liveSource?: ReturnType<typeof ffmpegLoopSource>;
+      catchupSource?: ReturnType<typeof ffmpegFileSource>;
+    } = {},
+  ) => {
     cfg = makeTestConfig();
-    provider = fakeXtream(liveSource ? { liveSource } : {});
+    provider = fakeXtream(sources);
     app = await buildApp({
       config: cfg.config,
       fetch: provider.fetch,
@@ -70,6 +75,9 @@ describe('live streaming routes', () => {
         url: '/api/live/channels/1001/stream',
         sessionId: null,
         reason: 'device plays MPEG-TS',
+        kind: 'live',
+        durationMs: null,
+        title: null,
       });
       res = await app.inject({
         method: 'POST',
@@ -129,6 +137,42 @@ describe('live streaming routes', () => {
       ).toBe(401);
     });
 
+    it('validates catch-up requests', async () => {
+      const guide = (
+        await app.inject({ method: 'GET', url: '/api/live/guide?channel=1001', headers: auth() })
+      ).json() as Array<{ id: string; title: string }>;
+      const earlier = guide.find((p) => p.title === 'Earlier Match')!;
+      const onAir = guide.find((p) => p.title === 'Big Match')!;
+      const decide = (channelId: string, programmeId: string) =>
+        app.inject({
+          method: 'POST',
+          url: '/api/live/decide',
+          headers: auth(),
+          payload: { channelId, profile: profile(['ts']), programmeId },
+        });
+      expect((await decide('1001', 'nope')).statusCode).toBe(404);
+      expect((await decide('1002', earlier.id)).statusCode).toBe(404); // wrong channel
+      let res = await decide('1001', onAir.id);
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/not finished/);
+      const news = (
+        await app.inject({ method: 'GET', url: '/api/live/guide?channel=1002', headers: auth() })
+      ).json() as Array<{ id: string }>;
+      res = await decide('1002', news[0]!.id);
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toMatch(/no catch-up/);
+      res = await decide('1001', earlier.id);
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({
+        method: 'hls',
+        kind: 'catchup',
+        title: 'Earlier Match',
+        durationMs: 60 * 60_000,
+      });
+      expect(res.json().sessionId).toBeTruthy();
+      await app.liveHls.stop(res.json().sessionId);
+    });
+
     it('returns 502 when the provider refuses the stream', async () => {
       provider.state.streams.push({ num: 9, name: 'Ghost', stream_id: 1999, category_id: '10' });
       await app.live.refresh();
@@ -144,7 +188,7 @@ describe('live streaming routes', () => {
   });
 
   describe('with an ffmpeg-generated provider stream', () => {
-    beforeEach(() => start(ffmpegLoopSource(cfgFfmpeg(), SAMPLE)));
+    beforeEach(() => start({ liveSource: ffmpegLoopSource(cfgFfmpeg(), SAMPLE) }));
 
     it(
       'packages the channel as a sliding-window HLS playlist with AAC audio',
@@ -203,6 +247,61 @@ describe('live streaming routes', () => {
             })
           ).statusCode,
         ).toBe(404);
+      },
+    );
+  });
+
+  describe('catch-up with an ffmpeg-generated programme', () => {
+    beforeEach(() =>
+      start({
+        liveSource: ffmpegLoopSource(cfgFfmpeg(), SAMPLE),
+        catchupSource: ffmpegFileSource(cfgFfmpeg(), SAMPLE),
+      }),
+    );
+
+    it(
+      'packages a past programme as a seekable EVENT playlist that ends',
+      { timeout: 60_000 },
+      async () => {
+        const guide = (
+          await app.inject({ method: 'GET', url: '/api/live/guide?channel=1001', headers: auth() })
+        ).json() as Array<{ id: string; title: string; startAt: string }>;
+        const earlier = guide.find((p) => p.title === 'Earlier Match')!;
+        const decide = await app.inject({
+          method: 'POST',
+          url: '/api/live/decide',
+          headers: auth(),
+          payload: { channelId: '1001', profile: profile(['mp4']), programmeId: earlier.id },
+        });
+        const { sessionId, url } = decide.json();
+        const first = await app.inject({ method: 'GET', url: `${url}?access_token=${token}` });
+        expect(first.statusCode).toBe(200);
+        expect(first.body).toContain('#EXT-X-PLAYLIST-TYPE:EVENT');
+        // The provider saw the programme start in its zone (UTC for the fake) and the length in minutes.
+        const start = new Date(earlier.startAt);
+        const p = (n: number) => String(n).padStart(2, '0');
+        expect(provider.timeshiftCalls).toEqual([
+          {
+            streamId: '1001',
+            duration: 60,
+            start: `${start.getUTCFullYear()}-${p(start.getUTCMonth() + 1)}-${p(start.getUTCDate())}:${p(start.getUTCHours())}-${p(start.getUTCMinutes())}`,
+          },
+        ]);
+        // The 30 s sample arrives at full speed, so the playlist soon has every segment and ENDLIST.
+        let body = '';
+        for (let i = 0; i < 100 && !body.includes('#EXT-X-ENDLIST'); i++) {
+          await sleep(300);
+          body = (
+            await app.inject({
+              method: 'GET',
+              url: `/api/live/sessions/${sessionId}/index.m3u8`,
+              headers: auth(),
+            })
+          ).body;
+        }
+        expect(body).toContain('#EXT-X-ENDLIST');
+        expect((body.match(/^seg-\d+\.ts$/gm) ?? []).length).toBeGreaterThanOrEqual(3);
+        await app.liveHls.stop(sessionId);
       },
     );
   });

@@ -108,3 +108,16 @@ describe('XtreamClient', () => {
     await expect(down.account()).rejects.toMatchObject({ kind: 'network' });
   });
 });
+
+describe('formatTimeshiftStart', () => {
+  it('writes the provider-zone wall clock', async () => {
+    const { formatTimeshiftStart } = await import('./xtream.js');
+    const t = new Date('2026-09-05T18:30:00Z');
+    expect(formatTimeshiftStart(t, 'UTC')).toBe('2026-09-05:18-30');
+    expect(formatTimeshiftStart(t, 'Europe/London')).toBe('2026-09-05:19-30');
+    expect(formatTimeshiftStart(new Date('2026-01-05T23:30:00Z'), 'Europe/Istanbul')).toBe(
+      '2026-01-06:02-30',
+    );
+    expect(formatTimeshiftStart(t, 'Not/AZone')).toBe('2026-09-05:18-30');
+  });
+});

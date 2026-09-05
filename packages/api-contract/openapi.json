@@ -1514,6 +1514,10 @@
           },
           "profile": {
             "$ref": "#/components/schemas/DeviceProfileInput"
+          },
+          "programmeId": {
+            "description": "A past programme on a catch-up channel; omit for the live stream",
+            "type": "string"
           }
         },
         "required": [
@@ -1544,13 +1548,43 @@
           },
           "reason": {
             "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "live",
+              "catchup"
+            ]
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Programme length for catch-up (seekable); null while live"
+          },
+          "title": {
+            "description": "Programme title for catch-up",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "method",
           "url",
           "sessionId",
-          "reason"
+          "reason",
+          "kind",
+          "durationMs",
+          "title"
         ]
       },
       "HealthResponseInput": {
@@ -3140,6 +3174,10 @@
           },
           "profile": {
             "$ref": "#/components/schemas/DeviceProfile"
+          },
+          "programmeId": {
+            "description": "A past programme on a catch-up channel; omit for the live stream",
+            "type": "string"
           }
         },
         "required": [
@@ -3171,13 +3209,43 @@
           },
           "reason": {
             "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "live",
+              "catchup"
+            ]
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Programme length for catch-up (seekable); null while live"
+          },
+          "title": {
+            "description": "Programme title for catch-up",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "method",
           "url",
           "sessionId",
-          "reason"
+          "reason",
+          "kind",
+          "durationMs",
+          "title"
         ],
         "additionalProperties": false
       },
@@ -5207,7 +5275,7 @@
         "tags": [
           "live"
         ],
-        "description": "Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC.",
+        "description": "Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5230,6 +5298,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LivePlaybackDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

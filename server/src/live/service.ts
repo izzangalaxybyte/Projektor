@@ -69,6 +69,24 @@ export class LiveService {
       .map(toProgramme);
   }
 
+  /** A programme with the channel it belongs to, or null. */
+  programme(id: string): { programme: LiveProgramme; channel: LiveChannel } | null {
+    const row = this.db
+      .select()
+      .from(schema.liveProgrammes)
+      .where(eq(schema.liveProgrammes.id, id))
+      .get();
+    if (!row) return null;
+    const ch = this.db
+      .select({ id: schema.liveChannels.id })
+      .from(schema.liveChannels)
+      .where(eq(schema.liveChannels.epgChannelId, row.epgChannelId))
+      .get();
+    const channel = ch ? this.channel(ch.id) : null;
+    if (!channel) return null;
+    return { programme: toProgramme(row), channel };
+  }
+
   counts(): { channels: number; programmes: number } {
     const c =
       this.db

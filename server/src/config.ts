@@ -19,6 +19,7 @@ const EnvSchema = z.object({
   WEB_DIST: z.string().optional(),
   IPTV_URL: z.string().default('http://playshare.co:8080/'),
   LIVE_MAX_STREAMS: z.coerce.number().int().positive().default(2),
+  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   LIVE_REFRESH: z
     .enum(['true', 'false'])
     .default('true')
@@ -55,6 +56,8 @@ export interface Config {
   iptvUrl: string;
   /** Concurrent provider connections; keep at or below the account's max_connections. */
   liveMaxStreams: number;
+  /** Login attempts allowed per IP per minute. */
+  authRateLimitPerMinute: number;
   /** Whether to watch library folders for changes. */
   watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
@@ -85,6 +88,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     liveRefresh: parsed.LIVE_REFRESH,
     iptvUrl: parsed.IPTV_URL,
     liveMaxStreams: parsed.LIVE_MAX_STREAMS,
+    authRateLimitPerMinute: parsed.AUTH_RATE_LIMIT,
     watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
@@ -113,6 +117,7 @@ export function configForDataDir(
     liveRefresh: false,
     iptvUrl: 'http://playshare.co:8080/',
     liveMaxStreams: 2,
+    authRateLimitPerMinute: 20,
     watchLibraries: true,
     ...overrides,
     dataDir,

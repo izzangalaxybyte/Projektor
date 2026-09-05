@@ -802,3 +802,13 @@ select {
 .guide-desc {
   display: block;
 }
+
+.button.small {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: inline-block;
+}
+.player-controls.catchup {
+  grid-template-columns: auto auto auto auto 1fr auto auto auto auto;
+}

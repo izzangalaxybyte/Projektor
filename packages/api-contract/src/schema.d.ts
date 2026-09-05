@@ -1913,7 +1913,7 @@ export interface paths {
         put?: never;
         /**
          * Choose a raw TS relay or live HLS for a channel and device profile
-         * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC.
+         * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.
          */
         post: {
             parameters: {
@@ -1935,6 +1935,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["LivePlaybackDecision"];
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description Default Response */
@@ -2452,6 +2461,8 @@ export interface components {
         LiveDecideRequestInput: {
             channelId: string;
             profile: components["schemas"]["DeviceProfileInput"];
+            /** @description A past programme on a catch-up channel; omit for the live stream */
+            programmeId?: string;
         };
         LivePlaybackDecisionInput: {
             /**
@@ -2463,6 +2474,12 @@ export interface components {
             url: string;
             sessionId: string | null;
             reason: string;
+            /** @enum {string} */
+            kind: "live" | "catchup";
+            /** @description Programme length for catch-up (seekable); null while live */
+            durationMs: number | null;
+            /** @description Programme title for catch-up */
+            title: string | null;
         };
         HealthResponseInput: {
             /** @constant */
@@ -2800,6 +2817,8 @@ export interface components {
         LiveDecideRequest: {
             channelId: string;
             profile: components["schemas"]["DeviceProfile"];
+            /** @description A past programme on a catch-up channel; omit for the live stream */
+            programmeId?: string;
         };
         LivePlaybackDecision: {
             /**
@@ -2811,6 +2830,12 @@ export interface components {
             url: string;
             sessionId: string | null;
             reason: string;
+            /** @enum {string} */
+            kind: "live" | "catchup";
+            /** @description Programme length for catch-up (seekable); null while live */
+            durationMs: number | null;
+            /** @description Programme title for catch-up */
+            title: string | null;
         };
         HealthResponse: {
             /** @constant */

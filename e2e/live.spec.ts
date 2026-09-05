@@ -93,3 +93,41 @@ test('live: categories filter, now/next shows, a channel plays, keys switch chan
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(/\/live$/);
 });
+
+test('catch-up: a past programme plays, and skip amount and speed apply', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/live/1001/watch');
+  await expect(page.getByTestId('channel-name')).toContainText('Sport One HD');
+  await page.getByTestId('guide-toggle').click();
+  const row = page.getByTestId('guide-panel').locator('.guide-row', { hasText: 'Earlier Match' });
+  await row.getByTestId('catchup-play').click();
+  await expect(page).toHaveURL(/\/live\/1001\/catchup\//);
+  await expect(page.getByTestId('catchup-title')).toContainText('Sport One HD · Earlier Match');
+  await expect(page.getByTestId('decision')).toHaveText('Catch-up');
+  await expect.poll(() => currentTime(page), { timeout: 40_000 }).toBeGreaterThan(0.5);
+
+  // The playlist grows as the provider sends the programme; wait until the player knows more
+  // than the first segment, then pause so the timing assertions are exact.
+  await expect
+    .poll(() => page.getByTestId('video').evaluate((v: HTMLVideoElement) => v.duration), {
+      timeout: 30_000,
+    })
+    .toBeGreaterThan(12);
+  await page.getByTestId('toggle').click();
+  await expect(page.getByTestId('toggle')).toHaveAttribute('aria-label', 'Play');
+  await page.getByTestId('video').evaluate((v: HTMLVideoElement) => (v.currentTime = 1));
+  await page.getByTestId('skip-select').selectOption('4');
+  await page.getByTestId('skip-forward').click();
+  await expect.poll(() => currentTime(page)).toBeCloseTo(5, 0);
+  await page.getByTestId('player').click();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => currentTime(page)).toBeCloseTo(9, 0);
+  await page.getByTestId('skip-back').click();
+  await expect.poll(() => currentTime(page)).toBeCloseTo(5, 0);
+
+  await page.getByTestId('speed-select').selectOption('1.5');
+  await expect
+    .poll(() => page.getByTestId('video').evaluate((v: HTMLVideoElement) => v.playbackRate))
+    .toBe(1.5);
+  await expect(page.getByTestId('seek')).toBeVisible();
+});

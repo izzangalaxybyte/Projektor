@@ -174,16 +174,24 @@ export class LiveRelayManager {
 
   /** Attaches to the channel's provider stream, opening it when this is the first subscriber. */
   subscribe(channelId: string): Subscription {
+    const client = this.live.client();
+    if (!client) throw new LiveStreamError(503, 'IPTV credentials are not set');
+    return this.subscribeUrl(channelId, client.liveUrl(channelId));
+  }
+
+  /**
+   * Attaches to any provider stream (a channel, or a catch-up programme) identified by `key`.
+   * Subscribers with the same key share one connection.
+   */
+  subscribeUrl(channelId: string, url: string): Subscription {
     let relay = this.relays.get(channelId);
     if (!relay) {
-      const client = this.live.client();
-      if (!client) throw new LiveStreamError(503, 'IPTV credentials are not set');
+      if (!this.live.credentials()) throw new LiveStreamError(503, 'IPTV credentials are not set');
       if (this.relays.size >= this.options.maxStreams)
         throw new LiveStreamError(
           503,
           'All provider connections are in use; stop another stream first',
         );
-      const url = client.liveUrl(channelId);
       const fetcher = this.options.fetcher ?? ((u, init) => fetch(u, init));
       const created: Relay = new Relay(channelId, url, fetcher, this.log, () => {
         if (this.relays.get(channelId) === created) this.relays.delete(channelId);

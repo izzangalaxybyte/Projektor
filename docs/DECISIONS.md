@@ -273,3 +273,11 @@ Browsers' MediaSource takes H.264 and HEVC but not the MP2 or AC-3 audio common 
 ## 2026-09-05 — Live TV is a section with a remote-style player, not a library
 
 Channels are not items: they have no files, progress, or artwork cache, and their metadata is a guide that changes hourly. So Live TV has its own routes, hooks, list page, and player. The player borrows the look of the file player but drops the seek bar and the skip and speed controls, which only make sense for catch-up (3.4). Channel up/down, digit entry, and a guide key mirror a TV remote so the same behaviour ports directly to the Android TV and Tizen clients.
+
+## 2026-09-05 — Catch-up is a growing EVENT playlist, always HLS
+
+Xtream's `timeshift.php` sends a finished programme as one MPEG-TS at whatever speed the link allows. Packaging it as an EVENT playlist that keeps every segment gives seeking within what has arrived, and `ENDLIST` turns it into a plain VOD once the provider is done; a precomputed VOD playlist (the transcode trick) is impossible because video is copied and segments follow the source keyframes. Raw TS is not seekable over HTTP without ranges, so catch-up is HLS for every client, ExoPlayer included. The provider expresses the start stamp in its own timezone, so the refresher keeps `server_info.timezone` and the URL is built with `Intl.DateTimeFormat` in that zone. The player is told the guide's duration so a forward skip is not clamped by the part of the playlist fetched so far; the browser still limits a seek to what hls.js has seen, which the e2e test waits for.
+
+## 2026-09-05 — The login rate limit is configurable
+
+Twenty login attempts per IP per minute is right for a house, but the e2e suite signs in sixteen times through the UI plus a handful of API logins in under a minute and the last test started failing at the PIN pad. `AUTH_RATE_LIMIT` sets the cap (default 20); the e2e server runs with 1000. Making the limit depend on the environment beats disabling it in tests, which would leave the lockout path untested.
