@@ -5,7 +5,7 @@
   "description": "Self-hosted media server for movies, TV shows, and anime with browser, Android, Android TV, iPad, and Samsung TV clients.",
   "license": "MIT",
   "engines": {
-    "node": ">=20",
+    "node": ">=22.13",
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@11.20.0",

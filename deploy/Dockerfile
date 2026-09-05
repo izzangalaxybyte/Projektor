@@ -1,7 +1,7 @@
 # Build: docker build -f deploy/Dockerfile -t projektor .   (context is the repo root)
 
 # ---- build: compile the server and the web app -------------------------------------------
-FROM node:20-bookworm-slim AS build
+FROM node:22-bookworm-slim AS build
 RUN corepack enable
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json ./
@@ -17,7 +17,7 @@ RUN pnpm --filter @projektor/server build \
  && pnpm --filter @projektor/server --prod deploy --legacy /out/server
 
 # ---- runtime: Node + ffmpeg with Intel VAAPI drivers ---------------------------------------
-FROM node:20-bookworm-slim AS runtime
+FROM node:22-bookworm-slim AS runtime
 # Intel's newer media driver is in non-free; the older i965 driver covers pre-Broadwell iGPUs.
 # The Intel drivers only exist for amd64; an arm64 build (a Mac, for tests) gets ffmpeg alone.
 RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
