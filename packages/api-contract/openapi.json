@@ -244,6 +244,23 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "filesProbed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "filesFailed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files ffprobe could not read"
+          },
+          "itemsLinked": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files linked to a movie or episode this scan"
+          },
           "startedAt": {
             "anyOf": [
               {
@@ -258,7 +275,17 @@
             ]
           }
         },
-        "required": ["libraryId", "state", "filesSeen", "filesChanged", "filesMissing", "startedAt"]
+        "required": [
+          "libraryId",
+          "state",
+          "filesSeen",
+          "filesChanged",
+          "filesMissing",
+          "filesProbed",
+          "filesFailed",
+          "itemsLinked",
+          "startedAt"
+        ]
       },
       "ProgressStateInput": {
         "type": "object",
@@ -1115,6 +1142,23 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "filesProbed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "filesFailed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files ffprobe could not read"
+          },
+          "itemsLinked": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Files linked to a movie or episode this scan"
+          },
           "startedAt": {
             "anyOf": [
               {
@@ -1135,6 +1179,9 @@
           "filesSeen",
           "filesChanged",
           "filesMissing",
+          "filesProbed",
+          "filesFailed",
+          "itemsLinked",
           "startedAt"
         ],
         "additionalProperties": false
@@ -2237,6 +2284,176 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items": {
+      "get": {
+        "summary": "Browse or search items",
+        "tags": ["items"],
+        "description": "Without kind or parentId, lists movies and shows. With parentId set to a show, lists its seasons and season-less episodes; set to a season, lists its episodes.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/LibraryKindInput"
+            },
+            "in": "query",
+            "name": "libraryKind",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ItemKindInput"
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "parentId",
+            "required": false,
+            "description": "Opaque identifier"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "search",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "needsReview",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": "title",
+              "type": "string",
+              "enum": ["title", "year", "added", "lastPlayed"]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ItemSummary"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["items", "total", "offset", "limit"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}": {
+      "get": {
+        "summary": "Item detail with files, streams, and children",
+        "tags": ["items"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemDetail"
                 }
               }
             }

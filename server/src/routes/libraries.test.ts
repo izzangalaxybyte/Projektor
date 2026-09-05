@@ -108,7 +108,12 @@ describe('libraries', () => {
         url: `/api/libraries/${allId}/scan`,
         headers: asAdmin(),
       });
-      expect(second.json()).toMatchObject({ filesSeen: 4, filesChanged: 0, filesMissing: 0 });
+      expect(second.json()).toMatchObject({
+        filesSeen: 4,
+        filesChanged: 0,
+        filesMissing: 0,
+        filesProbed: 0,
+      });
 
       const lib = (
         await app.inject({ method: 'GET', url: `/api/libraries/${allId}`, headers: asUser() })

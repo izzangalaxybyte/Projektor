@@ -42,6 +42,7 @@ export const StreamInfo = z
     channels: z.number().int().nullable(),
   })
   .meta({ id: 'StreamInfo' });
+export type StreamInfo = z.infer<typeof StreamInfo>;
 
 export const MediaFile = z
   .object({
@@ -54,6 +55,7 @@ export const MediaFile = z
     streams: StreamInfo.array(),
   })
   .meta({ id: 'MediaFile' });
+export type MediaFile = z.infer<typeof MediaFile>;
 
 export const ItemDetail = ItemSummary.extend({
   overview: z.string().nullable(),
