@@ -349,3 +349,7 @@ A release folder carried a one-minute sample next to the film; both files were l
 ## 2026-09-05 — CPU tone mapping runs at 720p by default
 
 Measured on the owner's four-core Skylake with the 4K HDR test file: software decode alone runs at 2.7× real time and the whole pipeline without colour correction at 1.9×, but with the float tone-mapping chain at 1080p it drops to 0.85× (20 fps for a 24 fps film), which is why the first segment never arrived. The chain's cost scales with pixels, so HDR tone-mapped on the CPU now targets 1280 wide, with `HDR_TONEMAP_MAX_WIDTH` to raise it on a stronger machine. Devices that show HDR themselves (the Android apps) never take this path.
+
+## 2026-09-05 — The fMP4 init file is served only after the first segment
+
+hls.js reported "Found no media" on the first 4K HDR transcode after the pipeline fallback. Two causes fixed together: the failed GPU run could leave an init file or a partial segment in the session folder that the fallback run then served, so the folder is cleared before a retry; and ffmpeg writes the fMP4 init file in place (segments go through `temp_file`, the init does not), so a fast player could read it half-written. The init file is now handed out only once the run's first segment exists, at which point it is complete.

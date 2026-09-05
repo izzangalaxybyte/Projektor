@@ -216,6 +216,9 @@ export class HlsManager {
           'transcode failed before its first segment; retrying with a different pipeline',
         );
         this.running.delete(session.id);
+        // Whatever the failed run left behind (an init file, a partial segment) must not be
+        // served alongside the next pipeline's output.
+        await rm(this.dir(session.id), { recursive: true, force: true });
         await this.ensureStarted(session, segment).catch((error) =>
           this.log.warn({ sessionId: session.id, error: String(error) }, 'fallback start failed'),
         );
@@ -303,7 +306,17 @@ export class HlsManager {
 
     let run = this.running.get(session.id)!;
     const deadline = Date.now() + this.options.waitMs;
-    while (!existsSync(file)) {
+    // Segments arrive atomically (temp_file), but ffmpeg writes the fMP4 init file in place, so a
+    // fast player can read it half-written. Serve it only once the first segment of the current
+    // run exists, by which point the init file is complete.
+    const waitFor =
+      name === 'init.mp4'
+        ? path.join(
+            this.dir(session.id),
+            `seg-${run.startSegment}.${hlsNaming(session.profile.hlsSegmentContainer).segmentExtension}`,
+          )
+        : file;
+    while (!existsSync(waitFor) || !existsSync(file)) {
       // A failed transcode may have been replaced by a fallback run; follow the newest one.
       run = this.running.get(session.id) ?? run;
       if (run.exited && this.running.get(session.id) === run)
