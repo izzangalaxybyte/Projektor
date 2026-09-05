@@ -1,5 +1,6 @@
 // The fake provider as a real HTTP server, for the e2e suite and manual runs:
 //   FAKE_XTREAM_PORT=8098 FAKE_XTREAM_FILE=../fixtures/movies/... npx tsx src/live/fake-xtream-server.ts
+import { readFileSync } from 'node:fs';
 import http from 'node:http';
 import { Readable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
@@ -52,6 +53,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         }
       : {}),
   });
+  if (file) started.provider.state.vodBytes = new Uint8Array(readFileSync(file));
   console.log(
     `fake Xtream provider at ${started.url} (user ${started.provider.username}, password ${started.provider.password})`,
   );

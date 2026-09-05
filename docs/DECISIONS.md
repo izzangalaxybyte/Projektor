@@ -281,3 +281,11 @@ Xtream's `timeshift.php` sends a finished programme as one MPEG-TS at whatever s
 ## 2026-09-05 — The login rate limit is configurable
 
 Twenty login attempts per IP per minute is right for a house, but the e2e suite signs in sixteen times through the UI plus a handful of API logins in under a minute and the last test started failing at the PIN pad. `AUTH_RATE_LIMIT` sets the cap (default 20); the e2e server runs with 1000. Making the limit depend on the environment beats disabling it in tests, which would leave the lockout path untested.
+
+## 2026-09-05 — Provider titles are matched like files, and kept apart from the libraries
+
+IPTV movies and series live in their own tables and their own tabs rather than being inserted as items in the Movies and TV libraries: they have no files on disk, appear and vanish with the subscription, and number in the thousands. They still get the TMDB treatment. The provider's name is parsed the way a file name is (language prefix and quality tags stripped, year pulled out), scored with the same `rankCandidates` threshold, and unmatched titles keep the parsed name with a `needsReview` mark and the provider's own cover. Matching runs after every catalogue refresh, two requests at a time, and stops early on a rejected key.
+
+## 2026-09-05 — Provider files pass through with ranges; HLS only when the container will not play
+
+A provider VOD file is a plain MP4 or MKV behind HTTP with range support, so the cheapest and most seekable path is to pass it through untouched, forwarding `Range` and the range response headers. That is what browsers get for MP4 and MKV and what ExoPlayer will get for everything. Only when the device cannot play the container does the server remux to an EVENT HLS playlist, and for that ffmpeg reads the provider URL directly instead of going through the relay, because it can seek the HTTP source itself. The URL carries the account password, so ffmpeg's arguments are redacted in the log.

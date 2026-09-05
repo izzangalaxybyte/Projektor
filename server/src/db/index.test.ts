@@ -4,6 +4,9 @@ import { makeTestConfig } from '../test-utils.js';
 import { openDatabase } from './index.js';
 
 const EXPECTED_TABLES = [
+  'iptv_episodes',
+  'iptv_movies',
+  'iptv_series',
   'live_categories',
   'live_channels',
   'live_programmes',

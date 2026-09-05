@@ -4,7 +4,13 @@ import { eq, inArray, lt, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { now, schema, type Db } from '../db/index.js';
 import type { SettingsService } from '../settings/service.js';
-import { XtreamClient, XtreamError, type Fetcher, type XtreamCredentials } from './xtream.js';
+import {
+  parseProviderTitle,
+  XtreamClient,
+  XtreamError,
+  type Fetcher,
+  type XtreamCredentials,
+} from './xtream.js';
 
 export const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
@@ -29,6 +35,8 @@ export class LiveRefresher {
   };
   private timer: NodeJS.Timeout | null = null;
   private inFlight: Promise<void> | null = null;
+  /** Called after a successful refresh; the app hooks TMDB matching of provider titles here. */
+  afterRefresh: (() => void) | null = null;
 
   constructor(
     private readonly db: Db,
@@ -157,6 +165,8 @@ export class LiveRefresher {
           tx.delete(schema.liveChannels).where(inArray(schema.liveChannels.id, stale)).run();
       });
 
+      await this.refreshCatalog(client);
+
       const programmes = await client.guide();
       const wanted = new Set(
         this.db
@@ -186,6 +196,7 @@ export class LiveRefresher {
       });
       this.state.lastRefreshAt = now();
       this.state.lastError = null;
+      this.afterRefresh?.();
       this.log.info(
         { categories: categories.length, channels: streams.length, programmes: keep.length },
         'live guide refreshed',
@@ -196,6 +207,127 @@ export class LiveRefresher {
     } finally {
       this.state.refreshing = false;
     }
+  }
+
+  /** VOD and series lists: categories and titles upserted by provider id, vanished ones dropped. */
+  private async refreshCatalog(client: XtreamClient): Promise<void> {
+    const [vodCats, vod, seriesCats, series] = await Promise.all([
+      client.vodCategories(),
+      client.vodStreams(),
+      client.seriesCategories(),
+      client.series(),
+    ]);
+    const ts = now();
+    this.db.transaction((tx) => {
+      for (const [kind, cats] of [
+        ['vod', vodCats],
+        ['series', seriesCats],
+      ] as const) {
+        tx.delete(schema.liveCategories).where(eq(schema.liveCategories.kind, kind)).run();
+        if (cats.length)
+          tx.insert(schema.liveCategories)
+            .values(
+              cats.map((c, i) => ({
+                id: `${kind}:${c.category_id}`,
+                name: c.category_name,
+                kind,
+                sortOrder: i,
+              })),
+            )
+            .onConflictDoUpdate({
+              target: schema.liveCategories.id,
+              set: { name: sql`excluded.name`, sortOrder: sql`excluded.sort_order` },
+            })
+            .run();
+      }
+      const seenMovies = new Set<string>();
+      for (const v of vod) {
+        const id = String(v.stream_id);
+        seenMovies.add(id);
+        const parsed = parseProviderTitle(v.name);
+        tx.insert(schema.iptvMovies)
+          .values({
+            id,
+            name: v.name,
+            categoryId: v.category_id ? `vod:${v.category_id}` : null,
+            logoUrl: v.stream_icon || null,
+            containerExtension: v.container_extension || 'mp4',
+            addedAt:
+              v.added && /^\d+$/.test(v.added)
+                ? new Date(Number(v.added) * 1000).toISOString()
+                : null,
+            parsedTitle: parsed.title,
+            parsedYear: parsed.year,
+            title: parsed.title,
+            year: parsed.year,
+            updatedAt: ts,
+          })
+          .onConflictDoUpdate({
+            target: schema.iptvMovies.id,
+            set: {
+              name: sql`excluded.name`,
+              categoryId: sql`excluded.category_id`,
+              logoUrl: sql`excluded.logo_url`,
+              containerExtension: sql`excluded.container_extension`,
+              addedAt: sql`excluded.added_at`,
+              updatedAt: ts,
+            },
+          })
+          .run();
+      }
+      const staleMovies = tx
+        .select({ id: schema.iptvMovies.id })
+        .from(schema.iptvMovies)
+        .all()
+        .map((r) => r.id)
+        .filter((id) => !seenMovies.has(id));
+      if (staleMovies.length)
+        tx.delete(schema.iptvMovies).where(inArray(schema.iptvMovies.id, staleMovies)).run();
+
+      const seenSeries = new Set<string>();
+      for (const sr of series) {
+        const id = String(sr.series_id);
+        seenSeries.add(id);
+        const parsed = parseProviderTitle(sr.name);
+        const year =
+          parsed.year ??
+          (sr.releaseDate && /^\d{4}/.test(sr.releaseDate)
+            ? Number(sr.releaseDate.slice(0, 4))
+            : null);
+        tx.insert(schema.iptvSeries)
+          .values({
+            id,
+            name: sr.name,
+            categoryId: sr.category_id ? `series:${sr.category_id}` : null,
+            coverUrl: sr.cover || null,
+            parsedTitle: parsed.title,
+            parsedYear: year,
+            title: parsed.title,
+            year,
+            overview: sr.plot || null,
+            updatedAt: ts,
+          })
+          .onConflictDoUpdate({
+            target: schema.iptvSeries.id,
+            set: {
+              name: sql`excluded.name`,
+              categoryId: sql`excluded.category_id`,
+              coverUrl: sql`excluded.cover_url`,
+              updatedAt: ts,
+            },
+          })
+          .run();
+      }
+      const staleSeries = tx
+        .select({ id: schema.iptvSeries.id })
+        .from(schema.iptvSeries)
+        .all()
+        .map((r) => r.id)
+        .filter((id) => !seenSeries.has(id));
+      if (staleSeries.length)
+        tx.delete(schema.iptvSeries).where(inArray(schema.iptvSeries.id, staleSeries)).run();
+    });
+    this.log.info({ movies: vod.length, series: series.length }, 'provider catalogue refreshed');
   }
 
   /** Drops programmes that ended more than the given number of days ago. */

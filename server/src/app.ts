@@ -18,11 +18,14 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { ImageStore } from './images/store.js';
 import { LiveHlsManager } from './live/live-hls.js';
 import { LiveRefresher } from './live/refresher.js';
+import { ProviderMatcher } from './live/provider-matcher.js';
 import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
+import { TmdbClient } from './metadata/tmdb.js';
 import { SessionRegistry } from './playback/sessions.js';
 import { SettingsService } from './settings/service.js';
 import { filesRoutes } from './routes/files.js';
@@ -31,6 +34,7 @@ import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
 import { liveRoutes } from './routes/live.js';
+import { liveVodRoutes } from './routes/live-vod.js';
 import { playbackRoutes } from './routes/playback.js';
 import { progressRoutes } from './routes/progress.js';
 import { settingsRoutes } from './routes/settings.js';
@@ -58,6 +62,7 @@ declare module 'fastify' {
     live: LiveRefresher;
     liveRelays: LiveRelayManager;
     liveHls: LiveHlsManager;
+    iptvMatcher: ProviderMatcher;
   }
 }
 
@@ -130,6 +135,19 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       waitMs: options.hlsWaitMs ?? 20_000,
     }),
   );
+  app.decorate(
+    'iptvMatcher',
+    new ProviderMatcher({
+      db: database.db,
+      images: new ImageStore(options.config.imagesDir, options.fetch ?? fetch),
+      tmdb: () => {
+        const key = new SettingsService(database.db).get('tmdb.apiKey');
+        return key ? new TmdbClient(key, options.fetch ?? fetch) : null;
+      },
+      log: app.log,
+    }),
+  );
+  app.live.afterRefresh = () => void app.iptvMatcher.matchPending();
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
@@ -183,6 +201,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(progressRoutes, { prefix: '/progress' });
       await api.register(usersRoutes, { prefix: '/users' });
       await api.register(liveRoutes, { prefix: '/live' });
+
+      await api.register(liveVodRoutes, { prefix: '/live' });
     },
     { prefix: '/api' },
   );

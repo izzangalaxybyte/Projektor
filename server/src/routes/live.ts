@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { LiveStreamError } from '../live/relay.js';
 import { LiveService } from '../live/service.js';
+import { VodService } from '../live/vod-service.js';
 import { HlsError, withToken } from '../playback/hls.js';
 import {
   ErrorResponse,
@@ -16,6 +17,7 @@ import {
 
 export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
   const live = new LiveService(app.db);
+  const vod = new VodService(app.db);
   const sec = { security: [{ bearerAuth: [] }], tags: ['live'] };
   const NAMES = {
     404: 'Not Found',
@@ -45,7 +47,7 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async () => {
-      const counts = live.counts();
+      const counts = { ...live.counts(), ...vod.counts(), matching: app.iptvMatcher.running };
       return { configured: app.live.credentials() !== null, ...app.live.state, ...counts };
     },
   );
@@ -62,7 +64,7 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async () => {
       await app.live.refresh();
-      const counts = live.counts();
+      const counts = { ...live.counts(), ...vod.counts(), matching: app.iptvMatcher.running };
       return { configured: app.live.credentials() !== null, ...app.live.state, ...counts };
     },
   );
@@ -131,7 +133,7 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         ...sec,
-        summary: 'Choose a raw TS relay or live HLS for a channel and device profile',
+        summary: 'Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode',
         description:
           'Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.',
         body: LiveDecideRequest,
@@ -144,10 +146,77 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const channel = live.channel(request.body.channelId);
-      if (!channel) return reply.notFound('No such channel');
       const client = app.live.client();
       if (!client) throw new LiveStreamError(503, 'IPTV credentials are not set');
+
+      // Provider files: direct pass-through when the device plays the container, else HLS.
+      const file =
+        request.body.vodId !== undefined
+          ? (() => {
+              const m = vod.movie(request.body.vodId);
+              return m
+                ? {
+                    kind: 'movie' as const,
+                    id: m.id,
+                    ext: m.containerExtension,
+                    title: m.title,
+                    durationMs: m.runtimeMs,
+                    url: client.vodUrl(m.id, m.containerExtension),
+                    proxy: `/api/live/vod/${m.id}/stream`,
+                  }
+                : null;
+            })()
+          : request.body.episodeId !== undefined
+            ? (() => {
+                const e = vod.episode(request.body.episodeId);
+                return e
+                  ? {
+                      kind: 'episode' as const,
+                      id: e.episode.id,
+                      ext: e.episode.containerExtension,
+                      title: `${e.series.title} · S${e.episode.seasonNumber} E${e.episode.episodeNumber} ${e.episode.title}`,
+                      durationMs: e.episode.durationMs,
+                      url: client.seriesEpisodeUrl(e.episode.id, e.episode.containerExtension),
+                      proxy: `/api/live/series/episodes/${e.episode.id}/stream`,
+                    }
+                  : null;
+              })()
+            : undefined;
+      if (file === null) return reply.notFound('No such movie or episode');
+      if (file) {
+        if (request.body.profile.containers.includes(file.ext)) {
+          return {
+            method: 'direct' as const,
+            url: file.proxy,
+            sessionId: null,
+            reason: `device plays ${file.ext}; byte ranges pass through`,
+            kind: 'vod' as const,
+            durationMs: file.durationMs,
+            title: file.title,
+          };
+        }
+        const session = app.liveHls.create({
+          channelId: '',
+          kind: 'vod',
+          sourceKey: `${file.kind}:${file.id}`,
+          sourceUrl: file.url,
+          durationMs: file.durationMs,
+        });
+        return {
+          method: 'hls' as const,
+          url: `/api/live/sessions/${session.id}/index.m3u8`,
+          sessionId: session.id,
+          reason: `device cannot play ${file.ext}; remuxed to HLS`,
+          kind: 'vod' as const,
+          durationMs: file.durationMs,
+          title: file.title,
+        };
+      }
+
+      if (!request.body.channelId)
+        return reply.badRequest('channelId, vodId, or episodeId is required');
+      const channel = live.channel(request.body.channelId);
+      if (!channel) return reply.notFound('No such channel');
 
       if (request.body.programmeId !== undefined) {
         const found = live.programme(request.body.programmeId);

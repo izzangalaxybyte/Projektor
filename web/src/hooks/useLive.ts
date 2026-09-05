@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api, unwrap } from '../api/client.js';
 
 const GUIDE_REFRESH_MS = 60_000;
@@ -60,4 +60,78 @@ export function programmeProgress(p: { startAt: string; endAt: string }, now = D
 export function fmtClock(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+const CATALOG_PAGE = 60;
+
+export function useIptvCategories(kind: 'vod' | 'series') {
+  return useQuery({
+    queryKey: ['live', kind, 'categories'],
+    queryFn: async () =>
+      unwrap(
+        await api.GET(kind === 'vod' ? '/api/live/vod/categories' : '/api/live/series/categories'),
+      ),
+  });
+}
+
+export function useIptvMovies(category: string | null, search: string) {
+  return useInfiniteQuery({
+    queryKey: ['live', 'vod', 'list', category, search],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        await api.GET('/api/live/vod', {
+          params: {
+            query: {
+              offset: pageParam,
+              limit: CATALOG_PAGE,
+              ...(category ? { category } : {}),
+              ...(search.trim() ? { search: search.trim() } : {}),
+            },
+          },
+        }),
+      ),
+    getNextPageParam: (last) =>
+      last.offset + last.items.length < last.total ? last.offset + last.items.length : undefined,
+  });
+}
+
+export function useIptvMovie(id: string | undefined) {
+  return useQuery({
+    queryKey: ['live', 'vod', id],
+    enabled: !!id,
+    queryFn: async () =>
+      unwrap(await api.GET('/api/live/vod/{id}', { params: { path: { id: id! } } })),
+  });
+}
+
+export function useIptvSeriesList(category: string | null, search: string) {
+  return useInfiniteQuery({
+    queryKey: ['live', 'series', 'list', category, search],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        await api.GET('/api/live/series', {
+          params: {
+            query: {
+              offset: pageParam,
+              limit: CATALOG_PAGE,
+              ...(category ? { category } : {}),
+              ...(search.trim() ? { search: search.trim() } : {}),
+            },
+          },
+        }),
+      ),
+    getNextPageParam: (last) =>
+      last.offset + last.items.length < last.total ? last.offset + last.items.length : undefined,
+  });
+}
+
+export function useIptvSeries(id: string | undefined) {
+  return useQuery({
+    queryKey: ['live', 'series', id],
+    enabled: !!id,
+    queryFn: async () =>
+      unwrap(await api.GET('/api/live/series/{id}', { params: { path: { id: id! } } })),
+  });
 }

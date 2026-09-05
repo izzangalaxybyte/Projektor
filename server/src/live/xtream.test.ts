@@ -121,3 +121,42 @@ describe('formatTimeshiftStart', () => {
     expect(formatTimeshiftStart(t, 'Not/AZone')).toBe('2026-09-05:18-30');
   });
 });
+
+describe('parseProviderTitle', () => {
+  it('strips language prefixes and quality tags and pulls the year', async () => {
+    const { parseProviderTitle } = await import('./xtream.js');
+    expect(parseProviderTitle('EN - Sample Movie (2019)')).toEqual({
+      title: 'Sample Movie',
+      year: 2019,
+    });
+    expect(parseProviderTitle('|FR| Le Film 1999 MULTI')).toEqual({ title: 'Le Film', year: 1999 });
+    expect(parseProviderTitle('[EN] Some Title 4K')).toEqual({ title: 'Some Title', year: null });
+    expect(parseProviderTitle('Obscure Film 1999')).toEqual({ title: 'Obscure Film', year: 1999 });
+    expect(parseProviderTitle('2012 (2009)')).toEqual({ title: '2012', year: 2009 });
+    expect(parseProviderTitle('   ')).toEqual({ title: '', year: null });
+  });
+});
+
+describe('flattenSeriesEpisodes', () => {
+  it('handles a season map and an array of arrays', async () => {
+    const { flattenSeriesEpisodes } = await import('./xtream.js');
+    const map = flattenSeriesEpisodes({
+      episodes: {
+        '1': [{ id: 'a', episode_num: 1 }],
+        '2': [{ id: 'b', episode_num: 1, season: 2 }],
+      },
+    });
+    expect(map.map((e) => [e.id, e.seasonNumber])).toEqual([
+      ['a', 1],
+      ['b', 2],
+    ]);
+    const arr = flattenSeriesEpisodes({
+      episodes: [[{ id: 'x', episode_num: 1 }], [{ id: 'y', episode_num: 1 }]],
+    });
+    expect(arr.map((e) => [e.id, e.seasonNumber])).toEqual([
+      ['x', 1],
+      ['y', 2],
+    ]);
+    expect(flattenSeriesEpisodes({})).toEqual([]);
+  });
+});
