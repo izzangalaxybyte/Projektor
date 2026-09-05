@@ -62,6 +62,9 @@ export class LibraryWatcher {
       this.log.warn({ libraryId, error: String(error) }, 'watcher error'),
     );
     this.watchers.set(libraryId, watcher);
+    // With ignoreInitial, a file that lands during the initial directory scan is silently treated
+    // as pre-existing. Resolve only once that scan is done so callers can rely on later events.
+    await new Promise<void>((resolve) => watcher.once('ready', () => resolve()));
     this.log.info({ libraryId, paths }, 'watching library');
   }
 
