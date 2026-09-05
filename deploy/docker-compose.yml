@@ -11,6 +11,13 @@ services:
       - '8096:8096'
     env_file:
       - .env
+    # .env holds HOST paths for the mounts below, and env_file hands every line to the container
+    # too. Pin the container-side data directory so the host DATA_DIR can never override it
+    # (it did once, and the database landed in the container's own filesystem and was lost on the
+    # next update).
+    environment:
+      DATA_DIR: /data
+      RECORDINGS_DIR: /data/recordings
     volumes:
       - ${DATA_DIR:-./data}:/data
       # Media is read-only: the server never writes beside your files.

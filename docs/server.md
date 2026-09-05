@@ -55,7 +55,7 @@ git pull
 docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
-Database migrations run automatically on start. Back up `DATA_DIR` before major upgrades; it holds the database, artwork cache, and subtitle cache, all of which can be rebuilt from your media and TMDB but slowly.
+Database migrations run automatically on start. Inside the container the data directory is always `/data` (pinned in the compose file, whatever `.env` says); on the host that is the `DATA_DIR` from `deploy/.env`. Back up `DATA_DIR` before major upgrades; it holds the database, artwork cache, and subtitle cache, all of which can be rebuilt from your media and TMDB but slowly.
 
 ## Logs and troubleshooting
 
