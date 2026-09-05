@@ -5,7 +5,8 @@ import type { FastifyReply } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { schema } from '../db/index.js';
-import { ErrorResponse, Id } from '../schemas/index.js';
+import { ErrorResponse, Id, SubtitleTrack } from '../schemas/index.js';
+import { SubtitleService } from '../subtitles/service.js';
 
 /** MIME types by canonical container name (see media/ffprobe.ts). */
 export const CONTAINER_MIME: Record<string, string> = {
@@ -49,6 +50,29 @@ export function parseRange(header: string | undefined, size: number): ByteRange 
 
 export const filesRoutes: FastifyPluginAsyncZod = async (app) => {
   const params = z.object({ id: Id });
+  const subtitles = new SubtitleService(app.db, app.config, app.log);
+
+  app.get(
+    '/:id/subtitles',
+    {
+      schema: {
+        tags: ['playback'],
+        summary: 'Text subtitle tracks available for a file',
+        security: [{ bearerAuth: [] }],
+        params,
+        response: { 200: SubtitleTrack.array(), 404: ErrorResponse },
+      },
+    },
+    async (request, reply) => {
+      const file = app.db
+        .select({ id: schema.mediaFiles.id })
+        .from(schema.mediaFiles)
+        .where(eq(schema.mediaFiles.id, request.params.id))
+        .get();
+      if (!file) return reply.notFound('No such file');
+      return subtitles.list(file.id);
+    },
+  );
 
   const handler = async (
     request: { params: { id: string }; headers: Record<string, unknown>; method: string },

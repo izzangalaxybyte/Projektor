@@ -15,6 +15,7 @@ import {
   vodPlaylist,
   type HardwareEncoder,
 } from './ffmpeg-args.js';
+import type { SubtitleTrack } from '../schemas/index.js';
 import type { PlaybackSession, SessionRegistry } from './sessions.js';
 
 /** The parts of an execa subprocess this module uses; execa's own generic type is unwieldy. */
@@ -96,19 +97,38 @@ export class HlsManager {
     return s;
   }
 
-  /** The master playlist we author; it points at ffmpeg's index playlist. */
-  masterPlaylist(session: PlaybackSession): string {
+  /** The master playlist we author: one video variant plus a subtitle rendition per text track. */
+  masterPlaylist(session: PlaybackSession, subtitles: SubtitleTrack[] = []): string {
     const bandwidth = Math.max(
       1_000_000,
       Math.round((session.decision.method === 'remux' ? 1.2 : 1.0) * 8_000_000),
     );
     const version = session.profile.hlsSegmentContainer === 'fmp4' ? 7 : 3;
+    const lines = ['#EXTM3U', `#EXT-X-VERSION:${version}`, '#EXT-X-INDEPENDENT-SEGMENTS'];
+    for (const sub of subtitles) {
+      const name = subtitleName(sub);
+      const lang = sub.language ? `,LANGUAGE="${sub.language}"` : '';
+      lines.push(
+        `#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="${name}"${lang},DEFAULT=NO,AUTOSELECT=YES,FORCED=NO,URI="sub-${sub.id}.m3u8"`,
+      );
+    }
+    const subsAttr = subtitles.length ? ',SUBTITLES="subs"' : '';
+    lines.push(`#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth}${subsAttr}`, 'index.m3u8', '');
+    return lines.join('\n');
+  }
+
+  /** A subtitle media playlist: the whole track as one WebVTT "segment" spanning the duration. */
+  subtitlePlaylist(session: PlaybackSession, subtitleId: string): string {
+    const seconds = Math.max(1, Math.ceil(session.durationMs / 1000));
     return [
       '#EXTM3U',
-      `#EXT-X-VERSION:${version}`,
-      '#EXT-X-INDEPENDENT-SEGMENTS',
-      `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth}`,
-      'index.m3u8',
+      '#EXT-X-VERSION:3',
+      `#EXT-X-TARGETDURATION:${seconds}`,
+      '#EXT-X-MEDIA-SEQUENCE:0',
+      '#EXT-X-PLAYLIST-TYPE:VOD',
+      `#EXTINF:${seconds}.000,`,
+      `sub-${subtitleId}.vtt`,
+      '#EXT-X-ENDLIST',
       '',
     ].join('\n');
   }
@@ -309,3 +329,25 @@ function readdirSyncSafe(dir: string): string[] {
   }
 }
 export { hlsNaming };
+
+function subtitleName(sub: SubtitleTrack): string {
+  const base = sub.title ?? sub.language ?? sub.format;
+  return base.replace(/"/g, "'");
+}
+
+/**
+ * Appends ?access_token= to every URI in a playlist when the client authenticated with a query
+ * token, since players resolve segment URLs relative to the playlist without its query string.
+ */
+export function withToken(playlist: string, token: string | undefined): string {
+  if (!token) return playlist;
+  const q = `?access_token=${encodeURIComponent(token)}`;
+  return playlist
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('#'))
+        return line.replace(/URI="([^"]+)"/g, (_m, uri: string) => `URI="${uri}${q}"`);
+      return line.trim() ? `${line}${q}` : line;
+    })
+    .join('\n');
+}

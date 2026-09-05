@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Id } from './common.js';
+import { SubtitleTrack } from './items.js';
 
 export const DeviceProfile = z
   .object({
@@ -37,9 +38,9 @@ export const PlaybackDecision = z
     url: z.string().meta({ description: 'Relative URL of the media or HLS master playlist' }),
     sessionId: Id.nullable(),
     reason: z.string(),
-    subtitleUrls: z
-      .object({ streamIndex: z.number().int(), language: z.string().nullable(), url: z.string() })
-      .array(),
+    subtitles: SubtitleTrack.array().meta({
+      description: 'Text subtitles available for this file as WebVTT',
+    }),
   })
   .meta({ id: 'PlaybackDecision' });
 export type PlaybackDecision = z.infer<typeof PlaybackDecision>;

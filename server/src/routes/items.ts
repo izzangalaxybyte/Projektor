@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ItemNotFound, ItemsService } from '../items/service.js';
 import { metadataDeps } from '../metadata/deps.js';
+import { SubtitleService } from '../subtitles/service.js';
 import { FixMatchError, FixMatchService } from '../metadata/fix-match.js';
 import {
   CandidatesQuery,
@@ -17,7 +18,7 @@ import {
 } from '../schemas/index.js';
 
 export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const items = new ItemsService(app.db);
+  const items = new ItemsService(app.db, new SubtitleService(app.db, app.config, app.log));
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ItemNotFound) return reply.notFound(error.message);

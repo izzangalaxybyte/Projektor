@@ -973,6 +973,54 @@ export interface paths {
     };
     trace?: never;
   };
+  '/api/files/{id}/subtitles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Text subtitle tracks available for a file */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SubtitleTrack'][];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/files/{id}/stream': {
     parameters: {
       query?: never;
@@ -1226,6 +1274,55 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/subtitles/{id}.vtt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A subtitle track as WebVTT, converted from its source on first request */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1361,6 +1458,19 @@ export interface components {
       height: number | null;
       channels: number | null;
     };
+    SubtitleTrackInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+    };
     MediaFileInput: {
       /** @description Opaque identifier */
       id: string;
@@ -1370,6 +1480,7 @@ export interface components {
       durationMs: number;
       bitrate: number | null;
       streams: components['schemas']['StreamInfoInput'][];
+      subtitles: components['schemas']['SubtitleTrackInput'][];
     };
     ItemDetailInput: {
       /** @description Opaque identifier */
@@ -1450,11 +1561,8 @@ export interface components {
       url: string;
       sessionId: string | null;
       reason: string;
-      subtitleUrls: {
-        streamIndex: number;
-        language: string | null;
-        url: string;
-      }[];
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrackInput'][];
     };
     ProgressUpdateRequestInput: {
       /** @description Opaque identifier */
@@ -1624,6 +1732,19 @@ export interface components {
       height: number | null;
       channels: number | null;
     };
+    SubtitleTrack: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+    };
     MediaFile: {
       /** @description Opaque identifier */
       id: string;
@@ -1633,6 +1754,7 @@ export interface components {
       durationMs: number;
       bitrate: number | null;
       streams: components['schemas']['StreamInfo'][];
+      subtitles: components['schemas']['SubtitleTrack'][];
     };
     ItemDetail: {
       /** @description Opaque identifier */
@@ -1713,11 +1835,8 @@ export interface components {
       url: string;
       sessionId: string | null;
       reason: string;
-      subtitleUrls: {
-        streamIndex: number;
-        language: string | null;
-        url: string;
-      }[];
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrack'][];
     };
     ProgressUpdateRequest: {
       /** @description Opaque identifier */

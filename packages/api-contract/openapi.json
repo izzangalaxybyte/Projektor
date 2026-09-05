@@ -525,6 +525,47 @@
           "channels"
         ]
       },
+      "SubtitleTrackInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["embedded", "external", "opensubtitles"]
+          },
+          "streamIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "language": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "format": {
+            "type": "string",
+            "description": "Source format: subrip, ass, mov_text, webvtt, ..."
+          },
+          "url": {
+            "type": "string",
+            "description": "WebVTT URL under /api/subtitles"
+          }
+        },
+        "required": ["id", "source", "streamIndex", "language", "title", "format", "url"]
+      },
       "MediaFileInput": {
         "type": "object",
         "properties": {
@@ -566,9 +607,24 @@
             "items": {
               "$ref": "#/components/schemas/StreamInfoInput"
             }
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleTrackInput"
+            }
           }
         },
-        "required": ["id", "fileName", "sizeBytes", "container", "durationMs", "bitrate", "streams"]
+        "required": [
+          "id",
+          "fileName",
+          "sizeBytes",
+          "container",
+          "durationMs",
+          "bitrate",
+          "streams",
+          "subtitles"
+        ]
       },
       "ItemDetailInput": {
         "type": "object",
@@ -936,28 +992,15 @@
           "reason": {
             "type": "string"
           },
-          "subtitleUrls": {
+          "subtitles": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "streamIndex": {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                },
-                "language": {
-                  "type": ["string", "null"]
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": ["streamIndex", "language", "url"]
-            }
+              "$ref": "#/components/schemas/SubtitleTrackInput"
+            },
+            "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitleUrls"]
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"]
       },
       "ProgressUpdateRequestInput": {
         "type": "object",
@@ -1584,6 +1627,48 @@
         ],
         "additionalProperties": false
       },
+      "SubtitleTrack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["embedded", "external", "opensubtitles"]
+          },
+          "streamIndex": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "language": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"]
+          },
+          "format": {
+            "type": "string",
+            "description": "Source format: subrip, ass, mov_text, webvtt, ..."
+          },
+          "url": {
+            "type": "string",
+            "description": "WebVTT URL under /api/subtitles"
+          }
+        },
+        "required": ["id", "source", "streamIndex", "language", "title", "format", "url"],
+        "additionalProperties": false
+      },
       "MediaFile": {
         "type": "object",
         "properties": {
@@ -1625,6 +1710,12 @@
             "items": {
               "$ref": "#/components/schemas/StreamInfo"
             }
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleTrack"
+            }
           }
         },
         "required": [
@@ -1634,7 +1725,8 @@
           "container",
           "durationMs",
           "bitrate",
-          "streams"
+          "streams",
+          "subtitles"
         ],
         "additionalProperties": false
       },
@@ -2009,29 +2101,15 @@
           "reason": {
             "type": "string"
           },
-          "subtitleUrls": {
+          "subtitles": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "streamIndex": {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
-                },
-                "language": {
-                  "type": ["string", "null"]
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": ["streamIndex", "language", "url"],
-              "additionalProperties": false
-            }
+              "$ref": "#/components/schemas/SubtitleTrack"
+            },
+            "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitleUrls"],
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"],
         "additionalProperties": false
       },
       "ProgressUpdateRequest": {
@@ -3090,6 +3168,54 @@
         }
       }
     },
+    "/api/files/{id}/subtitles": {
+      "get": {
+        "summary": "Text subtitle tracks available for a file",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleTrack"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/files/{id}/stream": {
       "get": {
         "summary": "Direct play: the original file with byte-range support",
@@ -3251,7 +3377,7 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^(index\\.m3u8|init\\.mp4|seg-\\d+\\.(ts|m4s))$"
+              "pattern": "^(index\\.m3u8|init\\.mp4|seg-\\d+\\.(ts|m4s)|sub-[A-Za-z0-9-]+\\.(m3u8|vtt))$"
             },
             "in": "path",
             "name": "name",
@@ -3331,6 +3457,58 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/subtitles/{id}.vtt": {
+      "get": {
+        "summary": "A subtitle track as WebVTT, converted from its source on first request",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

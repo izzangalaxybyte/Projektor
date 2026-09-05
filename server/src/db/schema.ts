@@ -221,6 +221,8 @@ export const subtitles = sqliteTable(
     title: text('title'),
     /** Original format before conversion: srt, ass, subrip, mov_text, webvtt. */
     format: text('format').notNull(),
+    /** Sidecar file path for external subtitles; null for embedded tracks. */
+    sourcePath: text('source_path'),
     /** Path of the cached WebVTT file under DATA_DIR/subtitles, null until converted. */
     vttPath: text('vtt_path'),
     ...timestamps,

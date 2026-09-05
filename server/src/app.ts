@@ -25,6 +25,7 @@ import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
 import { playbackRoutes } from './routes/playback.js';
 import { settingsRoutes } from './routes/settings.js';
+import { subtitlesRoutes } from './routes/subtitles.js';
 // Registers schema ids so every named schema appears under components.
 import './schemas/index.js';
 
@@ -130,6 +131,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(settingsRoutes, { prefix: '/settings' });
       await api.register(filesRoutes, { prefix: '/files' });
       await api.register(playbackRoutes, { prefix: '/playback' });
+      await api.register(subtitlesRoutes, { prefix: '/subtitles' });
     },
     { prefix: '/api' },
   );

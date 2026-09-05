@@ -1,12 +1,15 @@
+import { readFile } from 'node:fs/promises';
 import { asc, eq } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { schema } from '../db/index.js';
 import { decide } from '../playback/decision.js';
-import { HlsError } from '../playback/hls.js';
+import { HlsError, withToken } from '../playback/hls.js';
+import { SubtitleService } from '../subtitles/service.js';
 import { z } from 'zod';
 import { ErrorResponse, Id, PlaybackDecideRequest, PlaybackDecision } from '../schemas/index.js';
 
 export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
+  const subtitles = new SubtitleService(app.db, app.config, app.log);
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HlsError) {
       const names = {
@@ -73,7 +76,7 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         video: decision.video,
         audio: decision.audio,
         reason: decision.reasons.join('; '),
-        subtitleUrls: [],
+        subtitles: subtitles.list(file.id),
       };
       if (decision.method === 'direct') {
         return { ...base, url: `/api/files/${file.id}/stream`, sessionId: null };
@@ -110,10 +113,11 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       const session = app.hls.session(request.params.id);
+      const master = app.hls.masterPlaylist(session, subtitles.list(session.fileId));
       return reply
         .header('content-type', 'application/vnd.apple.mpegurl')
         .header('cache-control', 'no-store')
-        .send(app.hls.masterPlaylist(session) as never);
+        .send(withToken(master, request.query.access_token) as never);
     },
   );
 
@@ -126,7 +130,9 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         description:
           'Starts ffmpeg on first request and waits up to 20 seconds for the requested file.',
         params: sessionParams.extend({
-          name: z.string().regex(/^(index\.m3u8|init\.mp4|seg-\d+\.(ts|m4s))$/),
+          name: z
+            .string()
+            .regex(/^(index\.m3u8|init\.mp4|seg-\d+\.(ts|m4s)|sub-[A-Za-z0-9-]+\.(m3u8|vtt))$/),
         }),
         querystring: z.object({ access_token: z.string().optional() }),
         response: {
@@ -139,11 +145,31 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       const session = app.hls.session(request.params.id);
-      const body = await app.hls.awaitFile(session, request.params.name);
+      const name = request.params.name;
+      const token = request.query.access_token;
+      const sub = /^sub-([A-Za-z0-9-]+)\.(m3u8|vtt)$/.exec(name);
+      if (sub) {
+        if (sub[2] === 'm3u8') {
+          const playlist = app.hls.subtitlePlaylist(session, sub[1]!);
+          return reply
+            .header('content-type', 'application/vnd.apple.mpegurl')
+            .header('cache-control', 'no-store')
+            .send(withToken(playlist, token) as never);
+        }
+        const vtt = await readFile(await subtitles.ensureVtt(sub[1]!));
+        return reply
+          .header('content-type', 'text/vtt; charset=utf-8')
+          .header('cache-control', 'no-store')
+          .send(vtt as never);
+      }
+      const body = await app.hls.awaitFile(session, name);
+      const payload = name.endsWith('.m3u8')
+        ? Buffer.from(withToken(body.toString('utf8'), token))
+        : body;
       return reply
-        .header('content-type', app.hls.contentType(request.params.name))
+        .header('content-type', app.hls.contentType(name))
         .header('cache-control', 'no-store')
-        .send(body as never);
+        .send(payload as never);
     },
   );
 
