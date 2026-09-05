@@ -70,6 +70,8 @@ describe('buildRemuxArgs', () => {
       '0:2',
       '-c:v',
       'copy',
+      '-tag:v',
+      'hvc1',
       '-c:a',
       'copy',
       '-sn',

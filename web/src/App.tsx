@@ -5,6 +5,7 @@ import { useAuth } from './auth/useAuth.js';
 import { HomePage } from './pages/HomePage.js';
 import { ItemPage } from './pages/ItemPage.js';
 import { LibraryPage } from './pages/LibraryPage.js';
+import { PlayerPage } from './pages/PlayerPage.js';
 import { SearchPage } from './pages/SearchPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { SetupPage } from './pages/SetupPage.js';
@@ -54,6 +55,14 @@ export function App() {
               <PublicOnly>
                 <LoginPage />
               </PublicOnly>
+            }
+          />
+          <Route
+            path="/play/:fileId"
+            element={
+              <Gate>
+                <PlayerPage />
+              </Gate>
             }
           />
           <Route

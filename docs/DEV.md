@@ -74,7 +74,7 @@ In production the server serves `web/dist` itself: set `WEB_DIST=/path/to/web/di
 pnpm e2e
 ```
 
-Builds the web app, starts the API on port 8099 against a throwaway `DATA_DIR` serving `web/dist`, and runs Playwright (Chromium) through the real UI. Tests seed libraries from `fixtures/` through the API, so run `scripts/make-fixtures.sh` first. `npx playwright test --ui` opens the inspector; traces are kept on failure under `test-results/`.
+Builds the web app, starts the API on port 8099 against a throwaway `DATA_DIR` serving `web/dist`, and runs Playwright through the real UI in installed Google Chrome (Playwright's own Chromium lacks H.264/AAC, so the playback tests need the branded browser). Tests seed libraries from `fixtures/` through the API, so run `scripts/make-fixtures.sh` first. `npx playwright test --ui` opens the inspector; traces are kept on failure under `test-results/`.
 
 ## API contract
 

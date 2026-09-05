@@ -74,7 +74,9 @@ function hlsOutput(
 /** Remux: copy the video stream, copy or re-encode audio, segment into HLS. */
 export function buildRemuxArgs(session: PlaybackSession, outDir: string): string[] {
   const { input, maps, audio } = inputAndAudio(session, session.startPositionMs);
-  return [...input, ...maps, '-c:v', 'copy', ...audio, ...hlsOutput(session, outDir, 0)];
+  // Browsers' MediaSource and Safari want the 'hvc1' sample entry for HEVC; ffmpeg defaults to 'hev1'.
+  const tag = session.decision.videoStream?.codec === 'hevc' ? ['-tag:v', 'hvc1'] : [];
+  return [...input, ...maps, '-c:v', 'copy', ...tag, ...audio, ...hlsOutput(session, outDir, 0)];
 }
 
 export type HardwareEncoder = 'vaapi' | null;
