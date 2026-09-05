@@ -1,6 +1,7 @@
 package app.projektor.player
 
 import app.projektor.core.ProjektorClient
+import app.projektor.core.api.models.LivePlaybackDecision
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.PlaybackMethod
 
@@ -13,6 +14,7 @@ data class SubtitleSpec(val id: String, val uri: String, val language: String?, 
 
 const val MIME_HLS = "application/x-mpegURL"
 const val MIME_VTT = "text/vtt"
+const val MIME_TS = "video/mp2t"
 
 /**
  * Direct play streams the file with sideloaded WebVTT tracks; remux and transcode point at the
@@ -36,4 +38,19 @@ fun mediaSpecFor(decision: PlaybackDecision, client: ProjektorClient): MediaSpec
     } else {
         MediaSpec(uri = uri, mimeType = MIME_HLS, subtitles = emptyList())
     }
+}
+
+/**
+ * Provider content. A live channel arrives as a raw MPEG-TS relay, which ExoPlayer plays as an
+ * unbounded progressive stream when told the MIME type; catch-up and provider files are either HLS
+ * or a plain file the extractor can sniff.
+ */
+fun liveMediaSpecFor(decision: LivePlaybackDecision, client: ProjektorClient): MediaSpec {
+    val uri = client.withAccessToken(decision.url)
+    val mime = when {
+        decision.method == LivePlaybackDecision.Method.HLS -> MIME_HLS
+        decision.kind == LivePlaybackDecision.Kind.LIVE -> MIME_TS
+        else -> null
+    }
+    return MediaSpec(uri = uri, mimeType = mime, subtitles = emptyList())
 }

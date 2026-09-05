@@ -6,6 +6,7 @@ import app.projektor.core.auth.AuthRepository
 import app.projektor.core.auth.PrefsSessionStore
 import app.projektor.core.auth.SessionStore
 import app.projektor.core.items.ItemsRepository
+import app.projektor.core.live.LiveRepository
 import app.projektor.core.playback.PlayerPrefs
 import app.projektor.core.playback.SharedPrefsPlayerPrefs
 
@@ -18,6 +19,7 @@ class AppContainer(app: Application) {
     /** Client for the signed-in server; null while signed out. */
     fun client(): ProjektorClient? = sessions.serverUrl.value?.takeIf { sessions.session.value != null }?.let { auth.client(it) }
     fun items(): ItemsRepository? = client()?.let { ItemsRepository(it) }
+    fun live(): LiveRepository? = client()?.let { LiveRepository(it) }
 }
 
 class ProjektorApp : Application() {

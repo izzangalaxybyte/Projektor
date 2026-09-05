@@ -95,6 +95,23 @@ describe('LiveRelayManager', () => {
     cleanup();
   });
 
+  it('evicts an idle relay in its grace period when the cap is reached', async () => {
+    const { provider, relays, cleanup } = await setup(5000, 1);
+    const a = relays.subscribe('1001');
+    await a.ready;
+    a.close(); // idle, but kept warm for up to 5 s
+    expect(relays.active()).toBe(1);
+    const b = relays.subscribe('1002');
+    await b.ready;
+    await sleep(50);
+    expect(relays.active()).toBe(1);
+    expect(provider.live.open).toBe(1);
+    expect(provider.live.opened).toBe(2);
+    b.close();
+    await relays.close();
+    cleanup();
+  });
+
   it('rejects ready for an unknown channel and frees the slot', async () => {
     const { relays, cleanup } = await setup(50, 1);
     const a = relays.subscribe('9999');

@@ -245,7 +245,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
 }
 
 @Composable
-private fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String) {
+internal fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String) {
     var open by remember { mutableStateOf(false) }
     Box {
         OutlinedButton(onClick = { open = true }, modifier = Modifier.testTag(tag)) { Text(label, style = MaterialTheme.typography.labelMedium) }
