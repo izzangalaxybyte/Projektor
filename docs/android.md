@@ -33,6 +33,10 @@ One Gradle project under `android/` builds two apps from shared modules:
 
 The server address defaults to `http://10.0.2.2:8096` (the host as seen from an emulator); set `PROJEKTOR_SERVER_URL` for a physical device. To create an emulator with the SDK tools: install `system-images;android-35;google_apis;arm64-v8a` with `sdkmanager`, `avdmanager create avd -n projektor_phone -k <image> -d pixel_6`, and start it with `emulator -avd projektor_phone` (add `-no-window` for headless runs).
 
+## Phone app
+
+`:app-mobile` is Compose Material 3 with Compose Navigation. `AppNav` shows the sign-in flow (server address, first-run setup or profile picker, PIN) until a session exists, then a bottom-tab scaffold: Home (continue watching and recently added per library kind, so anime never mixes with TV), Movies, TV, Anime (adaptive poster grids), Search (debounced), and an item detail destination with Play/Resume, next episode, seasons and episodes, and file details. Dependencies are wired by hand in `AppContainer` on the `Application`; screens fetch through `ItemsRepository` in `LaunchedEffect`s and render a small `UiState`. Artwork loads with Coil from the public image route. `BrowseTest` is a Compose UI test that walks the whole flow on an emulator against a real server (`./gradlew :app-mobile:connectedDebugAndroidTest`).
+
 ## Building
 
 Requirements: the Android SDK (platform 36 and build tools; Android Studio installs them) and a JDK 17 to 21. Android Studio's bundled JDK works:
