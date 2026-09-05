@@ -321,3 +321,7 @@ First real-world playback on the box: a 6 GB anime MKV that Chrome said it could
 ## 2026-09-05 — AniList requests are paced and 429s are waited out
 
 The first anime scan (7,587 files, 61 shows) tripped AniList's limit after 25 shows; the rest logged "rate limit hit" and stayed unmatched until the next scan. The client now runs requests one at a time with a 2.1 s gap (AniList's degraded limit is 30 a minute) and, on a 429, waits for `Retry-After` (a minute if absent) before retrying, twice. A show whose search still fails keeps `matchAttemptedAt` empty, so pressing Scan again picks it up.
+
+## 2026-09-05 — The container's data directory is pinned in compose
+
+`deploy/.env` carries host paths for the volume mounts, and `env_file` hands every line of it to the container as well, so `DATA_DIR=/home/izzan/projektor/data` overrode the image's `DATA_DIR=/data`. The server wrote its database to a path that existed only inside the container's writable layer; the first update recreated the container and the owner's first scan was lost. The compose file now sets `DATA_DIR` and `RECORDINGS_DIR` under `environment`, which wins over `env_file`, so the container always uses the mounted `/data` regardless of what the host file says. Lesson: never let one file serve both as compose interpolation input and as container environment without pinning what must differ between the two.
