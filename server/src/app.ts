@@ -13,7 +13,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import type { Config } from './config.js';
-import { openDatabase, type Db } from './db/index.js';
+import { openDatabase, schema, type Db } from './db/index.js';
 import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
@@ -24,6 +24,7 @@ import { LiveRefresher } from './live/refresher.js';
 import { ProviderMatcher } from './live/provider-matcher.js';
 import { RecordingManager } from './live/recorder.js';
 import { LiveService } from './live/service.js';
+import { staleProbeFileIds } from './library/scanner.js';
 import { backfillStreamDepth } from './media/probe-service.js';
 import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
@@ -189,6 +190,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (options.config.liveRefresh) app.live.start();
     app.recorder.start();
     backfillStreamDepth(database.db, app.log);
+    // Anything still missing bit depth was probed by an older build; a scan re-probes just those.
+    for (const lib of database.db
+      .select({ id: schema.libraries.id })
+      .from(schema.libraries)
+      .all()) {
+      if (staleProbeFileIds(database.db, lib.id).size > 0) scans.request(lib.id, 'reprobe');
+    }
   });
   app.addHook('onClose', async () => {
     app.live.stop();

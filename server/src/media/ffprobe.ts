@@ -101,7 +101,9 @@ export async function probeFile(ffprobePath: string, filePath: string): Promise<
     const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
     throw new ProbeError(`ffprobe failed: ${message}`, filePath);
   }
-  const parsed = RawProbe.safeParse(JSON.parse(stdout));
+  // Keep ffprobe's whole output: the validated copy strips fields this build does not read yet.
+  const rawJson: unknown = JSON.parse(stdout);
+  const parsed = RawProbe.safeParse(rawJson);
   if (!parsed.success)
     throw new ProbeError('ffprobe output was not in the expected shape', filePath);
   const { format, streams } = parsed.data;
@@ -135,7 +137,7 @@ export async function probeFile(ffprobePath: string, filePath: string): Promise<
     durationMs: Number.isFinite(durationSeconds) ? Math.round(durationSeconds * 1000) : 0,
     bitrate: bitrate && Number.isFinite(bitrate) ? bitrate : null,
     streams: mapped,
-    raw: parsed.data,
+    raw: rawJson,
   };
 }
 

@@ -337,3 +337,7 @@ The first 4K title on the box (HEVC Main 10, HDR10, in MKV) failed as a remux: C
 ## 2026-09-05 — The transcoder degrades by itself instead of trusting a capability list
 
 The owner's box has a 6th-generation Intel iGPU: it encodes H.264 in hardware, but it cannot decode 10-bit HEVC and has no GPU tone mapping. Predicting that per generation is a losing game, so the HLS manager tries the full-GPU pipeline first and, when ffmpeg exits before writing a single segment, retries the same session with the next pipeline: CPU decode and filters with GPU encode (`vaapi-encode`: `scale`, software tone map, `format=nv12,hwupload`, `h264_vaapi`), then pure software. The startup self-test still picks the starting point; the fallback covers whatever the source turns out to need. CPU tone mapping is capped at 1080p wide, since it cannot keep up at 4K on four cores, while the full-GPU path keeps the source width.
+
+## 2026-09-05 — Keep ffprobe's whole output, and re-probe when a field is new
+
+The bit-depth backfill did nothing on the box: the stored probe JSON was the zod-validated copy, which strips every field the code did not read at the time, so `pix_fmt` was never saved. ffprobe's raw output is stored from now on. For files probed before, the scanner treats a video stream without bit depth as changed and probes only those files, and the server requests that scan for every affected library at startup, so an update that adds a probed field costs one background pass rather than a manual rescan or a wrong playback decision.

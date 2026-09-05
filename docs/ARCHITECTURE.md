@@ -29,7 +29,7 @@ Login is rate limited per IP with `@fastify/rate-limit` (registered with `global
 
 `server/src/media/ffprobe.ts` runs `ffprobe -print_format json -show_format -show_streams` through execa with an argument array (never a shell string) and a 60 second timeout, validates the JSON with zod, and normalises it: a canonical container name (ffprobe reports demuxer lists like `matroska,webm`, so the file extension breaks ties), duration in milliseconds, overall bitrate, and one entry per video, audio, or subtitle stream with codec, language (`und` becomes null), title, default and forced flags, dimensions, and channel count. Attached-picture streams (cover art) are dropped. `probe-service.ts` probes a list of file ids with a concurrency limit of 4, writes the result to `media_files` and replaces the file's `streams` rows in one transaction. A file ffprobe cannot read still gets `probedAt` set, with the error kept in `probeJson`, so broken files are not re-probed on every scan; a later change to the file clears `probedAt` through the scanner and it is tried again.
 
-Each video stream also carries its bit depth (from ffprobe's `pix_fmt`) and an HDR flag (PQ or HLG transfer), which the playback decision uses; `backfillStreamDepth` fills these on startup for streams probed by older builds, from the raw ffprobe JSON kept on the file.
+Each video stream also carries its bit depth (from ffprobe's `pix_fmt`) and an HDR flag (PQ or HLG transfer), which the playback decision uses; The raw ffprobe output is stored whole on the file; streams probed by older builds lack bit depth, so the scanner re-probes exactly those files and the server requests that scan for each affected library at startup.
 
 ## Identification
 
