@@ -78,7 +78,7 @@ In production the server serves `web/dist` itself: set `WEB_DIST=/path/to/web/di
 pnpm e2e
 ```
 
-Builds the web app, starts the API on port 8099 against a throwaway `DATA_DIR` serving `web/dist`, and runs Playwright through the real UI in installed Google Chrome (Playwright's own Chromium lacks H.264/AAC, so the playback tests need the branded browser). Tests seed libraries from `fixtures/` through the API, so run `scripts/make-fixtures.sh` first. `npx playwright test --ui` opens the inspector; traces are kept on failure under `test-results/`.
+Builds the web app, starts the API on port 8099 against a throwaway `DATA_DIR` serving `web/dist` together with a fake IPTV provider on port 8098 (`server/src/live/fake-xtream-server.ts`; username `alice`, password `secret`; the live channels loop the sample movie), and runs Playwright through the real UI in installed Google Chrome (Playwright's own Chromium lacks H.264/AAC, so the playback tests need the branded browser). Tests seed libraries from `fixtures/` through the API, so run `scripts/make-fixtures.sh` first. `npx playwright test --ui` opens the inspector; traces are kept on failure under `test-results/`. To try Live TV by hand, run `node e2e/start-server.mjs`, open `http://127.0.0.1:8099`, and enter `http://127.0.0.1:8098` with those credentials under Settings → Metadata.
 
 ## API contract
 

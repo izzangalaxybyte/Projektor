@@ -1,40 +1,12 @@
 import { execa } from 'execa';
 import path from 'node:path';
-import { Readable } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
-import { fakeXtream } from '../live/fake-xtream.js';
+import { fakeXtream, ffmpegLoopSource } from '../live/fake-xtream.js';
 import { fixturesDir, makeTestConfig, setupAdmin } from '../test-utils.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const SAMPLE = path.join(fixturesDir(), 'movies', 'Sample Movie (2019)', 'Sample Movie (2019).mp4');
-
-/** A real-time MPEG-TS loop of the sample movie, the way a provider would send a channel. */
-function ffmpegLiveSource(ffmpegPath: string) {
-  return (_id: string, signal: AbortSignal): ReadableStream<Uint8Array> => {
-    const child = execa(
-      ffmpegPath,
-      [
-        '-hide_banner',
-        '-loglevel',
-        'error',
-        '-re',
-        '-stream_loop',
-        '-1',
-        '-i',
-        SAMPLE,
-        '-c',
-        'copy',
-        '-f',
-        'mpegts',
-        'pipe:1',
-      ],
-      { reject: false, stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' },
-    );
-    signal.addEventListener('abort', () => child.kill('SIGKILL'), { once: true });
-    return Readable.toWeb(child.stdout!) as ReadableStream<Uint8Array>;
-  };
-}
 
 describe('live streaming routes', () => {
   let cfg: ReturnType<typeof makeTestConfig>;
@@ -43,7 +15,7 @@ describe('live streaming routes', () => {
   let provider: ReturnType<typeof fakeXtream>;
   let base: string;
 
-  const start = async (liveSource?: ReturnType<typeof ffmpegLiveSource>) => {
+  const start = async (liveSource?: ReturnType<typeof ffmpegLoopSource>) => {
     cfg = makeTestConfig();
     provider = fakeXtream(liveSource ? { liveSource } : {});
     app = await buildApp({
@@ -172,7 +144,7 @@ describe('live streaming routes', () => {
   });
 
   describe('with an ffmpeg-generated provider stream', () => {
-    beforeEach(() => start(ffmpegLiveSource(cfgFfmpeg())));
+    beforeEach(() => start(ffmpegLoopSource(cfgFfmpeg(), SAMPLE)));
 
     it(
       'packages the channel as a sliding-window HLS playlist with AAC audio',

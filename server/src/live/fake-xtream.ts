@@ -1,4 +1,6 @@
 // In-memory Xtream Codes provider for tests. Route the app's fetch through `fakeXtream(...).fetch`.
+import { execa } from 'execa';
+import { Readable } from 'node:stream';
 import type { Fetcher } from './xtream.js';
 
 export interface FakeXtreamOptions {
@@ -195,3 +197,43 @@ const json = (body: unknown) =>
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
+
+/** A real-time MPEG-TS loop of a video file, the way a provider sends a channel. */
+export function ffmpegLoopSource(ffmpegPath: string, file: string) {
+  return (_id: string, signal: AbortSignal): ReadableStream<Uint8Array> => {
+    const child = execa(
+      ffmpegPath,
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-re',
+        '-stream_loop',
+        '-1',
+        '-i',
+        file,
+        // Broadcast-style 2 s GOP so the packager can cut 4 s segments; the fixtures have 10 s GOPs.
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
+        '-tune',
+        'zerolatency',
+        '-g',
+        '48',
+        '-keyint_min',
+        '48',
+        '-sc_threshold',
+        '0',
+        '-c:a',
+        'copy',
+        '-f',
+        'mpegts',
+        'pipe:1',
+      ],
+      { reject: false, stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' },
+    );
+    signal.addEventListener('abort', () => child.kill('SIGKILL'), { once: true });
+    return Readable.toWeb(child.stdout!) as ReadableStream<Uint8Array>;
+  };
+}

@@ -1,5 +1,14 @@
 import Hls from 'hls.js';
-import { supportsNativeHls } from './profile.js';
+import type { LoadPolicy } from 'hls.js';
+
+const PATIENT: LoadPolicy = {
+  default: {
+    maxTimeToFirstByteMs: 30_000,
+    maxLoadTimeMs: 60_000,
+    timeoutRetry: { maxNumRetry: 2, retryDelayMs: 0, maxRetryDelayMs: 0 },
+    errorRetry: { maxNumRetry: 1, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
+  },
+};
 
 export type PlayerEvent =
   'timeupdate' | 'playing' | 'pause' | 'ended' | 'error' | 'durationchange' | 'waiting';
@@ -7,6 +16,8 @@ export type PlayerEvent =
 export interface LoadOptions {
   hls: boolean;
   startMs: number;
+  /** A live stream: start at the live edge and follow it rather than at startMs. */
+  live?: boolean;
 }
 
 /**
@@ -34,20 +45,30 @@ export class HtmlVideoPlayer {
   load(src: string, options: LoadOptions): void {
     this.teardownHls();
     const start = () => {
-      if (options.startMs > 0) this.video.currentTime = options.startMs / 1000;
+      if (options.startMs > 0 && !options.live) this.video.currentTime = options.startMs / 1000;
       void this.video.play().catch(() => undefined);
     };
-    if (options.hls && !supportsNativeHls(this.video) && Hls.isSupported()) {
+    // hls.js whenever MediaSource exists; the browser's own HLS only where it does not (iOS).
+    // Chrome answers "maybe" to the HLS MIME type but cannot actually play our live playlists.
+    if (options.hls && Hls.isSupported()) {
       // startPosition matters for EVENT playlists (a remux still being written): without it hls.js
       // starts near the live edge instead of where the viewer asked.
       this.hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
-        startPosition: options.startMs / 1000,
+        startPosition: options.live ? -1 : options.startMs / 1000,
+        liveSyncDurationCount: 3,
+        // The server answers the first playlist request only once ffmpeg has written a segment,
+        // which can take longer than hls.js's 10 s default while a transcode or a channel starts.
+        manifestLoadPolicy: PATIENT,
+        playlistLoadPolicy: PATIENT,
       });
       this.hls.on(Hls.Events.MANIFEST_PARSED, start);
       this.hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) this.emit('error');
+        if (!data.fatal) return;
+        // Left in on purpose: the only way to see why a stream failed on a TV or phone browser.
+        console.warn('hls.js fatal error', data.type, data.details, data.error?.message ?? '');
+        this.emit('error');
       });
       this.hls.loadSource(src);
       this.hls.attachMedia(this.video);

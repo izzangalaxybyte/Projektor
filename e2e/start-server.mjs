@@ -7,6 +7,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = mkdtempSync(path.join(os.tmpdir(), 'projektor-e2e-'));
+// A fake IPTV provider on 8098 looping the sample movie as a live channel.
+const provider = spawn('npx', ['tsx', 'src/live/fake-xtream-server.ts'], {
+  cwd: path.join(root, 'server'),
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    FAKE_XTREAM_PORT: '8098',
+    FAKE_XTREAM_FILE: path.join(root, 'fixtures/movies/Sample Movie (2019)/Sample Movie (2019).mp4'),
+  },
+});
 const child = spawn('npx', ['tsx', 'src/main.ts'], {
   cwd: path.join(root, 'server'),
   stdio: 'inherit',
@@ -22,5 +32,12 @@ const child = spawn('npx', ['tsx', 'src/main.ts'], {
     HLS_IDLE_MS: '120000',
   },
 });
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
-child.on('exit', (code) => process.exit(code ?? 0));
+for (const signal of ['SIGINT', 'SIGTERM'])
+  process.on(signal, () => {
+    provider.kill(signal);
+    child.kill(signal);
+  });
+child.on('exit', (code) => {
+  provider.kill('SIGTERM');
+  process.exit(code ?? 0);
+});

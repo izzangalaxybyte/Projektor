@@ -265,3 +265,11 @@ Xtream accounts allow one or two simultaneous connections, so the server never p
 ## 2026-09-05 — Live HLS copies video and re-encodes audio to AAC
 
 Browsers' MediaSource takes H.264 and HEVC but not the MP2 or AC-3 audio common on broadcast channels, and the server does not probe a live stream before packaging it. Audio is always re-encoded to stereo AAC at 160 kb/s, which costs a few percent of one core per viewer, while video is copied so no GPU is involved. The playlist is ffmpeg's own sliding window (six 4-second segments), served as written; there is no VOD playlist to precompute and no seek-restart logic, so live sessions have their own small manager rather than a mode inside the VOD one.
+
+## 2026-09-05 — hls.js first, native HLS only without MediaSource
+
+`HtmlVideoPlayer` used the browser's own HLS whenever `canPlayType` said `maybe`. Desktop Chrome 148 says `maybe` yet fails a live playlist with `MEDIA_ERR_SRC_NOT_SUPPORTED`, which cost an afternoon. Now hls.js is used wherever `Hls.isSupported()` (any browser with MediaSource, Safari included) and native HLS is the fallback for iOS-class browsers only. hls.js also gets a 30 s first-byte allowance on playlists because the server deliberately holds the first request until ffmpeg has produced a segment.
+
+## 2026-09-05 — Live TV is a section with a remote-style player, not a library
+
+Channels are not items: they have no files, progress, or artwork cache, and their metadata is a guide that changes hourly. So Live TV has its own routes, hooks, list page, and player. The player borrows the look of the file player but drops the seek bar and the skip and speed controls, which only make sense for catch-up (3.4). Channel up/down, digit entry, and a guide key mirror a TV remote so the same behaviour ports directly to the Android TV and Tizen clients.
