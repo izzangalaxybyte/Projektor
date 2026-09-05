@@ -9,6 +9,9 @@ export const settingsRoutes: FastifyPluginAsyncZod = async (app) => {
     openSubtitlesApiKey: settings.masked('opensubtitles.apiKey'),
     openSubtitlesUsername: settings.get('opensubtitles.username'),
     openSubtitlesPassword: settings.masked('opensubtitles.password'),
+    iptvUrl: app.live.url(),
+    iptvUsername: settings.get('iptv.username'),
+    iptvPassword: settings.masked('iptv.password'),
   });
 
   app.get(
@@ -48,6 +51,21 @@ export const settingsRoutes: FastifyPluginAsyncZod = async (app) => {
         settings.set('opensubtitles.username', b.openSubtitlesUsername?.trim() ?? null);
       if (b.openSubtitlesPassword !== undefined)
         settings.set('opensubtitles.password', b.openSubtitlesPassword ?? null);
+      let iptvChanged = false;
+      if (b.iptvUrl !== undefined) {
+        settings.set('iptv.url', b.iptvUrl?.trim() || null);
+        iptvChanged = true;
+      }
+      if (b.iptvUsername !== undefined) {
+        settings.set('iptv.username', b.iptvUsername?.trim() ?? null);
+        iptvChanged = true;
+      }
+      if (b.iptvPassword !== undefined) {
+        settings.set('iptv.password', b.iptvPassword ?? null);
+        iptvChanged = true;
+      }
+      // New provider details: pull the channel list right away, in the background.
+      if (iptvChanged && app.live.credentials()) void app.live.refresh();
       return view();
     },
   );

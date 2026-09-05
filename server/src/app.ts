@@ -18,14 +18,17 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { LiveRefresher } from './live/refresher.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
 import { SessionRegistry } from './playback/sessions.js';
+import { SettingsService } from './settings/service.js';
 import { filesRoutes } from './routes/files.js';
 import { healthRoutes } from './routes/health.js';
 import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
+import { liveRoutes } from './routes/live.js';
 import { playbackRoutes } from './routes/playback.js';
 import { progressRoutes } from './routes/progress.js';
 import { settingsRoutes } from './routes/settings.js';
@@ -50,6 +53,7 @@ declare module 'fastify' {
     playback: SessionRegistry;
     hls: HlsManager;
     hardware: HardwareReport;
+    live: LiveRefresher;
   }
 }
 
@@ -92,12 +96,24 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   );
   app.decorate('watcher', watcher);
   app.decorate('hardware', { encoder: null, reason: 'not probed yet' } as HardwareReport);
+  app.decorate(
+    'live',
+    new LiveRefresher(
+      database.db,
+      new SettingsService(database.db),
+      app.log,
+      options.config.iptvUrl,
+      options.fetch,
+    ),
+  );
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
     if (options.config.watchLibraries) await watcher.startAll();
+    if (options.config.liveRefresh) app.live.start();
   });
   app.addHook('onClose', async () => {
+    app.live.stop();
     await app.hls.close();
     await watcher.close();
     await scans.whenIdle();
@@ -140,6 +156,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(subtitlesRoutes, { prefix: '/subtitles' });
       await api.register(progressRoutes, { prefix: '/progress' });
       await api.register(usersRoutes, { prefix: '/users' });
+      await api.register(liveRoutes, { prefix: '/live' });
     },
     { prefix: '/api' },
   );

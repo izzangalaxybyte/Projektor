@@ -254,3 +254,45 @@ export const settings = sqliteTable('settings', {
   value: text('value').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const liveCategories = sqliteTable('live_categories', {
+  /** Provider category id. */
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  kind: text('kind', { enum: ['live', 'vod', 'series'] }).notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+});
+
+export const liveChannels = sqliteTable(
+  'live_channels',
+  {
+    /** Provider stream id. */
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    number: integer('number'),
+    logoUrl: text('logo_url'),
+    categoryId: text('category_id'),
+    /** Provider's guide channel id; programmes join on this. */
+    epgChannelId: text('epg_channel_id'),
+    hasArchive: integer('has_archive', { mode: 'boolean' }).notNull().default(false),
+    archiveDays: integer('archive_days').notNull().default(0),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    index('live_channels_category_idx').on(t.categoryId),
+    index('live_channels_epg_idx').on(t.epgChannelId),
+  ],
+);
+
+export const liveProgrammes = sqliteTable(
+  'live_programmes',
+  {
+    id: text('id').primaryKey(),
+    epgChannelId: text('epg_channel_id').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    startAt: text('start_at').notNull(),
+    endAt: text('end_at').notNull(),
+  },
+  (t) => [index('live_programmes_channel_start_idx').on(t.epgChannelId, t.startAt)],
+);

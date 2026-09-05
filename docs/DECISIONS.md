@@ -244,8 +244,16 @@ The Linux box always has `192.168.100.20`, so `http://192.168.100.20:8096` is a 
 
 ## 2026-09-05 — IPTV is integrated server-side through the Xtream Codes API
 
-The owner's subscription (`https://playshare.co:8080/`) exposes the Xtream API. Credentials are stored once in server Settings; the server fetches channels, guide, VOD, and series, and relays streams so devices never see the provider or its credentials, browsers avoid cross-origin blocks, and streams can be remuxed for players that cannot take raw MPEG-TS. Catch-up programmes are seekable, so the skip-amount and speed controls apply to them. Live TV became Phase 3; Samsung TV and iPad moved to Phases 4 and 5.
+The owner's subscription (`http://playshare.co:8080/`) exposes the Xtream API. Credentials are stored once in server Settings; the server fetches channels, guide, VOD, and series, and relays streams so devices never see the provider or its credentials, browsers avoid cross-origin blocks, and streams can be remuxed for players that cannot take raw MPEG-TS. Catch-up programmes are seekable, so the skip-amount and speed controls apply to them. Live TV became Phase 3; Samsung TV and iPad moved to Phases 4 and 5.
 
 ## 2026-09-05 — Recordings are files the server makes from the live relay
 
 A recording is the same ffmpeg copy that feeds a live viewer, written to `DATA_DIR/recordings` instead, so no second stream is pulled from the provider when both happen at once. Timed, until-programme-end, and manual stops all end the same process. Finished recordings are items of their own kind, so they get resume, skip amount, and speed for free, and they are kept on the server's disk rather than beside the owner's media. Remote triggering is deferred to a remote-access phase; scheduling from the guide covers recording while away.
+
+## 2026-09-05 — The IPTV provider URL is a setting with an env default
+
+The provider moves to a new address every few months and its HTTPS endpoint fails the TLS handshake, so the URL is plain HTTP and lives in two places that need no rebuild: `IPTV_URL` in the container environment supplies the default, and the admin can override it under Settings without touching the box. The web and Android clients never see the provider URL at all; they talk to the server's `/api/live` routes.
+
+## 2026-09-05 — The guide is replaced wholesale on each refresh
+
+Every six hours the server pulls the full XMLTV document and swaps the `live_programmes` table for it in one transaction, keeping only programmes for channels the provider still lists. Providers rewrite schedules freely and give no change feed, so a merge would keep stale entries. Channels and categories are upserted by provider id and dropped when they disappear, so channel ids stay stable for recordings and favourites. A failed refresh leaves the previous data in place and records the error on `/api/live/status`.

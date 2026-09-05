@@ -36,7 +36,7 @@ curl -s http://localhost:8096/api/health
 
 `encoder` should read `h264_vaapi`. If it says `libx264`, `encoderReason` tells you why (usually the render node is not passed through, or the iGPU is too old for the iHD driver, in which case set `LIBVA_DRIVER_NAME=i965` in `deploy/.env`).
 
-Open `http://<box-ip>:8096` in a browser, create the admin profile, then in **Settings → Libraries** add `/media/movies`, `/media/tv`, and `/media/anime` (the paths inside the container) and scan. Add a TMDB key under **Settings → Metadata** for posters and descriptions.
+Open `http://<box-ip>:8096` in a browser, create the admin profile, then in **Settings → Libraries** add `/media/movies`, `/media/tv`, and `/media/anime` (the paths inside the container) and scan. Add a TMDB key under **Settings → Metadata** for posters and descriptions, and the IPTV username and password there for Live TV. The provider address defaults to `IPTV_URL` from `deploy/.env` (`http://playshare.co:8080/`); when the provider moves, change it in Settings, or update `.env` and restart.
 
 ## Verifying hardware transcoding
 

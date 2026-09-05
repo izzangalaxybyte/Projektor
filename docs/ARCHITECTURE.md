@@ -71,6 +71,10 @@ Tracks surface in three places: `MediaFile.subtitles` on item details, `GET /api
 
 `progress/service.ts` keeps one `playback_state` row per user and item (movies and episodes only). `update` stores the position and marks the item watched once it passes 90% of the duration; the flag is sticky so a rewatch from the start does not un-watch it. `setWatched` sets the position to the end or deletes the row. `continueWatching` lists unwatched rows by recency. `nextEpisode` orders a show's episodes season-major with specials first and season-less anime by absolute number at the end, and returns the following one. `ItemsService` takes the caller's user id and stamps `progress` onto every summary and detail it returns, so clients never fetch progress separately.
 
+## Live TV
+
+`live/xtream.ts` is the Xtream Codes client: `player_api.php` for the account check (a wrong password is a 200 with `auth: 0`, mapped to an `auth` error), live categories and streams, VOD and series listings, and `xmltv.php` for the guide, parsed with fast-xml-parser into programmes with UTC ISO timestamps. Provider responses mix numbers and strings, so every field is coerced through zod. It also builds the provider stream URLs (`/live/`, `/movie/`, `/timeshift/`) that carry the credentials in the path; those never leave the server. `live/refresher.ts` reads `iptv.url` (falling back to `IPTV_URL`), `iptv.username`, and `iptv.password` from settings, refreshes on start, every six hours, and whenever an admin saves IPTV settings or calls `POST /api/live/refresh`, coalescing concurrent runs. Channels and categories are upserted and pruned; programmes are replaced. State (`refreshing`, `lastRefreshAt`, `lastError`, account status and expiry) is exposed on `GET /api/live/status`. `live/service.ts` is the read side: channels with what is on now and next, categories, and a guide window per channel. `live/fake-xtream.ts` is the in-memory provider the tests route `app.httpFetch` through. `LIVE_REFRESH=false` disables the schedule (tests).
+
 ## Web app
 
 `web/src/App.tsx` mounts the router inside a QueryClient. `Gate` sends first-run visitors to `/setup`, signed-out visitors to `/login`, and everyone else into `AppShell`, the top-nav layout (Home, Movies, TV Shows, Anime, Search, and Settings for admins). `auth/store.ts` keeps the bearer token and profile in localStorage and notifies React through `useSyncExternalStore`; `api/client.ts` wraps `createProjektorClient` with that token, exposes `unwrap` to turn openapi-fetch results into thrown errors with the server's message, `imageUrl` for artwork, and `withAccessToken` for URLs the browser fetches on its own (video, subtitles). `PinPad` is the one input component that must work with a mouse, a keyboard, and later a TV remote.
@@ -102,7 +106,10 @@ SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text U
 | `streams`                      | ffprobe video, audio, and subtitle tracks per file                                                         |
 | `subtitles`                    | Embedded, sidecar, or OpenSubtitles tracks and the path of their cached WebVTT                             |
 | `playback_state`               | Per user, per item position, duration, and watched flag                                                    |
-| `settings`                     | Key-value store for TMDB and OpenSubtitles credentials and other admin settings                            |
+| `settings`                     | Key-value store for TMDB, OpenSubtitles, and IPTV credentials and other admin settings                     |
+| `live_categories`              | Provider categories for live channels (and later VOD and series), keyed by provider id                     |
+| `live_channels`                | Live channels keyed by provider stream id: name, number, logo, category, guide id, catch-up availability   |
+| `live_programmes`              | Guide entries per guide channel id with start and end times; replaced wholesale on each refresh            |
 
 Items link to files one-to-many, so several versions of a movie or episode are allowed. Files that vanish are flagged `missing` rather than deleted so watch state survives a move.
 

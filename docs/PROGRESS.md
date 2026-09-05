@@ -65,16 +65,16 @@ Phase 2 is complete as of 2026-09-05 on emulators (Android 15 phone, Android 14 
 
 ## Phase 3 — Live TV (IPTV)
 
-| Sub-phase                      | Status | Landed in | Check |
-| ------------------------------ | ------ | --------- | ----- |
-| 3.1 Provider client + settings | todo   |           |       |
-| 3.2 Stream relay               | todo   |           |       |
-| 3.3 Web Live section           | todo   |           |       |
-| 3.4 Catch-up                   | todo   |           |       |
-| 3.5 Provider movies and series | todo   |           |       |
-| 3.6 Android Live tab           | todo   |           |       |
-| 3.7 Recording engine           | todo   |           |       |
-| 3.8 Recording UI               | todo   |           |       |
+| Sub-phase                      | Status | Landed in | Check                                                                                |
+| ------------------------------ | ------ | --------- | ------------------------------------------------------------------------------------ |
+| 3.1 Provider client + settings | done   | #43       | 15 tests: Xtream client, XMLTV parsing, refresh, live routes against a fake provider |
+| 3.2 Stream relay               | todo   |           |                                                                                      |
+| 3.3 Web Live section           | todo   |           |                                                                                      |
+| 3.4 Catch-up                   | todo   |           |                                                                                      |
+| 3.5 Provider movies and series | todo   |           |                                                                                      |
+| 3.6 Android Live tab           | todo   |           |                                                                                      |
+| 3.7 Recording engine           | todo   |           |                                                                                      |
+| 3.8 Recording UI               | todo   |           |                                                                                      |
 
 ## Phase 4 — TV shell + Tizen
 
