@@ -233,3 +233,7 @@ Requesting focus on a tile from the screen level raced the lazy list and failed 
 ## 2026-09-05 — TV tests use remote keys, and adb reverse for the dev server
 
 tv-material controls ignore Compose's touch-style `performClick`, so TV UI tests press D-pad keys through UiAutomator, which is also what a real remote does. The Android TV emulator image cannot reach the host via `10.0.2.2`; `adb reverse` maps the server port into the emulator instead.
+
+## 2026-09-05 — Left and Right on the remote are the skip keys
+
+While the TV player's controls are hidden, Left/Right jump by the chosen skip amount rather than scrubbing a timeline, because that is the whole point of the app for its owner. The control bar appears on Up/Down, so seeking the slider is still possible, and the media keys behave as expected at all times. The next episode starts on its own after a ten-second countdown, since a TV viewer usually has the remote out of reach by then.
