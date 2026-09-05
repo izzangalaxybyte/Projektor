@@ -2,7 +2,11 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { scanLibrary } from '../library/scanner.js';
 import { identifyFiles } from '../identify/identifier.js';
+import { ImageStore } from '../images/store.js';
 import { probeFiles } from '../media/probe-service.js';
+import { Matcher } from '../metadata/matcher.js';
+import { TmdbClient } from '../metadata/tmdb.js';
+import { SettingsService } from '../settings/service.js';
 import { LibraryError, LibraryService } from '../library/service.js';
 import { CreateLibraryRequest, ErrorResponse, Id, Library, ScanStatus } from '../schemas/index.js';
 
@@ -104,10 +108,21 @@ export const librariesRoutes: FastifyPluginAsyncZod = async (app) => {
         log: request.log,
       });
       const identified = identifyFiles(app.db, result.changedFileIds, request.log);
+      const tmdbKey = new SettingsService(app.db).get('tmdb.apiKey');
+      const matched = tmdbKey
+        ? await new Matcher({
+            db: app.db,
+            tmdb: new TmdbClient(tmdbKey),
+            images: new ImageStore(app.config.imagesDir),
+            log: request.log,
+          }).matchPending()
+        : { matched: 0, unmatched: 0, failed: 0 };
       return {
         libraryId: request.params.id,
         state: 'idle' as const,
         itemsLinked: identified.movies + identified.episodes,
+        itemsMatched: matched.matched,
+        itemsUnmatched: matched.unmatched,
         filesSeen: result.filesSeen,
         filesChanged: result.filesChanged,
         filesMissing: result.filesMissing,

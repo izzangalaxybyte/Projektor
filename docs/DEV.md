@@ -79,6 +79,18 @@ scripts/                make-fixtures.sh and other helpers
 docs/                   this documentation
 ```
 
+## Metadata
+
+Matching needs a TMDB credential. Create one at https://www.themoviedb.org/settings/api (a free account is enough) and store it:
+
+```bash
+curl -X PATCH http://localhost:8096/api/settings -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"tmdbApiKey":"<v3 key or v4 token>"}'
+```
+
+Scans match new items automatically once the key is set. Artwork lands in `DATA_DIR/images/`.
+
 ## Workflow
 
 Every sub-phase in [PLAN.md](PLAN.md) lands as a PR into `main` together with its documentation updates. Run the four checks before pushing. Update [PROGRESS.md](PROGRESS.md) as the last step of each sub-phase.
+
+Sub-phases depend on each other, so their PRs are stacked: each branch starts from the previous one and its PR targets that branch. To merge a stack, go in order with `gh pr merge N --merge` and **do not delete branches until the whole stack is merged**. Deleting a base branch closes the PRs stacked on it, and a closed PR whose base is gone cannot be reopened (this happened with #3, #5, #7, replaced by #8 to #10). Use merge commits, not squash: squashing makes the next PR's diff include the previous one again.

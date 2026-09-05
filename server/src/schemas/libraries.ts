@@ -35,6 +35,16 @@ export const ScanStatus = z
       .int()
       .nonnegative()
       .meta({ description: 'Files linked to a movie or episode this scan' }),
+    itemsMatched: z
+      .number()
+      .int()
+      .nonnegative()
+      .meta({ description: 'Items matched to TMDB this scan' }),
+    itemsUnmatched: z
+      .number()
+      .int()
+      .nonnegative()
+      .meta({ description: 'Items TMDB search could not match confidently' }),
     startedAt: Timestamp.nullable(),
   })
   .meta({ id: 'ScanStatus' });

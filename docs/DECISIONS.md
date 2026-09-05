@@ -81,3 +81,15 @@ The plan named `anitomyscript`, an Emscripten port of Anitomy. Its WASM loader i
 ## 2026-09-05 — Season phrases split into title and searchTitle
 
 `Jujutsu Kaisen 2nd Season - 05` groups under the show `Jujutsu Kaisen`, season 2, episode 5 in our database, but AniList lists `Jujutsu Kaisen 2nd Season` as its own entry. The parser keeps both forms so grouping and metadata search each get the name they need.
+
+## 2026-09-05 — Unmatched items are searched once, not every scan
+
+`movies.match_attempted_at` and `shows.match_attempted_at` record the attempt. An item TMDB could not match stays in the needs-review list until someone fixes it by hand; re-searching it on every scan would spend API calls to reach the same answer.
+
+## 2026-09-05 — Artwork variants are produced on demand
+
+Originals are downloaded once at TMDB's `w780` or `w1280`; the 300/780/1280 JPEG variants are created the first time a client asks for that width and cached. Resizing everything at scan time would triple the work for images most clients never request at that size.
+
+## 2026-09-05 — Stacked PRs are merged with merge commits, branches deleted last
+
+See DEV.md. Learned the hard way when `--delete-branch` on the first PR in the stack closed the rest.

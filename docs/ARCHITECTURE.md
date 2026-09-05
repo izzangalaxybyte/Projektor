@@ -36,6 +36,14 @@ Login is rate limited per IP with `@fastify/rate-limit` (registered with `global
 
 `items/service.ts` is the read model behind `/api/items`: it maps the four tables to `ItemSummary` and `ItemDetail`, handles browsing by library kind, kind, parent, search, and review flag, and attaches files with their streams to movies and episodes.
 
+## Metadata and artwork
+
+`server/src/metadata/tmdb.ts` is a small TMDB v3 client over `fetch` (injectable for tests) that accepts either a v3 API key (sent as `api_key`) or a v4 read access token (sent as a bearer header) and validates responses with zod. `score.ts` ranks search results: Sørensen–Dice similarity over normalised titles, a bonus for a matching year and a penalty for a clearly different one, popularity as a small tiebreaker, and an acceptance threshold of 0.85. `matcher.ts` runs after identification: for every movie and TV show never attempted it searches, applies the top result when it clears the threshold (title, year, overview, tagline, genres, rating, runtime, poster, backdrop, `needsReview = false`), and otherwise records `matchAttemptedAt` so the item is not searched again on every scan. For shows it fetches only the seasons that have local files and fills episode titles, overviews, air dates, stills, and runtimes by episode number. Anime libraries are skipped here and handled by the AniList path in 1.8. Two requests run concurrently; a 401 from TMDB drains the queue. `fake-tmdb.ts` is the canned server the tests run against.
+
+`images/store.ts` caches artwork under `DATA_DIR/images/<2-char prefix>/<sha1 of source url>.jpg`. Originals are downloaded once at TMDB's `w780` (posters, stills) or `w1280` (backdrops) and normalised to JPEG with sharp; `/api/images/{key}?w=` resizes to 300, 780, or 1280 on first request and caches the variant next to the original. The route is public because `<img>` tags cannot send headers and the keys are unguessable.
+
+`settings/service.ts` is a typed key-value layer over the `settings` table for the TMDB and OpenSubtitles credentials; the API only ever returns secrets masked.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.
