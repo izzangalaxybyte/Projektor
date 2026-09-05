@@ -85,7 +85,9 @@ export function buildLiveHlsArgs(
     'warning',
     ...(input === 'pipe:0'
       ? ['-fflags', '+genpts+discardcorrupt']
-      : ['-user_agent', 'VLC/3.0.20 LibVLC/3.0.20']),
+      : input.startsWith('http')
+        ? ['-user_agent', 'VLC/3.0.20 LibVLC/3.0.20']
+        : []),
     '-i',
     input,
     '-map',

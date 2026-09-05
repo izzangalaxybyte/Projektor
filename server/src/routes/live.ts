@@ -213,8 +213,41 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
         };
       }
 
+      if (request.body.recordingId !== undefined) {
+        const rec = app.recorder.get(request.body.recordingId);
+        const filePath = app.recorder.filePath(request.body.recordingId);
+        if (!rec || !filePath) return reply.notFound('No such recording, or it has not started');
+        if (request.body.profile.containers.includes('ts')) {
+          return {
+            method: 'direct' as const,
+            url: `/api/recordings/${rec.id}/stream`,
+            sessionId: null,
+            reason: 'device plays MPEG-TS; byte ranges pass through',
+            kind: 'recording' as const,
+            durationMs: rec.durationMs,
+            title: rec.title,
+          };
+        }
+        const session = app.liveHls.create({
+          channelId: rec.channelId,
+          kind: 'vod',
+          sourceKey: `recording:${rec.id}`,
+          sourceUrl: filePath,
+          durationMs: rec.durationMs,
+        });
+        return {
+          method: 'hls' as const,
+          url: `/api/live/sessions/${session.id}/index.m3u8`,
+          sessionId: session.id,
+          reason: 'device needs HLS; recording remuxed',
+          kind: 'recording' as const,
+          durationMs: rec.durationMs,
+          title: rec.title,
+        };
+      }
+
       if (!request.body.channelId)
-        return reply.badRequest('channelId, vodId, or episodeId is required');
+        return reply.badRequest('channelId, vodId, episodeId, or recordingId is required');
       const channel = live.channel(request.body.channelId);
       if (!channel) return reply.notFound('No such channel');
 

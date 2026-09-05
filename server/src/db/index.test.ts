@@ -22,6 +22,7 @@ const EXPECTED_TABLES = [
   'streams',
   'subtitles',
   'playback_state',
+  'recordings',
   'settings',
 ];
 
