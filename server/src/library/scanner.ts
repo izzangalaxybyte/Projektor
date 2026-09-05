@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { now, schema, type Db } from '../db/index.js';
 import { walkVideos } from './walker.js';
@@ -47,6 +47,7 @@ export async function scanLibrary(
 
   const result: ScanResult = { filesSeen: 0, filesChanged: 0, filesMissing: 0, changedFileIds: [] };
   const seen = new Set<string>();
+  const stale = staleProbeFileIds(db, libraryId);
 
   for (const root of paths) {
     for await (const file of walkVideos(root, {
@@ -74,7 +75,10 @@ export async function scanLibrary(
         result.changedFileIds.push(id);
         continue;
       }
-      const changed = existing.sizeBytes !== file.sizeBytes || existing.mtimeMs !== file.mtimeMs;
+      const changed =
+        existing.sizeBytes !== file.sizeBytes ||
+        existing.mtimeMs !== file.mtimeMs ||
+        stale.has(existing.id);
       if (changed) {
         db.update(schema.mediaFiles)
           .set({
@@ -111,4 +115,26 @@ export async function scanLibrary(
     .where(eq(schema.libraries.id, libraryId))
     .run();
   return result;
+}
+
+/**
+ * Files whose video stream was probed by a build that did not record bit depth. They are probed
+ * again on the next scan so the playback decision can tell 10-bit and HDR sources apart.
+ */
+export function staleProbeFileIds(db: Db, libraryId: string): Set<string> {
+  return new Set(
+    db
+      .select({ id: schema.mediaFiles.id })
+      .from(schema.mediaFiles)
+      .innerJoin(schema.streams, eq(schema.streams.fileId, schema.mediaFiles.id))
+      .where(
+        and(
+          eq(schema.mediaFiles.libraryId, libraryId),
+          eq(schema.streams.type, 'video'),
+          isNull(schema.streams.bitDepth),
+        ),
+      )
+      .all()
+      .map((r) => r.id),
+  );
 }
