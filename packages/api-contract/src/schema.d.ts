@@ -536,10 +536,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
-    put?: never;
-    /** Scan a library now (admin). Runs to completion before responding. */
-    post: {
+    /** Status of the latest scan of this library */
+    get: {
       parameters: {
         query?: never;
         header?: never;
@@ -553,6 +551,43 @@ export interface paths {
       responses: {
         /** @description Default Response */
         200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ScanStatus'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    /**
+     * Queue a scan of this library (admin)
+     * @description Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        202: {
           headers: {
             [name: string]: unknown;
           };
@@ -1017,6 +1052,7 @@ export interface components {
       libraryId: string;
       /** @enum {string} */
       state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
@@ -1030,6 +1066,9 @@ export interface components {
       /** @description Items TMDB search could not match confidently */
       itemsUnmatched: number;
       startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
     };
     ProgressStateInput: {
       positionMs: number;
@@ -1266,6 +1305,7 @@ export interface components {
       libraryId: string;
       /** @enum {string} */
       state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
       filesSeen: number;
       filesChanged: number;
       filesMissing: number;
@@ -1279,6 +1319,9 @@ export interface components {
       /** @description Items TMDB search could not match confidently */
       itemsUnmatched: number;
       startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
     };
     ProgressState: {
       positionMs: number;

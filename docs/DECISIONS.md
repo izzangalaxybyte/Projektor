@@ -105,3 +105,11 @@ The plan assumed AniList exposes a TMDB id. It does not (only a MyAnimeList id),
 ## 2026-09-05 — One injectable outbound fetch on the app
 
 `app.httpFetch` is the only way server code reaches TMDB, AniList, or artwork. Tests inject a router over the fake servers and exercise real routes end to end. Mocking modules or spying on `globalThis.fetch` would have been more fragile and would not have covered the wiring in the scan route.
+
+## 2026-09-05 — A folder change triggers a full library reconcile, not a per-file update
+
+The watcher only tells the runner "this library changed". The scan then walks the whole library, which the size+mtime check makes cheap, and probes only what changed. Per-file handling would duplicate the reconcile logic and get the missing-file case wrong for renames.
+
+## 2026-09-05 — Scans are serialised
+
+One scan at a time across all libraries. ffprobe already runs four wide inside a scan, and two libraries probing at once would only fight for disk. Requests during a run coalesce into a single rerun.

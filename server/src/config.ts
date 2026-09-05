@@ -9,6 +9,11 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   FFMPEG_PATH: z.string().default('ffmpeg'),
   FFPROBE_PATH: z.string().default('ffprobe'),
+  SCAN_DEBOUNCE_MS: z.coerce.number().int().positive().default(5000),
+  WATCH_LIBRARIES: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 export interface Config {
@@ -17,6 +22,10 @@ export interface Config {
   logLevel: z.infer<typeof EnvSchema>['LOG_LEVEL'];
   ffmpegPath: string;
   ffprobePath: string;
+  /** Quiet period after a folder change before a scan is queued. */
+  scanDebounceMs: number;
+  /** Whether to watch library folders for changes. */
+  watchLibraries: boolean;
   /** Absolute root for all server-owned state. */
   dataDir: string;
   dbPath: string;
@@ -34,6 +43,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     logLevel: parsed.LOG_LEVEL,
     ffmpegPath: parsed.FFMPEG_PATH,
     ffprobePath: parsed.FFPROBE_PATH,
+    scanDebounceMs: parsed.SCAN_DEBOUNCE_MS,
+    watchLibraries: parsed.WATCH_LIBRARIES,
   });
 }
 
@@ -50,6 +61,8 @@ export function configForDataDir(
     logLevel: 'info',
     ffmpegPath: 'ffmpeg',
     ffprobePath: 'ffprobe',
+    scanDebounceMs: 5000,
+    watchLibraries: true,
     ...overrides,
     dataDir,
     dbPath: path.join(dataDir, 'projektor.sqlite'),

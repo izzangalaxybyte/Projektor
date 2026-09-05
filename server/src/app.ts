@@ -13,6 +13,8 @@ import type { Config } from './config.js';
 import { openDatabase, type Db } from './db/index.js';
 import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
+import { ScanRunner } from './library/scan-runner.js';
+import { LibraryWatcher } from './library/watcher.js';
 import { healthRoutes } from './routes/health.js';
 import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
@@ -31,6 +33,8 @@ declare module 'fastify' {
     db: Db;
     /** Outbound HTTP for TMDB, AniList, and artwork. Injectable so tests never hit the network. */
     httpFetch: HttpFetch;
+    scans: ScanRunner;
+    watcher: LibraryWatcher;
   }
 }
 
@@ -51,7 +55,20 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.decorate('config', options.config);
   app.decorate('db', database.db);
   app.decorate('httpFetch', options.fetch ?? ((url, init) => fetch(url, init)));
-  app.addHook('onClose', () => database.close());
+  const scans = new ScanRunner(app, app.log);
+  const watcher = new LibraryWatcher(database.db, scans, app.log, {
+    debounceMs: options.config.scanDebounceMs,
+  });
+  app.decorate('scans', scans);
+  app.decorate('watcher', watcher);
+  app.addHook('onReady', async () => {
+    if (options.config.watchLibraries) await watcher.startAll();
+  });
+  app.addHook('onClose', async () => {
+    await watcher.close();
+    await scans.whenIdle();
+    database.close();
+  });
 
   await app.register(sensible);
   // Registered with global: false so only routes that set config.rateLimit are limited.

@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { fakeAniListFetch } from '../metadata/fake-anilist.js';
 import { fakeTmdbFetch } from '../metadata/fake-tmdb.js';
-import { fixturesDir, makeTestConfig, setupAdmin } from '../test-utils.js';
+import { fixturesDir, makeTestConfig, scanAndWait, setupAdmin } from '../test-utils.js';
 
 const fixtures = fixturesDir();
 const t = makeTestConfig();
@@ -114,9 +114,7 @@ describe.skipIf(!existsSync(fixtures))('scan matching and fix-match over the fix
         payload: { name, kind, paths: [`${fixtures}/${dir}`] },
       });
       const id = (create.json() as { id: string }).id;
-      const scan = (
-        await app.inject({ method: 'POST', url: `/api/libraries/${id}/scan`, headers })
-      ).json() as Record<string, number>;
+      const scan = (await scanAndWait(app, headers, id)) as Record<string, number>;
       expect(scan.itemsLinked).toBeGreaterThan(0);
     }
     const movies = await list('libraryKind=movie');

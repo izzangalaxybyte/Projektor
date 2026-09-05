@@ -17,10 +17,12 @@ export const CreateLibraryRequest = Library.pick({ name: true, kind: true, paths
   id: 'CreateLibraryRequest',
 });
 
+export type ScanStatus = z.infer<typeof ScanStatus>;
 export const ScanStatus = z
   .object({
     libraryId: Id,
     state: z.enum(['idle', 'running']),
+    phase: z.enum(['walking', 'probing', 'identifying', 'matching']).nullable(),
     filesSeen: z.number().int().nonnegative(),
     filesChanged: z.number().int().nonnegative(),
     filesMissing: z.number().int().nonnegative(),
@@ -46,5 +48,7 @@ export const ScanStatus = z
       .nonnegative()
       .meta({ description: 'Items TMDB search could not match confidently' }),
     startedAt: Timestamp.nullable(),
+    finishedAt: Timestamp.nullable(),
+    error: z.string().nullable().meta({ description: 'Set when the last scan failed' }),
   })
   .meta({ id: 'ScanStatus' });

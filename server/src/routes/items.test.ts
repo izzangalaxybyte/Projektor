@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { fixturesDir, makeTestConfig, setupAdmin } from '../test-utils.js';
+import { fixturesDir, makeTestConfig, scanAndWait, setupAdmin } from '../test-utils.js';
 
 const fixtures = fixturesDir();
 let app: FastifyInstance;
@@ -28,8 +28,8 @@ async function createAndScan(name: string, kind: string, dir: string) {
     payload: { name, kind, paths: [dir] },
   });
   const id = (create.json() as { id: string }).id;
-  const scan = await app.inject({ method: 'POST', url: `/api/libraries/${id}/scan`, headers });
-  return { id, scan: scan.json() as Record<string, number> };
+  const scan = (await scanAndWait(app, headers, id)) as Record<string, number>;
+  return { id, scan };
 }
 
 type Summary = {
