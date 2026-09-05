@@ -73,6 +73,8 @@ Phase 2 is complete as of 2026-09-05 on emulators (Android 15 phone, Android 14 
 | 3.4 Catch-up                   | todo   |           |       |
 | 3.5 Provider movies and series | todo   |           |       |
 | 3.6 Android Live tab           | todo   |           |       |
+| 3.7 Recording engine           | todo   |           |       |
+| 3.8 Recording UI               | todo   |           |       |
 
 ## Phase 4 — TV shell + Tizen
 
