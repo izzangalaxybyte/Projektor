@@ -205,9 +205,10 @@ export class HlsManager {
         this.highestSegment(session) < 0;
       const next = failedEarly ? fallbackHardware(this.hardwareFor(session.id)) : undefined;
       if (next !== undefined) {
+        const from = this.hardwareFor(session.id);
         this.sessionHardware.set(session.id, next);
         this.log.warn(
-          { sessionId: session.id, from: this.hardwareFor(session.id), to: next },
+          { sessionId: session.id, from, to: next },
           'transcode failed before its first segment; retrying with a different pipeline',
         );
         this.running.delete(session.id);

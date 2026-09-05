@@ -1,4 +1,4 @@
-import { and, asc, eq, like, type SQL } from 'drizzle-orm';
+import { desc, and, asc, eq, like, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
 import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
@@ -268,6 +268,8 @@ export class ItemsService {
       .select()
       .from(schema.mediaFiles)
       .where(and(condition, eq(schema.mediaFiles.missing, false)))
+      // Largest first: with several versions, the full-size one is the default to play.
+      .orderBy(desc(schema.mediaFiles.sizeBytes))
       .all();
     return files.map((f) => ({
       id: f.id,
