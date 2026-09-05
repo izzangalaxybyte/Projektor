@@ -63,25 +63,36 @@ Phase 2 is complete as of 2026-09-05 on emulators (Android 15 phone, Android 14 
 | 2.7 TV browse               | done                                 | PR #37                           | `TvBrowseTest` on the Android 14 TV emulator against the host API, remote keys only after typing the address: Down/Centre through sign-in, focus starts in the Movies row, Down lands in the TV row, Centre → Sample Show → Season 1 → Episode 2 with Play and `video: hevc`                                    |
 | 2.8 TV player               | done (emulator); real TV run pending | PR #38                           | `TvPlayerTest` on the Android 14 TV emulator: remote sign-in, Play from the detail screen, MEDIA_PAUSE, Right jumps 10 s by default, +4s picked from the side list then Right jumps 4 s and Left returns, 1.5× picked, prefs persisted; a full episode with subtitles on a real Android TV is the owner's check |
 
-## Phase 3 — TV shell + Tizen
+## Phase 3 — Live TV (IPTV)
+
+| Sub-phase                      | Status | Landed in | Check |
+| ------------------------------ | ------ | --------- | ----- |
+| 3.1 Provider client + settings | todo   |           |       |
+| 3.2 Stream relay               | todo   |           |       |
+| 3.3 Web Live section           | todo   |           |       |
+| 3.4 Catch-up                   | todo   |           |       |
+| 3.5 Provider movies and series | todo   |           |       |
+| 3.6 Android Live tab           | todo   |           |       |
+
+## Phase 4 — TV shell + Tizen
 
 | Sub-phase              | Status | Landed in | Check |
 | ---------------------- | ------ | --------- | ----- |
-| 3.1 TV shell scaffold  | todo   |           |       |
-| 3.2 TV screens         | todo   |           |       |
-| 3.3 TV player controls | todo   |           |       |
-| 3.4 Tizen build target | todo   |           |       |
-| 3.5 Tizen packaging    | todo   |           |       |
-| 3.6 AVPlay adapter     | todo   |           |       |
-| 3.7 RU7100 bring-up    | todo   |           |       |
-| 3.8 OpenSubtitles      | todo   |           |       |
+| 4.1 TV shell scaffold  | todo   |           |       |
+| 4.2 TV screens         | todo   |           |       |
+| 4.3 TV player controls | todo   |           |       |
+| 4.4 Tizen build target | todo   |           |       |
+| 4.5 Tizen packaging    | todo   |           |       |
+| 4.6 AVPlay adapter     | todo   |           |       |
+| 4.7 RU7100 bring-up    | todo   |           |       |
+| 4.8 OpenSubtitles      | todo   |           |       |
 
-## Phase 4 — iPad
+## Phase 5 — iPad
 
 | Sub-phase             | Status | Landed in | Check |
 | --------------------- | ------ | --------- | ----- |
-| 4.1 Xcode project     | todo   |           |       |
-| 4.2 API client + auth | todo   |           |       |
-| 4.3 Browse screens    | todo   |           |       |
-| 4.4 Player            | todo   |           |       |
-| 4.5 Cross-client pass | todo   |           |       |
+| 5.1 Xcode project     | todo   |           |       |
+| 5.2 API client + auth | todo   |           |       |
+| 5.3 Browse screens    | todo   |           |       |
+| 5.4 Player            | todo   |           |       |
+| 5.5 Cross-client pass | todo   |           |       |

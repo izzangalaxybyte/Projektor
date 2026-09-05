@@ -241,3 +241,7 @@ While the TV player's controls are hidden, Left/Right jump by the chosen skip am
 ## 2026-09-05 — The server address is baked in for now
 
 The Linux box always has `192.168.100.20`, so `http://192.168.100.20:8096` is a constant in every client (`DEFAULT_SERVER_URL` in `:core` for Android, `web/src/config.ts` for the web and Tizen builds). Sign-in screens prefill it, so Continue is one press and a TV remote never has to spell an IP. The field stays editable for a different box or a later address change. Discovery over mDNS is the eventual replacement.
+
+## 2026-09-05 — IPTV is integrated server-side through the Xtream Codes API
+
+The owner's subscription (`https://playshare.co:8080/`) exposes the Xtream API. Credentials are stored once in server Settings; the server fetches channels, guide, VOD, and series, and relays streams so devices never see the provider or its credentials, browsers avoid cross-origin blocks, and streams can be remuxed for players that cannot take raw MPEG-TS. Catch-up programmes are seekable, so the skip-amount and speed controls apply to them. Live TV became Phase 3; Samsung TV and iPad moved to Phases 4 and 5.
