@@ -117,6 +117,15 @@ curl -X PATCH http://localhost:8096/api/settings -H "authorization: Bearer $TOKE
 
 Scans match new items automatically once the key is set. Artwork lands in `DATA_DIR/images/`.
 
+## Docker
+
+```bash
+docker build -f deploy/Dockerfile -t projektor .
+docker run --rm -p 8096:8096 -v $PWD/data:/data -v $PWD/fixtures:/media:ro projektor
+```
+
+The image compiles the server (`server/dist`), builds the web app, and installs ffmpeg with the Intel VAAPI drivers (amd64 only; an arm64 build on a Mac gets ffmpeg alone and transcodes in software). See [server.md](server.md) for the compose setup on the Linux box.
+
 ## Workflow
 
 Every sub-phase in [PLAN.md](PLAN.md) lands as a PR into `main` together with its documentation updates. Run the four checks before pushing. Update [PROGRESS.md](PROGRESS.md) as the last step of each sub-phase.

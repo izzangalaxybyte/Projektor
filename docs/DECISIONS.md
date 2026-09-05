@@ -189,3 +189,11 @@ Playwright's Chromium has no proprietary codecs, so a passing test there would p
 ## 2026-09-05 — HEVC remuxes are tagged hvc1
 
 ffmpeg writes `hev1` sample entries for copied HEVC by default. Safari and browsers' MediaSource want `hvc1`, so remuxes add `-tag:v hvc1`. Found while getting the web player to play the HEVC fixture in Chrome.
+
+## 2026-09-05 — One container, root by default, media read-only
+
+The image bundles API, transcoder, and web app; the Linux box runs one thing. It runs as root so `/dev/dri` opens without host-specific group ids (the compose file shows how to run as a user with `group_add`). Media mounts are read-only because nothing is ever written beside the files. `tini` is PID 1 so killed ffmpeg processes do not linger as zombies.
+
+## 2026-09-05 — Intel drivers are installed only on amd64
+
+The image builds on an Apple Silicon Mac for testing, where the Intel packages do not exist. The Dockerfile installs them only when `dpkg --print-architecture` is amd64, which is what the Linux box is.

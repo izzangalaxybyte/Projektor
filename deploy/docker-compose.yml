@@ -1,0 +1,26 @@
+# Run from the repo root: docker compose -f deploy/docker-compose.yml up -d --build
+services:
+  projektor:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: projektor:local
+    container_name: projektor
+    restart: unless-stopped
+    ports:
+      - '8096:8096'
+    env_file:
+      - .env
+    volumes:
+      - ${DATA_DIR:-./data}:/data
+      # Media is read-only: the server never writes beside your files.
+      - ${MOVIES_DIR:-./media/movies}:/media/movies:ro
+      - ${TV_DIR:-./media/tv}:/media/tv:ro
+      - ${ANIME_DIR:-./media/anime}:/media/anime:ro
+    devices:
+      # Intel iGPU for VAAPI transcoding. Comment out on a box without /dev/dri.
+      - /dev/dri:/dev/dri
+    # The container runs as root by default so it can open /dev/dri. To run as your own user
+    # instead, set `user: "1000:1000"` and add the host's render group id under group_add.
+    # group_add:
+    #   - "109"

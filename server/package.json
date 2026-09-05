@@ -10,7 +10,9 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "emit-openapi": "tsx src/openapi.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "build": "tsc -p tsconfig.build.json",
+    "start:prod": "node dist/main.js"
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.0",
