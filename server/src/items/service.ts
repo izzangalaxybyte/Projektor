@@ -1,5 +1,6 @@
 import { and, asc, eq, like, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
+import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
 import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
 
@@ -28,9 +29,10 @@ export class ItemsService {
   constructor(
     private readonly db: Db,
     private readonly subtitles?: SubtitleService,
+    private readonly progress?: ProgressService,
   ) {}
 
-  list(q: ItemsQueryInput): ItemsPage {
+  list(q: ItemsQueryInput, userId?: string): ItemsPage {
     // Only top-level items (movies and shows) are listed unless a kind or parent is given.
     const wantMovies = q.kind ? q.kind === 'movie' : !q.parentId;
     const wantShows = q.kind ? q.kind === 'show' : !q.parentId;
@@ -43,7 +45,7 @@ export class ItemsService {
     if (wantShows && q.libraryKind !== 'movie') ranked.push(...this.shows(q));
     if (wantSeasons && q.parentId) ranked.push(...this.seasons(q.parentId));
     if (wantEpisodes && q.parentId) ranked.push(...this.episodes(q.parentId, q.parentId));
-    const items = sortItems(ranked, q.sort);
+    const items = this.withProgress(sortItems(ranked, q.sort), userId);
     return {
       items: items.slice(q.offset, q.offset + q.limit),
       total: items.length,
@@ -52,7 +54,49 @@ export class ItemsService {
     };
   }
 
-  get(id: string): ItemDetail {
+  get(id: string, userId?: string): ItemDetail {
+    const detail = this.detail(id);
+    if (!userId) return detail;
+    const [withSelf] = this.withProgress([detail], userId) as ItemDetail[];
+    return { ...withSelf!, children: this.withProgress(detail.children, userId) };
+  }
+
+  /** Summaries for specific ids (any kind), in the given order, skipping unknown ids. */
+  summaries(ids: string[], userId?: string): ItemSummary[] {
+    const out: ItemSummary[] = [];
+    for (const id of ids) {
+      try {
+        const {
+          files: _f,
+          children: _c,
+          overview: _o,
+          tagline: _t,
+          genres: _g,
+          rating: _r,
+          airDate: _a,
+          runtimeMs: _m,
+          tmdbId: _x,
+          anilistId: _y,
+          ...summary
+        } = this.detail(id);
+        out.push(summary);
+      } catch (error) {
+        if (!(error instanceof ItemNotFound)) throw error;
+      }
+    }
+    return this.withProgress(out, userId);
+  }
+
+  private withProgress<T extends ItemSummary>(items: T[], userId: string | undefined): T[] {
+    if (!userId || !this.progress) return items;
+    const map = this.progress.getMany(
+      userId,
+      items.filter((i) => i.kind === 'movie' || i.kind === 'episode').map((i) => i.id),
+    );
+    return items.map((i) => (map.has(i.id) ? { ...i, progress: map.get(i.id)! } : i));
+  }
+
+  private detail(id: string): ItemDetail {
     const movie = this.db.select().from(schema.movies).where(eq(schema.movies.id, id)).get();
     if (movie) {
       const lib = this.libraryKind(movie.libraryId);

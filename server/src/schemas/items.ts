@@ -9,6 +9,7 @@ export const ProgressState = z
     updatedAt: Timestamp,
   })
   .meta({ id: 'ProgressState' });
+export type ProgressState = z.infer<typeof ProgressState>;
 
 export const ItemSummary = z
   .object({

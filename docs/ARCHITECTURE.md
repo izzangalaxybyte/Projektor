@@ -66,6 +66,10 @@ A transcode encodes H.264 (libx264 `veryfast` CRF 23, or `h264_vaapi` when hardw
 
 Tracks surface in three places: `MediaFile.subtitles` on item details, `GET /api/files/{id}/subtitles`, and `PlaybackDecision.subtitles`. HLS sessions add one `EXT-X-MEDIA:TYPE=SUBTITLES` rendition per track to the master playlist, each pointing at a one-segment media playlist whose single "segment" is the whole WebVTT file, so AVPlayer and ExoPlayer render them natively. Because players resolve segment URLs relative to the playlist and drop its query string, a playlist requested with `?access_token=` is rewritten so every URI carries the token too.
 
+## Progress
+
+`progress/service.ts` keeps one `playback_state` row per user and item (movies and episodes only). `update` stores the position and marks the item watched once it passes 90% of the duration; the flag is sticky so a rewatch from the start does not un-watch it. `setWatched` sets the position to the end or deletes the row. `continueWatching` lists unwatched rows by recency. `nextEpisode` orders a show's episodes season-major with specials first and season-less anime by absolute number at the end, and returns the following one. `ItemsService` takes the caller's user id and stamps `progress` onto every summary and detail it returns, so clients never fetch progress separately.
+
 ## Data model
 
 SQLite via better-sqlite3 with Drizzle ORM. WAL journal, foreign keys on. Text UUID primary keys, ISO 8601 UTC timestamps, milliseconds for durations.
