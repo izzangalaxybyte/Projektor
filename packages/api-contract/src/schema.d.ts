@@ -1902,6 +1902,235 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/live/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Choose a raw TS relay or live HLS for a channel and device profile
+         * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LiveDecideRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LivePlaybackDecision"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/channels/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The channel's MPEG-TS stream, relayed from the provider
+         * @description One provider connection per channel is shared by every viewer and closes shortly after the last one leaves. Players that cannot set headers may pass `?access_token=`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/sessions/{id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live HLS playlist or segment
+         * @description `index.m3u8` is a sliding window of the last six 4-second segments; `seg-N.ts` are the segments. The first request starts ffmpeg.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                504: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop a live HLS session */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2219,6 +2448,21 @@ export interface components {
             /** @description Provider's account status, e.g. Active */
             accountStatus: string | null;
             accountExpiresAt: string | null;
+        };
+        LiveDecideRequestInput: {
+            channelId: string;
+            profile: components["schemas"]["DeviceProfileInput"];
+        };
+        LivePlaybackDecisionInput: {
+            /**
+             * @description direct: raw MPEG-TS relay; hls: live playlist
+             * @enum {string}
+             */
+            method: "direct" | "hls";
+            /** @description Relative URL of the TS stream or the HLS playlist */
+            url: string;
+            sessionId: string | null;
+            reason: string;
         };
         HealthResponseInput: {
             /** @constant */
@@ -2552,6 +2796,21 @@ export interface components {
             /** @description Provider's account status, e.g. Active */
             accountStatus: string | null;
             accountExpiresAt: string | null;
+        };
+        LiveDecideRequest: {
+            channelId: string;
+            profile: components["schemas"]["DeviceProfile"];
+        };
+        LivePlaybackDecision: {
+            /**
+             * @description direct: raw MPEG-TS relay; hls: live playlist
+             * @enum {string}
+             */
+            method: "direct" | "hls";
+            /** @description Relative URL of the TS stream or the HLS playlist */
+            url: string;
+            sessionId: string | null;
+            reason: string;
         };
         HealthResponse: {
             /** @constant */

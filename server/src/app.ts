@@ -18,7 +18,9 @@ import { authPlugin } from './auth/plugin.js';
 import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
+import { LiveHlsManager } from './live/live-hls.js';
 import { LiveRefresher } from './live/refresher.js';
+import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
 import { SessionRegistry } from './playback/sessions.js';
@@ -54,6 +56,8 @@ declare module 'fastify' {
     hls: HlsManager;
     hardware: HardwareReport;
     live: LiveRefresher;
+    liveRelays: LiveRelayManager;
+    liveHls: LiveHlsManager;
   }
 }
 
@@ -61,11 +65,16 @@ export interface AppOptions {
   config: Config;
   logger?: boolean;
   fetch?: HttpFetch;
+  /** Test hooks: how long a live relay stays open with no viewers, and the HLS file wait. */
+  liveGraceMs?: number;
+  hlsWaitMs?: number;
 }
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const app = fastify({
     logger: options.logger ? { level: options.config.logLevel } : false,
+    // Shutdown must not wait for live viewers to leave; their streams are cut with the server.
+    forceCloseConnections: true,
   }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -106,6 +115,21 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       options.fetch,
     ),
   );
+  app.decorate(
+    'liveRelays',
+    new LiveRelayManager(app.live, app.log, {
+      maxStreams: options.config.liveMaxStreams,
+      graceMs: options.liveGraceMs ?? 5000,
+      fetcher: options.fetch,
+    }),
+  );
+  app.decorate(
+    'liveHls',
+    new LiveHlsManager(options.config, app.liveRelays, app.log, {
+      idleMs: options.config.hlsIdleMs,
+      waitMs: options.hlsWaitMs ?? 20_000,
+    }),
+  );
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
@@ -114,6 +138,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
   app.addHook('onClose', async () => {
     app.live.stop();
+    await app.liveHls.close();
+    await app.liveRelays.close();
     await app.hls.close();
     await watcher.close();
     await scans.whenIdle();

@@ -7,6 +7,8 @@ export interface FakeXtreamOptions {
   password?: string;
   status?: string;
   expiresAtUnix?: number;
+  /** Bytes for /live/{u}/{p}/{id}.ts; defaults to synthetic TS packets forever. */
+  liveSource?: (streamId: string, signal: AbortSignal) => ReadableStream<Uint8Array>;
 }
 
 export function fakeXtream(opts: FakeXtreamOptions = {}) {
@@ -14,6 +16,8 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
   const username = opts.username ?? 'alice';
   const password = opts.password ?? 'secret';
   const calls: string[] = [];
+  /** Open provider stream connections, so tests can see a relay drop. */
+  const live = { open: 0, opened: 0 };
   const state = {
     categories: [
       { category_id: '10', category_name: 'Sports', parent_id: 0 },
@@ -70,7 +74,7 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
 </tv>`;
   };
 
-  const fetch: Fetcher = async (input) => {
+  const fetch: Fetcher = async (input, init) => {
     const url = new URL(input);
     if (`${url.protocol}//${url.host}` !== base) return new Response('not found', { status: 404 });
     calls.push(
@@ -101,6 +105,34 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
           return json([]);
       }
     }
+    const stream = /^\/live\/([^/]+)\/([^/]+)\/(\d+)\.ts$/.exec(url.pathname);
+    if (stream) {
+      if (
+        decodeURIComponent(stream[1]!) !== username ||
+        decodeURIComponent(stream[2]!) !== password
+      )
+        return new Response('', { status: 401 });
+      if (!state.streams.some((s) => String(s['stream_id']) === stream[3]))
+        return new Response('', { status: 404 });
+      const signal = init?.signal ?? new AbortController().signal;
+      live.open += 1;
+      live.opened += 1;
+      let closed = false;
+      const onClose = () => {
+        if (closed) return;
+        closed = true;
+        live.open -= 1;
+      };
+      signal.addEventListener('abort', onClose, { once: true });
+      const source = (opts.liveSource ?? syntheticTs)(stream[3]!, signal);
+      const counted = source.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          flush: onClose,
+          transform: (c, ctl) => ctl.enqueue(c),
+        }),
+      );
+      return new Response(counted, { status: 200, headers: { 'content-type': 'video/mp2t' } });
+    }
     if (url.pathname === '/xmltv.php') {
       if (!authed) return new Response('', { status: 401 });
       return new Response(guide(), { status: 200, headers: { 'content-type': 'text/xml' } });
@@ -108,7 +140,49 @@ export function fakeXtream(opts: FakeXtreamOptions = {}) {
     return new Response('not found', { status: 404 });
   };
 
-  return { base, username, password, calls, state, fetch };
+  return { base, username, password, calls, state, live, fetch };
+}
+
+/** Endless 188-byte MPEG-TS packets (sync byte, PID 0x100, rolling counter), 20 per 25 ms. */
+export function syntheticTs(_streamId: string, signal: AbortSignal): ReadableStream<Uint8Array> {
+  let counter = 0;
+  let timer: NodeJS.Timeout | null = null;
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      const tick = () => {
+        if (signal.aborted) {
+          controller.close();
+          return;
+        }
+        const chunk = new Uint8Array(188 * 20);
+        for (let i = 0; i < 20; i++) {
+          chunk[i * 188] = 0x47;
+          chunk[i * 188 + 1] = 0x01;
+          chunk[i * 188 + 2] = 0x00;
+          chunk[i * 188 + 3] = 0x10 | (counter++ & 0x0f);
+          chunk.fill(0xff, i * 188 + 4, (i + 1) * 188);
+        }
+        controller.enqueue(chunk);
+        timer = setTimeout(tick, 25);
+      };
+      tick();
+      signal.addEventListener(
+        'abort',
+        () => {
+          if (timer) clearTimeout(timer);
+          try {
+            controller.close();
+          } catch {
+            /* already closed */
+          }
+        },
+        { once: true },
+      );
+    },
+    cancel() {
+      if (timer) clearTimeout(timer);
+    },
+  });
 }
 
 export function xmltvTime(d: Date): string {
