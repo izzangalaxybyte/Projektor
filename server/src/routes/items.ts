@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ItemNotFound, ItemsService } from '../items/service.js';
 import { metadataDeps } from '../metadata/deps.js';
+import { ProgressService } from '../progress/service.js';
 import { SubtitleService } from '../subtitles/service.js';
 import { FixMatchError, FixMatchService } from '../metadata/fix-match.js';
 import {
@@ -18,7 +19,12 @@ import {
 } from '../schemas/index.js';
 
 export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const items = new ItemsService(app.db, new SubtitleService(app.db, app.config, app.log));
+  const progress = new ProgressService(app.db);
+  const items = new ItemsService(
+    app.db,
+    new SubtitleService(app.db, app.config, app.log),
+    progress,
+  );
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ItemNotFound) return reply.notFound(error.message);
@@ -46,7 +52,7 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: Page(ItemSummary) },
       },
     },
-    async (request) => items.list(request.query),
+    async (request) => items.list(request.query, request.user!.id),
   );
 
   app.get(
@@ -60,7 +66,7 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: ItemDetail, 404: ErrorResponse },
       },
     },
-    async (request) => items.get(request.params.id),
+    async (request) => items.get(request.params.id, request.user!.id),
   );
 
   app.get(
@@ -100,7 +106,29 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request) => {
       const service = new FixMatchService(app.db, metadataDeps(app, request.log));
       await service.apply(request.params.id, request.body);
-      return items.get(request.params.id);
+      return items.get(request.params.id, request.user!.id);
+    },
+  );
+
+  app.get(
+    '/:id/next',
+    {
+      schema: {
+        tags: ['items'],
+        summary: 'The episode that follows this one in its show',
+        security: [{ bearerAuth: [] }],
+        params: z.object({ id: Id }),
+        response: { 200: ItemSummary.nullable(), 404: ErrorResponse },
+      },
+    },
+    async (request, reply) => {
+      let nextId: string | null;
+      try {
+        nextId = progress.nextEpisode(request.params.id);
+      } catch {
+        return reply.notFound('No such episode');
+      }
+      return nextId ? (items.summaries([nextId], request.user!.id)[0] ?? null) : null;
     },
   );
 };

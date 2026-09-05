@@ -30,7 +30,8 @@ afterAll(async () => {
   rmSync(dataDir, { recursive: true, force: true });
 });
 
-async function waitFor<T>(probe: () => Promise<T | null>, timeoutMs = 15_000): Promise<T> {
+// Generous: this file runs alongside the ffmpeg-heavy HLS tests.
+async function waitFor<T>(probe: () => Promise<T | null>, timeoutMs = 45_000): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const value = await probe();
@@ -79,7 +80,7 @@ describe.skipIf(!existsSync(fixtures))('library watcher', () => {
       await app.inject({ method: 'GET', url: `/api/items/${item.id}`, headers })
     ).json() as { files: unknown[] };
     expect(detail.files).toEqual([]);
-  }, 30_000);
+  }, 60_000);
 
   it('coalesces a scan requested while one is running into a single rerun', async () => {
     const create = await app.inject({
@@ -101,5 +102,5 @@ describe.skipIf(!existsSync(fixtures))('library watcher', () => {
       await app.inject({ method: 'GET', url: `/api/libraries/${libraryId}/scan`, headers })
     ).json() as Record<string, unknown>;
     expect(status).toMatchObject({ state: 'idle', filesSeen: 2, error: null });
-  }, 30_000);
+  }, 60_000);
 });

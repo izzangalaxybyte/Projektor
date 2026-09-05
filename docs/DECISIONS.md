@@ -153,3 +153,15 @@ Each subtitle rendition's media playlist lists the whole track as a single segme
 ## 2026-09-05 — Playlists carry the query token when the client used one
 
 Players resolve `seg-0.ts` relative to the playlist URL without its query string, so a token passed as `?access_token=` would be lost on segment requests. The server appends it to every URI in playlists it serves when, and only when, the request itself used a query token. Header-authenticated clients see clean playlists.
+
+## 2026-09-05 — Watched is sticky at 90%
+
+An item counts as watched once a position at or past 90% of its duration is reported, and stays watched when replayed from the beginning. Credits make "100%" unreliable, and un-watching something because a viewer skimmed the opening again is worse than leaving it marked. Explicit unwatch removes the state.
+
+## 2026-09-05 — Progress rides on every summary
+
+`ItemSummary.progress` is filled per caller by the items service rather than fetched from a separate endpoint. Every client screen that shows a poster also shows a progress bar, so one round trip instead of two on every list.
+
+## 2026-09-05 — Stacked PRs must be retargeted by hand before each merge
+
+See DEV.md. GitHub retargets nothing on its own; the catch-up PR #21 was the cost of assuming it would.

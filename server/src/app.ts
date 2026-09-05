@@ -24,6 +24,7 @@ import { imagesRoutes } from './routes/images.js';
 import { itemsRoutes } from './routes/items.js';
 import { librariesRoutes } from './routes/libraries.js';
 import { playbackRoutes } from './routes/playback.js';
+import { progressRoutes } from './routes/progress.js';
 import { settingsRoutes } from './routes/settings.js';
 import { subtitlesRoutes } from './routes/subtitles.js';
 // Registers schema ids so every named schema appears under components.
@@ -132,6 +133,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(filesRoutes, { prefix: '/files' });
       await api.register(playbackRoutes, { prefix: '/playback' });
       await api.register(subtitlesRoutes, { prefix: '/subtitles' });
+      await api.register(progressRoutes, { prefix: '/progress' });
     },
     { prefix: '/api' },
   );
