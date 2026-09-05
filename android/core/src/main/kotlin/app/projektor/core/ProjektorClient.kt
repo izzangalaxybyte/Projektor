@@ -23,6 +23,9 @@ import kotlinx.serialization.json.Json
 /** API version this client was built against (packages/api-contract/openapi.json). */
 const val API_VERSION = "1.0.0"
 
+/** The owner's server has a fixed LAN address; baked in for now so no device ever needs it typed. */
+const val DEFAULT_SERVER_URL = "http://192.168.100.20:8096"
+
 /**
  * One entry point to the generated API. Every request carries the bearer token supplied by
  * [tokenProvider], read per request so it can change after login or logout.

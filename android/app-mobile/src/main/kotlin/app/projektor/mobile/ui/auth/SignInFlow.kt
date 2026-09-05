@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import app.projektor.core.DEFAULT_SERVER_URL
 import app.projektor.core.api.models.Profile
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.userMessage
@@ -61,7 +62,7 @@ fun SignInFlow(container: AppContainer) {
         Text("Projektor", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         when (val s = step) {
             Step.Server -> {
-                var url by remember { mutableStateOf(savedServer ?: "http://") }
+                var url by remember { mutableStateOf(savedServer ?: DEFAULT_SERVER_URL) }
                 Text("Where is your server?", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
                     value = url, onValueChange = { url = it }, label = { Text("Server address") }, singleLine = true,

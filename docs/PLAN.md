@@ -25,7 +25,9 @@ The owner's main reason for building this: skipping should move by an amount the
 - **Skip amount**: a selector offering +3, +4, +5, +6, +7, +8, +9, +10, and +15 seconds. The forward and back buttons, and the arrow keys or remote left/right, jump by exactly that amount.
 - **Speed**: 0.5×, 0.75×, normal, 1.25×, 1.5×, 1.75×, 2×.
 
-Both choices persist per device across sessions. The web player has them from Phase 1; the Android, Tizen, and iPad players must ship with them, not add them later.
+Both choices persist per device across sessions.
+
+Every client also ships with the server's fixed LAN address (`http://192.168.100.20:8096`) baked in as the default, so a fresh install never needs it typed; the address stays editable. The web player has them from Phase 1; the Android, Tizen, and iPad players must ship with them, not add them later.
 
 ## Scope boundaries
 

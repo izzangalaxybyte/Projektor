@@ -13,6 +13,10 @@ One Gradle project under `android/` builds two apps from shared modules:
 
 `:core` generates its Kotlin client from `packages/api-contract/openapi.json` at build time with the OpenAPI Generator Gradle plugin (`kotlin` generator, `jvm-ktor` library, kotlinx.serialization). Nothing generated is committed, so the Kotlin types can never drift from the contract; regenerate the contract on the server side and the next Gradle build picks it up. `ProjektorClient` wraps the generated `*Api` classes with one base URL and a bearer token read per request, plus `imageUrl` and `withAccessToken` for URLs a player fetches itself. `SessionStore` keeps server address, token, and profile in SharedPreferences (`MemorySessionStore` for tests); `AuthRepository` does setup, profiles, login, and logout.
 
+## Server address
+
+`DEFAULT_SERVER_URL` in `:core` (`http://192.168.100.20:8096`) prefills the server field on first launch and is what a fresh install talks to. Edit the constant if the box moves; the field remains editable on the device too.
+
 ## Device profile
 
 `DeviceProfiles` (in `:core`) turns the device's `MediaCodecList` into the server's `DeviceProfile`: decoder MIME types map to `h264`, `hevc`, `vp9`, `av1`, `aac`, `ac3`, `eac3`, `opus`, `mp3`, `flac`; containers are what Media3 demuxes (mp4, mkv, webm, mov, ts, avi); segments are fMP4. The mapping is a pure function so it is unit tested with synthetic decoder lists; only `DeviceProfiles.current()` touches Android.
