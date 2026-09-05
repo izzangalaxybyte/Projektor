@@ -9,6 +9,9 @@ const RawStream = z.object({
   width: z.number().int().optional(),
   height: z.number().int().optional(),
   channels: z.number().int().optional(),
+  pix_fmt: z.string().optional(),
+  color_transfer: z.string().optional(),
+  profile: z.string().optional(),
   disposition: z.record(z.string(), z.number()).optional(),
   tags: z.record(z.string(), z.string()).optional(),
 });
@@ -35,6 +38,10 @@ export interface ProbedStream {
   width: number | null;
   height: number | null;
   channels: number | null;
+  /** Bits per sample from the pixel format (8, 10, 12); null for non-video or unknown. */
+  bitDepth: number | null;
+  /** True for PQ (HDR10/Dolby Vision base layer) or HLG transfer characteristics. */
+  hdr: boolean;
 }
 
 export interface ProbeResult {
@@ -116,6 +123,8 @@ export async function probeFile(ffprobePath: string, filePath: string): Promise<
       width: s.width ?? null,
       height: s.height ?? null,
       channels: s.channels ?? null,
+      bitDepth: s.codec_type === 'video' ? bitDepthOf(s.pix_fmt) : null,
+      hdr: s.codec_type === 'video' && isHdrTransfer(s.color_transfer),
     });
   }
 
@@ -134,4 +143,23 @@ function normaliseLanguage(tag: string | undefined): string | null {
   if (!tag) return null;
   const lower = tag.toLowerCase();
   return lower === 'und' ? null : lower;
+}
+
+/** "yuv420p10le" → 10, "p010le" → 10, "yuv420p" → 8; null when ffprobe gave no pixel format. */
+export function bitDepthOf(pixFmt: string | undefined): number | null {
+  if (!pixFmt) return null;
+  const m =
+    /(?:p|le|be|^gbr|^yuv\d{3}p?)(\d{1,2})(?:le|be)?$/.exec(pixFmt) ?? /p(\d{2})/.exec(pixFmt);
+  if (m && m[1]) {
+    const n = Number(m[1]);
+    if (n === 10 || n === 12 || n === 14 || n === 16) return n;
+  }
+  if (/p010|p012|p016|yuv4\d\dp1[0246]/.test(pixFmt))
+    return Number(/1[0246]/.exec(pixFmt)?.[0] ?? 10);
+  return 8;
+}
+
+/** PQ (smpte2084) and HLG (arib-std-b67) are the HDR transfer functions in the wild. */
+export function isHdrTransfer(transfer: string | undefined): boolean {
+  return transfer === 'smpte2084' || transfer === 'arib-std-b67';
 }

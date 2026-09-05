@@ -80,6 +80,10 @@ A POST without a request body may be sent with `Content-Type: application/json` 
 
 PINs are 4 to 6 digits. Five wrong PINs in a row lock the profile for 15 minutes; during the lockout even the right PIN returns 423.
 
+## Stream and profile fields added after 1.0
+
+`StreamInfo` carries `bitDepth` (video bits per sample, null when unknown) and `hdr`. `DeviceProfile` accepts an optional `hdr` flag (the device shows HDR itself) and understands `hevc10` in `videoCodecs` for 10-bit HEVC; without them, 10-bit or HDR sources are transcoded and tone-mapped.
+
 ## Schemas defined for upcoming routes
 
 Grouped by the sub-phase that will route them.

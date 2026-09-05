@@ -10,6 +10,7 @@ import {
   NUMBER_ENTRY_MAX_DIGITS,
 } from '../live/channel-entry.js';
 import { HtmlVideoPlayer } from '../player/HtmlVideoPlayer.js';
+import { releaseSessionOnPageHide } from '../player/release.js';
 import { buildDeviceProfile } from '../player/profile.js';
 
 /**
@@ -89,7 +90,11 @@ export function LivePlayerPage() {
     if (!d || !player) return;
     setError(null);
     player.load(withAccessToken(d.url), { hls: d.method === 'hls', startMs: 0, live: true });
+    const offPageHide = d.sessionId
+      ? releaseSessionOnPageHide(`/api/live/sessions/${d.sessionId}`)
+      : () => undefined;
     return () => {
+      offPageHide();
       if (d.sessionId)
         void api.DELETE('/api/live/sessions/{id}', { params: { path: { id: d.sessionId } } });
     };

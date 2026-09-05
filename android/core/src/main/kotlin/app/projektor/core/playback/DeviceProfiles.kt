@@ -40,12 +40,15 @@ object DeviceProfiles {
         return DeviceProfileInput(
             name = name,
             containers = CONTAINERS,
-            videoCodecs = VIDEO_MIMES.filterKeys { it in mimes }.values.distinct(),
+            // MediaCodec HEVC decoders on anything recent handle Main 10, and the display (or the
+            // TV) tone-maps HDR itself, so the server is told not to.
+            videoCodecs = VIDEO_MIMES.filterKeys { it in mimes }.values.distinct().let { if ("hevc" in it) it + "hevc10" else it },
             audioCodecs = AUDIO_MIMES.filterKeys { it in mimes }.values.distinct(),
             maxWidth = maxWidth,
             maxBitrate = maxBitrate,
             // ExoPlayer plays both; fMP4 is the same choice the web player makes.
             hlsSegmentContainer = DeviceProfileInput.HlsSegmentContainer.FMP4,
+            hdr = true,
         )
     }
 

@@ -26,7 +26,7 @@ class DeviceProfilesTest {
     fun `a TV with hardware HEVC and AC3 advertises both, case-insensitively`() {
         val tv = listOf("Video/HEVC", "video/avc", "AUDIO/AC3", "audio/eac3", "audio/mp4a-latm")
         val p = DeviceProfiles.fromMimeTypes(tv, "Shield", maxWidth = 3840, maxBitrate = 40_000_000)
-        assertEquals(listOf("h264", "hevc"), p.videoCodecs)
+        assertEquals(listOf("h264", "hevc", "hevc10"), p.videoCodecs)
         assertEquals(listOf("aac", "ac3", "eac3"), p.audioCodecs)
         assertEquals(3840, p.maxWidth)
         assertEquals(40_000_000, p.maxBitrate)

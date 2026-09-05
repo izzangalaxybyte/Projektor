@@ -211,4 +211,22 @@ describe('vodPlaylist', () => {
     expect(playlist).toContain('#EXT-X-MAP:URI="init.mp4"');
     expect(playlist).toContain('seg-0.m4s');
   });
+
+  it('tone-maps HDR sources on the GPU and in software', () => {
+    const b = base();
+    const hdr: PlaybackSession = {
+      ...b,
+      decision: {
+        ...b.decision,
+        method: 'transcode',
+        video: 'transcode',
+        videoStream: { ...b.decision.videoStream!, hdr: true, bitDepth: 10 },
+      },
+    };
+    const gpu = buildTranscodeArgs(hdr, '/out', { startSegment: 0, hardware: 'vaapi' }).join(' ');
+    expect(gpu).toContain('-vf tonemap_vaapi=format=nv12:t=bt709:m=bt709:p=bt709 -c:v h264_vaapi');
+    const soft = buildTranscodeArgs(hdr, '/out', { startSegment: 0, hardware: null }).join(' ');
+    expect(soft).toContain('tonemap=hable');
+    expect(soft).toContain('-pix_fmt yuv420p');
+  });
 });

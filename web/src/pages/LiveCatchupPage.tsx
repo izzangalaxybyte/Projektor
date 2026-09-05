@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api, unwrap, withAccessToken } from '../api/client.js';
 import { useLiveChannels } from '../hooks/useLive.js';
 import { HtmlVideoPlayer } from '../player/HtmlVideoPlayer.js';
+import { releaseSessionOnPageHide } from '../player/release.js';
 import {
   formatRate,
   loadPrefs,
@@ -122,7 +123,11 @@ export function LiveCatchupPage({ source = 'catchup' }: { source?: ProviderSourc
     player.knownDurationMs = d.durationMs ?? 0;
     player.load(withAccessToken(d.url), { hls: d.method === 'hls', startMs: 0 });
     player.setRate(prefsRef.current.rate);
+    const offPageHide = d.sessionId
+      ? releaseSessionOnPageHide(`/api/live/sessions/${d.sessionId}`)
+      : () => undefined;
     return () => {
+      offPageHide();
       if (d.sessionId)
         void api.DELETE('/api/live/sessions/{id}', { params: { path: { id: d.sessionId } } });
     };

@@ -122,11 +122,18 @@ export function buildTranscodeArgs(
       'va',
     );
     input.splice(input.indexOf('-i'), 0, '-hwaccel', 'vaapi', '-hwaccel_output_format', 'vaapi');
-    const filters = [
-      targetWidth !== null
-        ? `scale_vaapi=w=${targetWidth}:h=-2:format=nv12`
-        : 'scale_vaapi=format=nv12',
-    ];
+    // HDR sources are tone-mapped to BT.709 on the GPU (this also converts 10-bit to 8-bit);
+    // everything else just becomes 8-bit nv12, scaled when the profile asks for it.
+    const filters = decision.videoStream?.hdr
+      ? [
+          'tonemap_vaapi=format=nv12:t=bt709:m=bt709:p=bt709',
+          ...(targetWidth !== null ? [`scale_vaapi=w=${targetWidth}:h=-2`] : []),
+        ]
+      : [
+          targetWidth !== null
+            ? `scale_vaapi=w=${targetWidth}:h=-2:format=nv12`
+            : 'scale_vaapi=format=nv12',
+        ];
     video.push('-vf', filters.join(','), '-c:v', 'h264_vaapi', '-profile:v', 'high');
     if (maxBitrate !== null)
       video.push(
@@ -139,7 +146,18 @@ export function buildTranscodeArgs(
       );
     else video.push('-qp', '23');
   } else {
-    if (targetWidth !== null) video.push('-vf', `scale=${targetWidth}:-2`);
+    const soft: string[] = [];
+    if (decision.videoStream?.hdr)
+      // Software tone mapping (slow, but correct colours) for boxes without VAAPI.
+      soft.push(
+        'zscale=t=linear:npl=100',
+        'format=gbrpf32le',
+        'zscale=p=bt709',
+        'tonemap=hable:desat=0',
+        'zscale=t=bt709:m=bt709:r=tv',
+      );
+    if (targetWidth !== null) soft.push(`scale=${targetWidth}:-2`);
+    if (soft.length) video.push('-vf', soft.join(','));
     video.push(
       '-c:v',
       'libx264',

@@ -136,4 +136,56 @@ describe('decide', () => {
     const audioOnly = { container: 'mp4', bitrate: null, streams: [stream(0, 'audio', 'aac')] };
     expect(decide(audioOnly, chrome).reasons).toContain('no video stream');
   });
+
+  it('refuses to copy 10-bit HEVC unless the device lists hevc10, and HDR unless the device shows it', () => {
+    const profile: DeviceProfile = {
+      name: 'chrome',
+      containers: ['mp4', 'webm'],
+      videoCodecs: ['h264', 'hevc'],
+      audioCodecs: ['aac'],
+      maxWidth: null,
+      maxBitrate: null,
+      hlsSegmentContainer: 'fmp4',
+    };
+    const hdr10: DecisionFile = {
+      container: 'mkv',
+      bitrate: 20_000_000,
+      streams: [
+        stream(0, 'video', 'hevc', { width: 3840, height: 2160, bitDepth: 10, hdr: true }),
+        stream(1, 'audio', 'aac'),
+      ],
+    };
+    const tenBit = decide(hdr10, profile);
+    expect(tenBit.method).toBe('transcode');
+    expect(tenBit.reasons).toEqual(
+      expect.arrayContaining([
+        '10-bit hevc not supported',
+        'HDR source needs tone mapping for this device',
+      ]),
+    );
+
+    const sdr10: DecisionFile = {
+      ...hdr10,
+      streams: [
+        stream(0, 'video', 'hevc', { bitDepth: 10, hdr: false }),
+        stream(1, 'audio', 'aac'),
+      ],
+    };
+    expect(decide(sdr10, { ...profile, videoCodecs: ['h264', 'hevc', 'hevc10'] }).method).toBe(
+      'remux',
+    );
+    expect(decide(sdr10, profile).method).toBe('transcode');
+
+    // An Android TV that decodes Main 10 and shows HDR gets a plain remux (mkv is not in containers here).
+    expect(
+      decide(hdr10, { ...profile, videoCodecs: ['h264', 'hevc', 'hevc10'], hdr: true }).method,
+    ).toBe('remux');
+    // Unknown depth (probed by an older build) is treated as 8-bit.
+    expect(
+      decide(
+        { ...sdr10, streams: [stream(0, 'video', 'hevc'), stream(1, 'audio', 'aac')] },
+        profile,
+      ).method,
+    ).toBe('remux');
+  });
 });

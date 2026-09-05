@@ -41,6 +41,14 @@ export const StreamInfo = z
     width: z.number().int().nullable(),
     height: z.number().int().nullable(),
     channels: z.number().int().nullable(),
+    bitDepth: z
+      .number()
+      .int()
+      .nullable()
+      .meta({ description: 'Video bits per sample; null when unknown' }),
+    hdr: z
+      .boolean()
+      .meta({ description: 'PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG)' }),
   })
   .meta({ id: 'StreamInfo' });
 export type StreamInfo = z.infer<typeof StreamInfo>;

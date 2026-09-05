@@ -9,6 +9,8 @@ const PROBE: Record<string, string> = {
   // video codecs
   h264: 'video/mp4; codecs="avc1.640028"',
   hevc: 'video/mp4; codecs="hvc1.1.6.L120.B0"',
+  // Main 10: browsers often accept 8-bit HEVC but not this, so it is probed separately.
+  hevc10: 'video/mp4; codecs="hvc1.2.4.L153.B0"',
   vp9: 'video/webm; codecs="vp9"',
   av1: 'video/mp4; codecs="av01.0.08M.08"',
   // audio codecs
@@ -34,7 +36,7 @@ export function buildDeviceProfile(
   // QuickTime, then plays a multi-gigabyte MKV by hopping around it with range requests and stalls
   // on the way; a remux to HLS costs nothing but a copy and is reliable.
   const containers = ['mp4', 'webm'].filter((c) => canPlay(video, c));
-  const videoCodecs = ['h264', 'hevc', 'vp9', 'av1'].filter((c) => canPlay(video, c));
+  const videoCodecs = ['h264', 'hevc', 'hevc10', 'vp9', 'av1'].filter((c) => canPlay(video, c));
   const audioCodecs = ['aac', 'ac3', 'eac3', 'opus', 'mp3', 'flac'].filter((c) =>
     canPlay(video, c),
   );

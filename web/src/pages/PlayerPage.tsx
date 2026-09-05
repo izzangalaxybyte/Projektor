@@ -16,6 +16,7 @@ import {
   type SkipSeconds,
 } from '../player/prefs.js';
 import { buildDeviceProfile } from '../player/profile.js';
+import { releaseSessionOnPageHide } from '../player/release.js';
 import { planSeek } from '../player/timeline.js';
 import { fmt } from './ItemPage.js';
 
@@ -186,7 +187,11 @@ export function PlayerPage() {
       startMs: isRemux ? 0 : resumeAt.current,
     });
     player.setRate(prefsRef.current.rate);
+    const offPageHide = d.sessionId
+      ? releaseSessionOnPageHide(`/api/playback/sessions/${d.sessionId}`)
+      : () => undefined;
     return () => {
+      offPageHide();
       // Free the server's ffmpeg as soon as this session is replaced or the page closes.
       if (d.sessionId)
         void api.DELETE('/api/playback/sessions/{id}', { params: { path: { id: d.sessionId } } });

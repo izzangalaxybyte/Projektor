@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import pLimit from 'p-limit';
 import { now, schema, type Db } from '../db/index.js';
-import { probeFile } from './ffprobe.js';
+import { bitDepthOf, isHdrTransfer, probeFile } from './ffprobe.js';
 
 export interface ProbeOptions {
   ffprobePath: string;
@@ -69,6 +69,8 @@ export async function probeFiles(
                     width: s.width,
                     height: s.height,
                     channels: s.channels,
+                    bitDepth: s.bitDepth,
+                    hdr: s.hdr,
                   })),
                 )
                 .run();
@@ -91,4 +93,42 @@ export async function probeFiles(
     ),
   );
   return summary;
+}
+
+/**
+ * Fills bit depth and HDR for video streams probed before those columns existed, from the raw
+ * ffprobe JSON kept on the file, so a library does not have to be re-probed. Returns the count.
+ */
+export function backfillStreamDepth(db: Db, log?: FastifyBaseLogger): number {
+  const rows = db
+    .select({
+      id: schema.streams.id,
+      index: schema.streams.streamIndex,
+      probeJson: schema.mediaFiles.probeJson,
+    })
+    .from(schema.streams)
+    .innerJoin(schema.mediaFiles, eq(schema.mediaFiles.id, schema.streams.fileId))
+    .where(and(eq(schema.streams.type, 'video'), isNull(schema.streams.bitDepth)))
+    .all();
+  let updated = 0;
+  db.transaction((tx) => {
+    for (const row of rows) {
+      if (!row.probeJson) continue;
+      let raw: { streams?: Array<{ index: number; pix_fmt?: string; color_transfer?: string }> };
+      try {
+        raw = JSON.parse(row.probeJson) as typeof raw;
+      } catch {
+        continue;
+      }
+      const s = raw.streams?.find((x) => x.index === row.index);
+      if (!s) continue;
+      tx.update(schema.streams)
+        .set({ bitDepth: bitDepthOf(s.pix_fmt), hdr: isHdrTransfer(s.color_transfer) })
+        .where(eq(schema.streams.id, row.id))
+        .run();
+      updated += 1;
+    }
+  });
+  if (updated > 0) log?.info({ updated }, 'stream bit depth and HDR backfilled from probe data');
+  return updated;
 }

@@ -291,6 +291,8 @@ export class ItemsService {
           title: s.title,
           isDefault: s.isDefault,
           isForced: s.isForced,
+          bitDepth: s.bitDepth,
+          hdr: s.hdr,
           width: s.width,
           height: s.height,
           channels: s.channels,

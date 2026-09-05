@@ -2908,6 +2908,10 @@ export interface components {
             width: number | null;
             height: number | null;
             channels: number | null;
+            /** @description Video bits per sample; null when unknown */
+            bitDepth: number | null;
+            /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
+            hdr: boolean;
         };
         SubtitleTrackInput: {
             /** @description Opaque identifier */
@@ -2981,7 +2985,7 @@ export interface components {
             name: string;
             /** @description e.g. mp4, mkv, webm */
             containers: string[];
-            /** @description e.g. h264, hevc, vp9, av1 */
+            /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
             videoCodecs: string[];
             /** @description e.g. aac, ac3, eac3, opus, flac */
             audioCodecs: string[];
@@ -2990,6 +2994,8 @@ export interface components {
             maxBitrate: number | null;
             /** @enum {string} */
             hlsSegmentContainer: "ts" | "fmp4";
+            /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
+            hdr?: boolean;
         };
         PlaybackDecideRequestInput: {
             /** @description Opaque identifier */
@@ -3393,6 +3399,10 @@ export interface components {
             width: number | null;
             height: number | null;
             channels: number | null;
+            /** @description Video bits per sample; null when unknown */
+            bitDepth: number | null;
+            /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
+            hdr: boolean;
         };
         SubtitleTrack: {
             /** @description Opaque identifier */
@@ -3466,7 +3476,7 @@ export interface components {
             name: string;
             /** @description e.g. mp4, mkv, webm */
             containers: string[];
-            /** @description e.g. h264, hevc, vp9, av1 */
+            /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
             videoCodecs: string[];
             /** @description e.g. aac, ac3, eac3, opus, flac */
             audioCodecs: string[];
@@ -3475,6 +3485,8 @@ export interface components {
             maxBitrate: number | null;
             /** @enum {string} */
             hlsSegmentContainer: "ts" | "fmp4";
+            /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
+            hdr?: boolean;
         };
         PlaybackDecideRequest: {
             /** @description Opaque identifier */
