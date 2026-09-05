@@ -16,6 +16,7 @@ import {
   type SkipSeconds,
 } from '../player/prefs.js';
 import { buildDeviceProfile } from '../player/profile.js';
+import { planSeek } from '../player/timeline.js';
 import { fmt } from './ItemPage.js';
 
 const PROGRESS_INTERVAL_MS = 10_000;
@@ -53,17 +54,42 @@ export function PlayerPage() {
     savePrefs(next);
     if (patch.rate !== undefined) playerRef.current?.setRate(patch.rate);
   };
-  const skip = (direction: 1 | -1) => {
-    const p = playerRef.current;
-    if (p) p.seek(p.currentMs + direction * prefsRef.current.skipSeconds * 1000);
-  };
   const lastReport = useRef(0);
   const resumeAt = useRef(startMs);
+  // A remux session's HLS timeline starts at the position it was opened at; everything the page
+  // shows or reports is absolute, so it adds this back.
+  const offsetRef = useRef(0);
+  const decisionRef = useRef<PlaybackDecision | null>(null);
+  const knownDurationRef = useRef(knownDurationMs);
+  knownDurationRef.current = knownDurationMs;
+  const [seekEpoch, setSeekEpoch] = useState(0);
+  const seekTo = (absoluteMs: number) => {
+    const p = playerRef.current;
+    const d = decisionRef.current;
+    if (!p || !d) return;
+    const plan = planSeek({
+      targetMs: absoluteMs,
+      offsetMs: offsetRef.current,
+      availableMs: p.durationMs,
+      method: d.method,
+      knownDurationMs: knownDurationRef.current,
+    });
+    if (plan.kind === 'restart') {
+      // Beyond what ffmpeg has remuxed so far: open a new session starting there.
+      resumeAt.current = plan.ms;
+      setSeekEpoch((e) => e + 1);
+    } else p.seek(plan.ms);
+  };
+  const skip = (direction: 1 | -1) => {
+    const p = playerRef.current;
+    if (p)
+      seekTo(p.currentMs + offsetRef.current + direction * prefsRef.current.skipSeconds * 1000);
+  };
   const reportRef = useRef<(force?: boolean) => void>(() => undefined);
 
   const profile = useMemo(() => buildDeviceProfile(), []);
   const decision = useQuery({
-    queryKey: ['decide', fileId, audioIndex, profile.name],
+    queryKey: ['decide', fileId, audioIndex, profile.name, seekEpoch],
     enabled: !!fileId,
     staleTime: Infinity,
     queryFn: async () =>
@@ -94,11 +120,13 @@ export function PlayerPage() {
       const p = playerRef.current;
       // Remux sessions stream an EVENT playlist until ffmpeg finishes, so the browser reports an
       // infinite duration; fall back to the duration ffprobe measured.
-      const duration = p && p.durationMs > 0 ? p.durationMs : knownDurationMs;
-      if (!p || !itemId || duration <= 0 || p.currentMs <= 0) return;
+      const position = p ? p.currentMs + offsetRef.current : 0;
+      const duration =
+        knownDurationMs > 0 ? knownDurationMs : p ? p.durationMs + offsetRef.current : 0;
+      if (!p || !itemId || duration <= 0 || position <= 0) return;
       if (!force && Date.now() - lastReport.current < PROGRESS_INTERVAL_MS) return;
       lastReport.current = Date.now();
-      report.mutate({ positionMs: p.currentMs, durationMs: duration });
+      report.mutate({ positionMs: position, durationMs: duration });
     },
     [itemId, report, knownDurationMs],
   );
@@ -111,7 +139,7 @@ export function PlayerPage() {
     playerRef.current = player;
     const offs = [
       player.on('timeupdate', () => {
-        setCurrentMs(player.currentMs);
+        setCurrentMs(player.currentMs + offsetRef.current);
         reportRef.current();
       }),
       player.on('durationchange', () => setDurationMs(player.durationMs)),
@@ -147,12 +175,26 @@ export function PlayerPage() {
     const player = playerRef.current;
     if (!d || !player) return;
     setError(null);
-    player.load(withAccessToken(d.url), { hls: d.method !== 'direct', startMs: resumeAt.current });
+    decisionRef.current = d;
+    // A remux is written from the requested position with a timeline starting at zero, so the
+    // player starts at zero and the page adds the offset back; other methods are absolute.
+    const isRemux = d.method === 'remux';
+    offsetRef.current = isRemux ? resumeAt.current : 0;
+    player.knownDurationMs = Math.max(0, knownDurationMs - offsetRef.current);
+    player.load(withAccessToken(d.url), {
+      hls: d.method !== 'direct',
+      startMs: isRemux ? 0 : resumeAt.current,
+    });
     player.setRate(prefsRef.current.rate);
-  }, [decision.data]);
+    return () => {
+      // Free the server's ffmpeg as soon as this session is replaced or the page closes.
+      if (d.sessionId)
+        void api.DELETE('/api/playback/sessions/{id}', { params: { path: { id: d.sessionId } } });
+    };
+  }, [decision.data, knownDurationMs]);
 
   const switchAudio = (index: number) => {
-    resumeAt.current = playerRef.current?.currentMs ?? 0;
+    resumeAt.current = (playerRef.current?.currentMs ?? 0) + offsetRef.current;
     setAudioIndex(index);
   };
 
@@ -164,8 +206,8 @@ export function PlayerPage() {
       if (e.key === ' ' || e.key === 'k') {
         e.preventDefault();
         p.toggle();
-      } else if (e.key === 'ArrowRight') p.seek(p.currentMs + prefsRef.current.skipSeconds * 1000);
-      else if (e.key === 'ArrowLeft') p.seek(p.currentMs - prefsRef.current.skipSeconds * 1000);
+      } else if (e.key === 'ArrowRight') skip(1);
+      else if (e.key === 'ArrowLeft') skip(-1);
       else if (e.key === 'f') void document.documentElement.requestFullscreen?.();
       else if (e.key === 'Escape' && !document.fullscreenElement) navigate(-1);
       setShowControls(true);
@@ -181,7 +223,7 @@ export function PlayerPage() {
     return () => clearTimeout(t);
   }, [paused, showControls, currentMs]);
 
-  const effectiveDurationMs = durationMs > 0 ? durationMs : knownDurationMs;
+  const effectiveDurationMs = Math.max(knownDurationMs, durationMs + offsetRef.current);
   const title = item.data
     ? item.data.kind === 'episode'
       ? `${item.data.showTitle ?? ''} · ${item.data.title}`
@@ -264,7 +306,7 @@ export function PlayerPage() {
           min={0}
           max={Math.max(effectiveDurationMs, 1)}
           value={Math.min(currentMs, effectiveDurationMs)}
-          onChange={(e) => playerRef.current?.seek(Number(e.target.value))}
+          onChange={(e) => seekTo(Number(e.target.value))}
           aria-label="Seek"
           data-testid="seek"
         />
