@@ -15,6 +15,10 @@ openApiGenerate {
     inputSpec.set(rootProject.file("../packages/api-contract/openapi.json").absolutePath)
     outputDir.set(generatedDir.map { it.asFile.absolutePath })
     packageName.set("app.projektor.core.api")
+    // Plain JSON numbers (rating, score) decode as Double. The generator's default is
+    // java.math.BigDecimal, which kotlinx.serialization has no serializer for, so the first
+    // item with a rating crashed the app.
+    typeMappings.set(mapOf("number" to "kotlin.Double", "BigDecimal" to "kotlin.Double"))
     additionalProperties.set(
         mapOf(
             "serializationLibrary" to "kotlinx_serialization",
