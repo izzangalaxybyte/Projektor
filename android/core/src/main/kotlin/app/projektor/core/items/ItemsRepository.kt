@@ -23,13 +23,13 @@ class ItemsRepository(private val client: ProjektorClient) {
         offset: Int? = null,
         limit: Int? = null,
     ): ApiItemsGet200Response =
-        client.items.apiItemsGet(libraryKind, kind, parentId, search, needsReview?.toString(), sort, offset, limit).bodyOrThrow()
+        client.items.apiItemsGet(libraryKind, kind, parentId, search, needsReview?.toString(), sort, offset?.toLong(), limit?.toLong()).bodyOrThrow()
 
     suspend fun recentlyAdded(libraryKind: LibraryKindInput, limit: Int = 20): List<ItemSummary> =
         list(libraryKind = libraryKind, sort = "added", limit = limit).items
 
     suspend fun continueWatching(libraryKind: LibraryKindInput? = null, limit: Int = 20): List<ItemSummary> =
-        client.progress.apiProgressContinueGet(libraryKind, limit).bodyOrThrow()
+        client.progress.apiProgressContinueGet(libraryKind, limit.toLong()).bodyOrThrow()
 
     suspend fun detail(id: String): ItemDetail = client.items.apiItemsIdGet(id).bodyOrThrow()
 
@@ -40,6 +40,6 @@ class ItemsRepository(private val client: ProjektorClient) {
     suspend fun decide(request: PlaybackDecideRequestInput): PlaybackDecision = client.playback.apiPlaybackDecidePost(request).bodyOrThrow()
 
     suspend fun reportProgress(itemId: String, positionMs: Long, durationMs: Long) {
-        client.progress.apiProgressPost(ProgressUpdateRequestInput(itemId = itemId, positionMs = positionMs.toInt(), durationMs = durationMs.toInt()))
+        client.progress.apiProgressPost(ProgressUpdateRequestInput(itemId = itemId, positionMs = positionMs, durationMs = durationMs))
     }
 }

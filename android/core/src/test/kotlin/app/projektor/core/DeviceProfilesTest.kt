@@ -28,8 +28,8 @@ class DeviceProfilesTest {
         val p = DeviceProfiles.fromMimeTypes(tv, "Shield", maxWidth = 3840, maxBitrate = 40_000_000)
         assertEquals(listOf("h264", "hevc", "hevc10"), p.videoCodecs)
         assertEquals(listOf("aac", "ac3", "eac3"), p.audioCodecs)
-        assertEquals(3840, p.maxWidth)
-        assertEquals(40_000_000, p.maxBitrate)
+        assertEquals(3840L, p.maxWidth)
+        assertEquals(40_000_000L, p.maxBitrate)
     }
 
     @Test

@@ -44,8 +44,8 @@ object DeviceProfiles {
             // TV) tone-maps HDR itself, so the server is told not to.
             videoCodecs = VIDEO_MIMES.filterKeys { it in mimes }.values.distinct().let { if ("hevc" in it) it + "hevc10" else it },
             audioCodecs = AUDIO_MIMES.filterKeys { it in mimes }.values.distinct(),
-            maxWidth = maxWidth,
-            maxBitrate = maxBitrate,
+            maxWidth = maxWidth?.toLong(),
+            maxBitrate = maxBitrate?.toLong(),
             // ExoPlayer plays both; fMP4 is the same choice the web player makes.
             hlsSegmentContainer = DeviceProfileInput.HlsSegmentContainer.FMP4,
             hdr = true,

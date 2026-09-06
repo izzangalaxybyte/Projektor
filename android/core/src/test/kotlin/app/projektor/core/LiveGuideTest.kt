@@ -9,8 +9,8 @@ import org.junit.Test
 import java.util.TimeZone
 
 class LiveGuideTest {
-    private data class Ch(val id: String, val number: Int?)
-    private val channels = listOf(Ch("a", 1), Ch("b", 2), Ch("c", null))
+    private data class Ch(val id: String, val number: Long?)
+    private val channels = listOf(Ch("a", 1L), Ch("b", 2L), Ch("c", null))
 
     @Test fun parsesServerTimestamps() {
         assertEquals(1_788_000_000_000L, LiveGuide.parseIso("2026-08-29T10:40:00.000Z"))

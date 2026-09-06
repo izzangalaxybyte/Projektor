@@ -30,7 +30,7 @@ import app.projektor.core.api.models.ItemSummary
 import coil3.compose.AsyncImage
 
 /** "S1 E2 · Show" for episodes, the year otherwise. */
-fun captionFor(kind: String, seasonNumber: Int?, episodeNumber: Int?, showTitle: String?, year: Int?): String = when (kind) {
+fun captionFor(kind: String, seasonNumber: Long?, episodeNumber: Long?, showTitle: String?, year: Long?): String = when (kind) {
     "episode" -> buildString {
         seasonNumber?.let { append("S$it ") }
         append("E${episodeNumber ?: "?"}")

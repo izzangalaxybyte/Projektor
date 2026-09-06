@@ -34,7 +34,7 @@ class AuthRepositoryTest {
                 """{"id":"m1","kind":"movie","libraryKind":"movie","title":"Shrek 2","year":2004,"posterKey":null,"backdropKey":null,
                    "seasonNumber":null,"episodeNumber":null,"showTitle":null,"needsReview":false,"progress":null,"overview":null,
                    "tagline":null,"genres":["Animation"],"rating":7.3,"airDate":null,"runtimeMs":5580000,"tmdbId":809,"anilistId":null,
-                   "files":[],"children":[]}""",
+                   "files":[{"id":"f1","fileName":"Shrek 2 (2004).mkv","sizeBytes":7012093037,"container":"mkv","durationMs":5580000,"bitrate":10053000,"streams":[],"subtitles":[]}],"children":[]}""",
                 HttpStatusCode.OK, json,
             )
             else -> respond("""{"statusCode":404,"error":"Not Found","message":"nope"}""", HttpStatusCode.NotFound, json)
@@ -69,13 +69,15 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun `an item with a decimal rating decodes`() = runTest {
+    fun `an item with a decimal rating and a file over 2 GB decodes`() = runTest {
         // The generator's default for a JSON number is BigDecimal, which has no serializer; the
         // first real item with a rating crashed the phone app. Ratings are Doubles now.
         val client = ProjektorClient("http://s:8096/", { "abc" }, engine)
         val detail = client.items.apiItemsIdGet("m1").body()
         assertEquals(7.3, detail.rating!!, 0.0001)
         assertEquals("Shrek 2", detail.title)
+        // A 7 GB file: sizes past 2^31 overflowed the generator's default Int.
+        assertEquals(7_012_093_037L, detail.files.single().sizeBytes)
     }
 
     @Test

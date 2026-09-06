@@ -18,7 +18,9 @@ openApiGenerate {
     // Plain JSON numbers (rating, score) decode as Double. The generator's default is
     // java.math.BigDecimal, which kotlinx.serialization has no serializer for, so the first
     // item with a rating crashed the app.
-    typeMappings.set(mapOf("number" to "kotlin.Double", "BigDecimal" to "kotlin.Double"))
+    // Integers are 64-bit: the contract's integers are JS safe integers (up to 2^53) and file
+    // sizes and durations pass 2^31, which the generator's default Int rejected at parse time.
+    typeMappings.set(mapOf("number" to "kotlin.Double", "BigDecimal" to "kotlin.Double", "integer" to "kotlin.Long"))
     additionalProperties.set(
         mapOf(
             "serializationLibrary" to "kotlinx_serialization",

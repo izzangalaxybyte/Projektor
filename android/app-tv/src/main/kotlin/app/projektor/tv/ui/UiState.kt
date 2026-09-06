@@ -16,7 +16,7 @@ fun formatMs(ms: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
-fun captionFor(kind: String, seasonNumber: Int?, episodeNumber: Int?, showTitle: String?, year: Int?): String = when (kind) {
+fun captionFor(kind: String, seasonNumber: Long?, episodeNumber: Long?, showTitle: String?, year: Long?): String = when (kind) {
     "episode" -> buildString {
         seasonNumber?.let { append("S$it ") }
         append("E${episodeNumber ?: "?"}")

@@ -87,7 +87,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var detail by remember { mutableStateOf<ItemDetail?>(null) }
     var file by remember { mutableStateOf<MediaFile?>(null) }
     var decision by remember { mutableStateOf<PlaybackDecision?>(null) }
-    var audioIndex by remember { mutableStateOf<Int?>(null) }
+    var audioIndex by remember { mutableStateOf<Long?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -131,7 +131,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         val f = file ?: return@LaunchedEffect
         try {
             val profile = DeviceProfiles.current()
-            val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = profile, audioStreamIndex = audioIndex, startPositionMs = resumeAt.toInt()))
+            val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = profile, audioStreamIndex = audioIndex, startPositionMs = resumeAt))
             decision = d
             player.load(mediaSpecFor(d, client), startMs = resumeAt, rate = settings.rate, knownDurationMs = f.durationMs.toLong())
         } catch (e: Exception) { error = e.userMessage() }

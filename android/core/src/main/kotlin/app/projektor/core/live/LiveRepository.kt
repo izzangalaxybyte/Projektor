@@ -28,9 +28,9 @@ class LiveRepository(private val client: ProjektorClient) {
     suspend fun releaseSession(id: String) { runCatching { client.live.apiLiveSessionsIdDelete(id) } }
 
     suspend fun movies(category: String? = null, search: String? = null, offset: Int = 0, limit: Int = 60): List<IptvMovie> =
-        client.live.apiLiveVodGet(category, search, null, offset, limit).bodyOrThrow().items
+        client.live.apiLiveVodGet(category, search, null, offset.toLong(), limit.toLong()).bodyOrThrow().items
     suspend fun series(category: String? = null, search: String? = null, offset: Int = 0, limit: Int = 60): List<IptvSeries> =
-        client.live.apiLiveSeriesGet(category, search, null, offset, limit).bodyOrThrow().items
+        client.live.apiLiveSeriesGet(category, search, null, offset.toLong(), limit.toLong()).bodyOrThrow().items
     suspend fun seriesDetail(id: String): IptvSeriesDetail = client.live.apiLiveSeriesIdGet(id).bodyOrThrow()
 
     suspend fun recordings(state: RecordingStateInput? = null): List<Recording> = client.recordings.apiRecordingsGet(state).bodyOrThrow()

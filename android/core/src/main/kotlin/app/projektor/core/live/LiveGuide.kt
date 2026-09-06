@@ -39,13 +39,13 @@ object LiveGuide {
     }
 
     /** The channel whose number matches the typed digits. */
-    fun <T> byNumber(list: List<T>, digits: String, number: (T) -> Int?): T? {
-        val n = digits.toIntOrNull() ?: return null
+    fun <T> byNumber(list: List<T>, digits: String, number: (T) -> Long?): T? {
+        val n = digits.toLongOrNull() ?: return null
         return list.firstOrNull { number(it) == n }
     }
 
     /** Whether a past programme can still be played from the channel's archive. */
-    fun inArchive(startAt: String, hasArchive: Boolean, archiveDays: Int, now: Long = System.currentTimeMillis()): Boolean =
+    fun inArchive(startAt: String, hasArchive: Boolean, archiveDays: Long, now: Long = System.currentTimeMillis()): Boolean =
         hasArchive && parseIso(startAt) >= now - archiveDays * 86_400_000L
 
     const val NUMBER_ENTRY_COMMIT_MS = 1_500L

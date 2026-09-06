@@ -11,8 +11,8 @@ android {
         applicationId = "app.projektor.mobile"
         minSdk = libs.versions.minSdkMobile.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = rootProject.extra["projektorVersionCode"] as Int
+        versionName = rootProject.extra["projektorVersionName"] as String
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["serverUrl"] = System.getenv("PROJEKTOR_SERVER_URL") ?: "http://10.0.2.2:8096"
     }
@@ -21,7 +21,16 @@ android {
             isMinifyEnabled = false
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    // Projektor-phone-<version>-<buildType>.apk, so the file name says which build it is.
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "Projektor-phone-$versionName-$name.apk"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

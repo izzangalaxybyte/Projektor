@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.BuildConfig
 import app.projektor.mobile.ui.UiState
 import app.projektor.mobile.ui.components.TileRow
 import app.projektor.mobile.ui.userMessage
@@ -55,6 +56,7 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
             KINDS.forEach { k -> TileRow("Continue watching · ${LABEL[k]}", s.value.continueWatching[k].orEmpty(), client, { openItem(it.id) }, "continue-${k.value}") }
             KINDS.forEach { k -> TileRow("Recently added · ${LABEL[k]}", s.value.recent[k].orEmpty(), client, { openItem(it.id) }, "recent-${k.value}") }
             if (s.value.isEmpty) Text("Nothing here yet. Add a library on the server and scan it.", Modifier.padding(24.dp).testTag("home-empty"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Projektor build ${BuildConfig.VERSION_NAME}", Modifier.padding(horizontal = 16.dp, vertical = 12.dp).testTag("build-number"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
