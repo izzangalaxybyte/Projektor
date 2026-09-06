@@ -22,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.Alignment
+import app.projektor.tv.BuildConfig
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Tab
@@ -48,12 +50,15 @@ private val TABS = listOf("Home", "Movies", "TV Shows", "Anime", "Live", "Search
 fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}, openRecordings: () -> Unit = {}) {
     var tab by rememberSaveable { mutableStateOf(0) }
     Column(Modifier.fillMaxSize().padding(top = 24.dp)) {
-        TabRow(selectedTabIndex = tab, modifier = Modifier.padding(horizontal = 48.dp).testTag("tabs")) {
-            TABS.forEachIndexed { i, label ->
-                Tab(selected = tab == i, onFocus = { tab = i }, modifier = Modifier.testTag("tab-${label.lowercase().replace(' ', '-')}")) {
-                    Text(label, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            TabRow(selectedTabIndex = tab, modifier = Modifier.testTag("tabs")) {
+                TABS.forEachIndexed { i, label ->
+                    Tab(selected = tab == i, onFocus = { tab = i }, modifier = Modifier.testTag("tab-${label.lowercase().replace(' ', '-')}")) {
+                        Text(label, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                    }
                 }
             }
+            Text("Build ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("build-number"))
         }
         Column(Modifier.padding(top = 24.dp)) {
             when (tab) {

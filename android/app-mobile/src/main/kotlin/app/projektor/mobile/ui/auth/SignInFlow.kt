@@ -3,6 +3,7 @@ package app.projektor.mobile.ui.auth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -29,6 +30,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import app.projektor.core.DEFAULT_SERVER_URL
+import app.projektor.mobile.BuildConfig
+import androidx.compose.ui.Alignment
 import app.projektor.core.api.models.Profile
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.userMessage
@@ -59,7 +62,10 @@ fun SignInFlow(container: AppContainer) {
     }
 
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Projektor", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Text("Projektor", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+            Text("Build ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("build-number"))
+        }
         when (val s = step) {
             Step.Server -> {
                 var url by remember { mutableStateOf(savedServer ?: DEFAULT_SERVER_URL) }

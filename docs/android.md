@@ -85,11 +85,15 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 `local.properties` (gitignored) points `sdk.dir` at the SDK; Android Studio writes it, or create it with `sdk.dir=/Users/you/Library/Android/sdk`. Debug APKs land in `app-mobile/build/outputs/apk/debug/` and `app-tv/build/outputs/apk/debug/`.
 
+Every APK carries a build number taken from git at build time: `versionCode` is the commit count on the current branch and `versionName` is `0.1.<count>-<short sha>` (root `build.gradle.kts`). The file is named after it, `Projektor-phone-0.1.118-05856a1-debug.apk`, and both apps show "Build 0.1.118-05856a1" on the sign-in screen and the home screen, so a tester can tell at a glance which build is installed. Build from the merged `main` before handing out an APK so the number matches a commit in the repo.
+
+The generated client maps JSON `number` to `Double` and `integer` to `Long` (`typeMappings` in `core/build.gradle.kts`). The generator's defaults were `BigDecimal`, which kotlinx.serialization cannot decode, and `Int`, which a 7 GB file's `sizeBytes` overflows; the contract's integers are JS safe integers, so `Long` is the honest type.
+
 ## Installing
 
 ```bash
-adb install -r app-mobile/build/outputs/apk/debug/app-mobile-debug.apk
-adb install -r app-tv/build/outputs/apk/debug/app-tv-debug.apk
+adb install -r app-mobile/build/outputs/apk/debug/Projektor-phone-*-debug.apk
+adb install -r app-tv/build/outputs/apk/debug/Projektor-tv-*-debug.apk
 ```
 
 For the TV, enable developer options and network debugging on the device, then `adb connect <tv-ip>:5555` first. The TV app appears in the leanback launcher with the Projektor banner.
