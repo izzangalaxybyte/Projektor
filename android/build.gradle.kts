@@ -40,6 +40,8 @@ val publishTasks = apphoundApps.map { (module, flavor, storeName) ->
         )
     }
 }
+// Publishes update the store index with a conditional write, so two at once make one of them fail.
+publishTasks.zipWithNext { earlier, later -> later.configure { mustRunAfter(earlier) } }
 tasks.register("publishToApphound") {
     group = "publishing"
     description = "Builds and publishes the phone and TV release APKs to apphound."
