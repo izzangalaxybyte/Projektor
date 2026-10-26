@@ -1,0 +1,19 @@
+<!-- Launcher foreground on the 108dp adaptive canvas: an amber projector lens (ring + disc) with a
+     play triangle cut into it. Everything stays inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8B14A"
+        android:strokeWidth="3"
+        android:pathData="M54,23.5a30.5,30.5 0,1 1,0 61a30.5,30.5 0,1 1,0 -61z" />
+    <path
+        android:fillColor="#E8B14A"
+        android:pathData="M54,29a25,25 0,1 1,0 50a25,25 0,1 1,0 -50z" />
+    <path
+        android:fillColor="#0F1115"
+        android:pathData="M48,42.5L66.5,54L48,65.5z" />
+</vector>
