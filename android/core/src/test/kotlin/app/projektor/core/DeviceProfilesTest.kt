@@ -38,4 +38,13 @@ class DeviceProfilesTest {
         assertEquals(emptyList<String>(), p.videoCodecs)
         assertEquals(emptyList<String>(), p.audioCodecs)
     }
+
+    @Test
+    fun `codecs whose decoders list a 10-bit profile are advertised with a 10 suffix`() {
+        val phone = listOf("video/avc", "video/hevc", "video/av01", "video/x-vnd.on2.vp9", "audio/opus")
+        val p = DeviceProfiles.fromMimeTypes(phone, "Phone", tenBitMimes = listOf("video/av01"))
+        assertEquals(listOf("h264", "hevc", "vp9", "av1", "av110", "hevc10"), p.videoCodecs)
+        // A 10-bit profile for a codec with no decoder at all is ignored.
+        assertEquals(listOf("h264"), DeviceProfiles.fromMimeTypes(listOf("video/avc"), "Old", tenBitMimes = listOf("video/av01")).videoCodecs)
+    }
 }
