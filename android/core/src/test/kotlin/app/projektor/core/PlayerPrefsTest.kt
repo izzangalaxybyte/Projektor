@@ -34,4 +34,14 @@ class PlayerPrefsTest {
         assertEquals(PlayerSettings(7, 2f), prefs.settings.value)
         assertEquals(7000L, prefs.settings.value.skipMs)
     }
+
+    @Test
+    fun `hold speed defaults to 2x, persists, and rejects odd values`() {
+        val prefs = MemoryPlayerPrefs()
+        assertEquals(2f, prefs.settings.value.holdRate)
+        prefs.update(holdRate = 3f)
+        prefs.update(skipSeconds = 5)
+        assertEquals(PlayerSettings(5, 1f, 3f), prefs.settings.value)
+        assertEquals(2f, sanitizeSettings(10, 1f, 7f).holdRate)
+    }
 }

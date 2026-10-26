@@ -138,7 +138,7 @@ fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: Stri
                 }
             },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.exo } }, modifier = Modifier.fillMaxSize())
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } }, modifier = Modifier.fillMaxSize())
         Text(state.positionMs.toString(), Modifier.width(1.dp).height(1.dp).testTag("position-ms"), color = Color.Transparent)
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(32.dp), color = MaterialTheme.colorScheme.error) }
         if (state.isBuffering && error == null) Text("…", Modifier.align(Alignment.Center), style = MaterialTheme.typography.displayMedium)

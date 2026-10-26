@@ -44,6 +44,7 @@ import androidx.media3.ui.PlayerView
 import app.projektor.core.api.models.LiveDecideRequestInput
 import app.projektor.core.api.models.LivePlaybackDecision
 import app.projektor.core.playback.DeviceProfiles
+import app.projektor.core.playback.HOLD_RATE_OPTIONS
 import app.projektor.core.playback.RATE_OPTIONS
 import app.projektor.core.playback.SKIP_OPTIONS
 import app.projektor.core.playback.formatRate
@@ -53,6 +54,7 @@ import app.projektor.mobile.ui.player.ButtonScrim
 import app.projektor.mobile.ui.player.Picker
 import app.projektor.mobile.ui.player.PlayerChrome
 import app.projektor.mobile.ui.player.PlayerWindow
+import app.projektor.mobile.ui.player.SpeedBoostBadge
 import app.projektor.mobile.ui.player.TopScrim
 import app.projektor.mobile.ui.item.formatMs
 import app.projektor.mobile.ui.userMessage
@@ -104,7 +106,9 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
             player.load(liveMediaSpecFor(d, client), rate = settings.rate, knownDurationMs = (d.durationMs ?: 0).toLong())
         } catch (e: Exception) { error = e.userMessage() }
     }
-    LaunchedEffect(settings.rate) { player.setRate(settings.rate) }
+    // Holding the screen plays at the hold speed until it's let go.
+    var boosting by remember { mutableStateOf(false) }
+    LaunchedEffect(settings.rate, settings.holdRate, boosting) { player.setRate(if (boosting) settings.holdRate else settings.rate) }
     LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction) {
         if (controlsVisible && state.isPlaying) {
             delay(3_500)
@@ -122,13 +126,16 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
             detectTapGestures(
                 onTap = { if (controlsVisible) controlsVisible = false else touched() },
                 onDoubleTap = { offset -> skip(if (offset.x < size.width / 2) -1 else 1) },
+                onLongPress = { if (state.isPlaying) boosting = true },
+                onPress = { tryAwaitRelease(); boosting = false },
             )
         },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.exo } }, modifier = Modifier.fillMaxSize())
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } }, modifier = Modifier.fillMaxSize())
         Text(state.positionMs.toString(), Modifier.size(1.dp).testTag("position-ms"), color = Color.Transparent)
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
+        if (boosting) SpeedBoostBadge(settings.holdRate, Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
 
         if (controlsVisible || !state.isPlaying) PlayerChrome {
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -160,6 +167,7 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Picker(label = "Skip +${settings.skipSeconds}s", options = SKIP_OPTIONS.map { it to "+${it}s" }, onPick = { container.playerPrefs.update(skipSeconds = it); touched() }, tag = "skip-select")
                     Picker(label = formatRate(settings.rate), options = RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(rate = it); touched() }, tag = "speed-select")
+                    Picker(label = "Hold ${formatRate(settings.holdRate)}", options = HOLD_RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(holdRate = it); touched() }, tag = "hold-speed-select")
                 }
             }
         }

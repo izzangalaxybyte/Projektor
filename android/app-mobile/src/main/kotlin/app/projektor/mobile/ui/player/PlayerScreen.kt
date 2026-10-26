@@ -3,6 +3,8 @@ package app.projektor.mobile.ui.player
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +55,7 @@ import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.PlaybackMethod
 import app.projektor.core.playback.DeviceProfiles
+import app.projektor.core.playback.HOLD_RATE_OPTIONS
 import app.projektor.core.playback.RATE_OPTIONS
 import app.projektor.core.playback.SKIP_OPTIONS
 import app.projektor.core.playback.formatRate
@@ -113,7 +116,9 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             player.load(mediaSpecFor(d, client), startMs = resumeAt, rate = settings.rate, knownDurationMs = f.durationMs.toLong())
         } catch (e: Exception) { error = e.userMessage() }
     }
-    LaunchedEffect(settings.rate) { player.setRate(settings.rate) }
+    // Holding the screen plays at the hold speed until it's let go.
+    var boosting by remember { mutableStateOf(false) }
+    LaunchedEffect(settings.rate, settings.holdRate, boosting) { player.setRate(if (boosting) settings.holdRate else settings.rate) }
 
     // Auto-hide controls while playing.
     LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction) {
@@ -134,11 +139,13 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             detectTapGestures(
                 onTap = { if (controlsVisible) controlsVisible = false else touched() },
                 onDoubleTap = { offset -> skip(if (offset.x < size.width / 2) -1 else 1) },
+                onLongPress = { if (state.isPlaying) boosting = true },
+                onPress = { tryAwaitRelease(); boosting = false },
             )
         },
     ) {
         AndroidView(
-            factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.exo } },
+            factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } },
             modifier = Modifier.fillMaxSize(),
         )
         // Hidden probes for tests: position in ms and current rate.
@@ -147,6 +154,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
 
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
+        if (boosting) SpeedBoostBadge(settings.holdRate, Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
         if (state.ended && nextEpisode != null) {
             Button(onClick = { nextEpisode?.let { (f, i) -> playNext(f, i) } }, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
         }
@@ -184,7 +192,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     )
                     Text(formatMs(state.durationMs), style = MaterialTheme.typography.labelMedium)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Picker(
                         label = "Skip +${settings.skipSeconds}s",
                         options = SKIP_OPTIONS.map { it to "+${it}s" },
@@ -196,6 +204,12 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                         options = RATE_OPTIONS.map { it to formatRate(it) },
                         onPick = { container.playerPrefs.update(rate = it); touched() },
                         tag = "speed-select",
+                    )
+                    Picker(
+                        label = "Hold ${formatRate(settings.holdRate)}",
+                        options = HOLD_RATE_OPTIONS.map { it to formatRate(it) },
+                        onPick = { container.playerPrefs.update(holdRate = it); touched() },
+                        tag = "hold-speed-select",
                     )
                     val audioTracks = file?.streams?.filter { it.type.value == "audio" }.orEmpty()
                     if (audioTracks.size > 1) {
