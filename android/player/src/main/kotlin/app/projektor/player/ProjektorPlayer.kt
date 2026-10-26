@@ -49,6 +49,9 @@ class ProjektorPlayer(
     private var ticker: Job? = null
     private var knownDurationMs: Long = 0
     private var audioOrdinal: Int? = null
+    /** Ids of the server's WebVTT tracks sideloaded with a direct-play file; empty otherwise. */
+    private var sideloaded: Set<String> = emptySet()
+    private var redirectEmbeddedText = false
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state
 
@@ -67,6 +70,7 @@ class ProjektorPlayer(
             }
             override fun onTracksChanged(tracks: Tracks) {
                 applyAudioChoice()
+                preferSideloadedText()
                 publish()
             }
         })
@@ -94,6 +98,8 @@ class ProjektorPlayer(
     fun load(spec: MediaSpec, startMs: Long = 0, rate: Float = 1f, knownDurationMs: Long = 0, audioOrdinal: Int? = null) {
         this.knownDurationMs = knownDurationMs
         this.audioOrdinal = audioOrdinal
+        sideloaded = spec.subtitles.map { it.id }.toSet()
+        redirectEmbeddedText = sideloaded.isNotEmpty()
         exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_AUDIO).build()
         exo.setMediaItem(spec.toMediaItem(), startMs)
         exo.setPlaybackSpeed(rate)
@@ -149,7 +155,40 @@ class ProjektorPlayer(
 
     private fun durationOrKnown(): Long = exo.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: knownDurationMs
 
-    private fun textGroups(): List<Tracks.Group> = exo.currentTracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
+    /**
+     * The subtitle tracks to offer. With a direct-play file that is only the server's WebVTT copies:
+     * the file's own text tracks can be zlib-compressed, which Media3's Matroska extractor does not
+     * undo, so they showed nothing (ASS) or random glyphs (SRT) under the same names.
+     */
+    private fun textGroups(): List<Tracks.Group> =
+        exo.currentTracks.groups.filter { it.type == C.TRACK_TYPE_TEXT && (sideloaded.isEmpty() || isSideloaded(it)) }
+
+    private fun isSideloaded(group: Tracks.Group): Boolean {
+        val id = group.getTrackFormat(0).id ?: return false
+        return sideloaded.any { id == it || id.endsWith(":$it") }
+    }
+
+    /**
+     * The player picks the file's default text track on its own; once tracks are known, swap an
+     * embedded pick for the server's copy with the same name (or language), so a default-on
+     * subtitle stays on but readable.
+     */
+    private fun preferSideloadedText() {
+        if (!redirectEmbeddedText) return
+        val all = exo.currentTracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }
+        if (all.none(::isSideloaded)) return
+        redirectEmbeddedText = false
+        val picked = all.firstOrNull { it.isSelected } ?: return
+        if (isSideloaded(picked)) return
+        val f = picked.getTrackFormat(0)
+        val copies = all.filter(::isSideloaded)
+        val match = copies.firstOrNull { it.getTrackFormat(0).label == f.label && f.label != null }
+            ?: copies.firstOrNull { it.getTrackFormat(0).language == f.language }
+        val params = exo.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_TEXT)
+        if (match != null) params.setOverrideForType(TrackSelectionOverride(match.mediaTrackGroup, 0))
+        else params.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+        exo.trackSelectionParameters = params.build()
+    }
 
     private fun trackId(group: Tracks.Group): String {
         val f = group.getTrackFormat(0)

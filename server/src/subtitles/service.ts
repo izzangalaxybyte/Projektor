@@ -2,7 +2,7 @@
 // the media. Both are converted to WebVTT with ffmpeg on first request and cached.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { execa } from 'execa';
@@ -206,6 +206,7 @@ export class SubtitleService {
       this.log?.warn({ subtitleId, stderr: result.stderr }, 'subtitle conversion failed');
       throw new SubtitleError(500, 'Subtitle conversion failed');
     }
+    await writeFile(out, cleanVtt(await readFile(out, 'utf8')));
     this.db
       .update(schema.subtitles)
       .set({ vttPath: out, updatedAt: now() })
@@ -213,4 +214,35 @@ export class SubtitleService {
       .run();
     return out;
   }
+}
+
+/**
+ * Tidies ffmpeg's ASS-to-WebVTT output. It keeps override blocks it does not understand
+ * ("{=74}" from Aegisub) as text, and a sign drawn with \p1 becomes its vector path ("m 0 0 l 100
+ * 0 100 50"), which players show as junk. Cues left empty are dropped.
+ */
+export function cleanVtt(vtt: string): string {
+  const blocks = vtt.replace(/\r\n/g, '\n').split(/\n{2,}/);
+  const kept: string[] = [];
+  for (const block of blocks) {
+    const lines = block.split('\n');
+    const timing = lines.findIndex((l) => l.includes('-->'));
+    if (timing === -1) {
+      kept.push(block);
+      continue;
+    }
+    const text = lines
+      .slice(timing + 1)
+      .map((l) => l.replace(/\{[^}]*\}/g, ''))
+      .filter(
+        (l) =>
+          !/^\s*(?:<[^>]+>)*\s*m\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?(?:\s+[mlbspc]?\s*-?\d+(?:\.\d+)?)*\s*(?:<\/[^>]+>)*\s*$/i.test(
+            l,
+          ),
+      );
+    if (text.some((l) => l.replace(/<[^>]+>/g, '').trim() !== '')) {
+      kept.push([...lines.slice(0, timing + 1), ...text].join('\n'));
+    }
+  }
+  return kept.join('\n\n').trimEnd() + '\n';
 }
