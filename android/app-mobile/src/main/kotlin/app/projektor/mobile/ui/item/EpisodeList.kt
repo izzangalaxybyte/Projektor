@@ -168,9 +168,6 @@ private fun progressOf(e: ItemSummary): Float? = e.progress?.takeIf { !it.watche
 private fun Thumb(e: ItemSummary, client: ProjektorClient, modifier: Modifier) {
     Box(modifier.aspectRatio(16f / 9f).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface)) {
         client.imageUrl(e.posterKey, 780)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        formatDuration(e.runtimeMs)?.let {
-            Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
-        }
         if (e.progress?.watched == true) {
             Icon(Icons.Filled.CheckCircle, "Watched", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(20.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50)))
         }
