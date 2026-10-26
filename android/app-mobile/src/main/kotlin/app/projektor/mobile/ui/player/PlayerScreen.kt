@@ -1,6 +1,5 @@
 package app.projektor.mobile.ui.player
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -31,28 +30,22 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.ui.PlayerView
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.MediaFile
@@ -69,7 +62,6 @@ import app.projektor.mobile.ui.userMessage
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.mediaSpecFor
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * Fullscreen playback. Skip back/forward and double taps jump by exactly the chosen amount; the
@@ -80,8 +72,6 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     val items = container.items() ?: return
     val client = container.client() ?: return
     val context = LocalContext.current
-    val view = LocalView.current
-    val scope = rememberCoroutineScope()
     val settings by container.playerPrefs.settings.collectAsState()
 
     var detail by remember { mutableStateOf<ItemDetail?>(null) }
@@ -99,20 +89,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     }
     val state by player.state.collectAsState()
 
-    // Immersive while the player is up; keep the screen on.
-    DisposableEffect(Unit) {
-        val window = (context as? Activity)?.window
-        val controller = window?.let { WindowInsetsControllerCompat(it, view) }
-        controller?.hide(WindowInsetsCompat.Type.systemBars())
-        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
-        view.keepScreenOn = true
-        onDispose {
-            view.keepScreenOn = false
-            controller?.show(WindowInsetsCompat.Type.systemBars())
-            scope.launch { player.release() }
-        }
-    }
+    PlayerWindow(player)
 
     // Load detail once, then decide (again whenever the audio track changes).
     LaunchedEffect(itemId) {
@@ -146,14 +123,16 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         }
     }
     fun touched() { lastInteraction = System.currentTimeMillis(); controlsVisible = true }
-    fun skip(direction: Int) { player.skip(direction * settings.skipMs); touched() }
+    // Double taps seek without bringing the controls up; while they're up, any skip keeps them there.
+    fun skip(direction: Int) { player.skip(direction * settings.skipMs); if (controlsVisible) touched() }
+    fun exit() { player.pause(); back() }
 
-    BackHandler { back() }
+    BackHandler { exit() }
 
     Box(
         Modifier.fillMaxSize().background(Color.Black).pointerInput(settings.skipSeconds) {
             detectTapGestures(
-                onTap = { touched(); if (!controlsVisible) controlsVisible = true else controlsVisible = false },
+                onTap = { if (controlsVisible) controlsVisible = false else touched() },
                 onDoubleTap = { offset -> skip(if (offset.x < size.width / 2) -1 else 1) },
             )
         },
@@ -172,10 +151,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             Button(onClick = { nextEpisode?.let { (f, i) -> playNext(f, i) } }, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
         }
 
-        if (controlsVisible || !state.isPlaying) {
+        if (controlsVisible || !state.isPlaying) PlayerChrome {
             // Top bar
-            Row(Modifier.align(Alignment.TopStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = back, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+            Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {
                     Text(detail?.let { d -> if (d.kind.value == "episode") "${d.showTitle ?: ""} · ${d.title}" else d.title } ?: "", style = MaterialTheme.typography.titleMedium)
                     decision?.let { Text(badge(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision")) }
@@ -183,18 +162,18 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             }
             // Center transport: back N · play/pause · forward N
             Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { skip(-1) }, modifier = Modifier.size(64.dp).testTag("skip-back").semantics { contentDescription = "Skip back ${settings.skipSeconds} seconds" }) {
+                IconButton(onClick = { skip(-1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("skip-back").semantics { contentDescription = "Skip back ${settings.skipSeconds} seconds" }) {
                     Icon(Icons.Filled.Replay10, null, Modifier.size(40.dp))
                 }
-                IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
+                IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).then(ButtonScrim).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
                     Icon(if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, null, Modifier.size(56.dp))
                 }
-                IconButton(onClick = { skip(1) }, modifier = Modifier.size(64.dp).testTag("skip-forward").semantics { contentDescription = "Skip forward ${settings.skipSeconds} seconds" }) {
+                IconButton(onClick = { skip(1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("skip-forward").semantics { contentDescription = "Skip forward ${settings.skipSeconds} seconds" }) {
                     Icon(Icons.Filled.Forward10, null, Modifier.size(40.dp))
                 }
             }
             // Bottom bar
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(formatMs(state.positionMs), style = MaterialTheme.typography.labelMedium)
                     Slider(

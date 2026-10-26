@@ -1,6 +1,5 @@
 package app.projektor.mobile.ui.live
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,7 +30,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,15 +42,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.ui.PlayerView
 import app.projektor.core.api.models.CreateRecordingRequestInput
 import app.projektor.core.api.models.LiveChannel
@@ -62,6 +56,11 @@ import app.projektor.core.api.models.LiveProgramme
 import app.projektor.core.live.LiveGuide
 import app.projektor.core.playback.DeviceProfiles
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.ui.player.BottomScrim
+import app.projektor.mobile.ui.player.ButtonScrim
+import app.projektor.mobile.ui.player.PlayerChrome
+import app.projektor.mobile.ui.player.PlayerWindow
+import app.projektor.mobile.ui.player.TopScrim
 import app.projektor.mobile.ui.userMessage
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.liveMediaSpecFor
@@ -77,7 +76,6 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
     val live = container.live() ?: return
     val client = container.client() ?: return
     val context = LocalContext.current
-    val view = LocalView.current
     val scope = rememberCoroutineScope()
 
     var current by remember { mutableStateOf(channelId) }
@@ -103,19 +101,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
     val player = remember { ProjektorPlayer(context) }
     val state by player.state.collectAsState()
 
-    DisposableEffect(Unit) {
-        val window = (context as? Activity)?.window
-        val controller = window?.let { WindowInsetsControllerCompat(it, view) }
-        controller?.hide(WindowInsetsCompat.Type.systemBars())
-        window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
-        view.keepScreenOn = true
-        onDispose {
-            view.keepScreenOn = false
-            controller?.show(WindowInsetsCompat.Type.systemBars())
-            val sid = decision?.sessionId
-            scope.launch { player.release(); sid?.let { live.releaseSession(it) } }
-        }
-    }
+    PlayerWindow(player, onClose = { decision?.sessionId?.let { live.releaseSession(it) } })
     // The channel list, refreshed each minute so now/next stay right.
     LaunchedEffect(Unit) {
         while (true) {
@@ -148,11 +134,13 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
     fun touched() { lastInteraction = System.currentTimeMillis(); controlsVisible = true }
     fun step(direction: Int) { LiveGuide.neighbour(channels, current, direction) { it.id }?.let { current = it.id }; touched() }
 
-    BackHandler { if (showGuide) showGuide = false else back() }
+    fun exit() { player.pause(); back() }
+
+    BackHandler { if (showGuide) showGuide = false else exit() }
 
     Box(
         Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) {
-            detectTapGestures(onTap = { touched(); controlsVisible = !controlsVisible })
+            detectTapGestures(onTap = { if (controlsVisible) controlsVisible = false else touched() })
         },
     ) {
         AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.exo } }, modifier = Modifier.fillMaxSize())
@@ -161,22 +149,22 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
         notice?.let { Text(it, Modifier.align(Alignment.TopCenter).padding(top = 72.dp).background(Color.Black.copy(alpha = 0.8f)).padding(horizontal = 16.dp, vertical = 8.dp).testTag("notice")) }
 
-        if (controlsVisible || !state.isPlaying || showGuide) {
-            Row(Modifier.align(Alignment.TopStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.55f)).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = back, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+        if (controlsVisible || !state.isPlaying || showGuide) PlayerChrome {
+            Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {
                     Text(channel?.let { listOfNotNull(it.number?.toString(), it.name).joinToString(" ") } ?: "…", style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("channel-name"))
                     Text(decision?.let { if (it.method == LivePlaybackDecision.Method.DIRECT) "Live · Direct" else "Live · HLS" } ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
                 }
             }
             Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { step(-1) }, modifier = Modifier.size(64.dp).testTag("channel-down").semantics { contentDescription = "Previous channel" }) { Icon(Icons.Filled.KeyboardArrowDown, null, Modifier.size(40.dp)) }
-                IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
+                IconButton(onClick = { step(-1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("channel-down").semantics { contentDescription = "Previous channel" }) { Icon(Icons.Filled.KeyboardArrowDown, null, Modifier.size(40.dp)) }
+                IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).then(ButtonScrim).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
                     Icon(if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, null, Modifier.size(56.dp))
                 }
-                IconButton(onClick = { step(1) }, modifier = Modifier.size(64.dp).testTag("channel-up").semantics { contentDescription = "Next channel" }) { Icon(Icons.Filled.KeyboardArrowUp, null, Modifier.size(40.dp)) }
+                IconButton(onClick = { step(1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("channel-up").semantics { contentDescription = "Next channel" }) { Icon(Icons.Filled.KeyboardArrowUp, null, Modifier.size(40.dp)) }
             }
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
                 val now = channel?.now
                 if (now != null) {
                     Text(now.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("now-title"))
@@ -191,7 +179,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
                 }
             }
         }
-        if (showGuide) {
+        if (showGuide) PlayerChrome {
             Column(Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f).background(Color.Black.copy(alpha = 0.9f)).padding(12.dp).testTag("guide-panel")) {
                 Text(channel?.name ?: "Guide", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
                 val list = guide
