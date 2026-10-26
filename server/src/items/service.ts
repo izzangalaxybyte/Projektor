@@ -1,4 +1,4 @@
-import { desc, and, asc, eq, like, type SQL } from 'drizzle-orm';
+import { desc, and, asc, eq, inArray, like, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
 import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
@@ -74,7 +74,6 @@ export class ItemsService {
           genres: _g,
           rating: _r,
           airDate: _a,
-          runtimeMs: _m,
           tmdbId: _x,
           anilistId: _y,
           ...summary
@@ -101,13 +100,12 @@ export class ItemsService {
     if (movie) {
       const lib = this.libraryKind(movie.libraryId);
       return {
-        ...movieSummary(movie, lib).summary,
+        ...movieSummary(movie, lib, this.fileDurations('movie', [movie.id]).get(movie.id)).summary,
         overview: movie.overview,
         tagline: movie.tagline,
         genres: JSON.parse(movie.genresJson) as string[],
         rating: movie.rating,
         airDate: movie.releaseDate,
-        runtimeMs: movie.runtimeMs,
         tmdbId: movie.tmdbId,
         anilistId: null,
         files: this.filesFor(eq(schema.mediaFiles.movieId, movie.id)),
@@ -124,7 +122,6 @@ export class ItemsService {
         genres: JSON.parse(show.genresJson) as string[],
         rating: show.rating,
         airDate: show.firstAirDate,
-        runtimeMs: null,
         tmdbId: show.tmdbId,
         anilistId: show.anilistId,
         files: [],
@@ -151,7 +148,6 @@ export class ItemsService {
         genres: [],
         rating: null,
         airDate: null,
-        runtimeMs: null,
         tmdbId: season.tmdbId,
         anilistId: null,
         files: [],
@@ -167,13 +163,17 @@ export class ItemsService {
         .get()!;
       const lib = this.libraryKind(parent.libraryId);
       return {
-        ...episodeSummary(episode, parent, lib).summary,
+        ...episodeSummary(
+          episode,
+          parent,
+          lib,
+          this.fileDurations('episode', [episode.id]).get(episode.id),
+        ).summary,
         overview: episode.overview,
         tagline: null,
         genres: [],
         rating: null,
         airDate: episode.airDate,
-        runtimeMs: episode.runtimeMs,
         tmdbId: episode.tmdbId,
         anilistId: null,
         files: this.filesFor(eq(schema.mediaFiles.episodeId, episode.id)),
@@ -197,13 +197,17 @@ export class ItemsService {
       q.search ? like(schema.movies.title, `%${q.search}%`) : undefined,
       q.needsReview !== undefined ? eq(schema.movies.needsReview, q.needsReview) : undefined,
     ].filter((c): c is SQL => c !== undefined);
-    return this.db
+    const rows = this.db
       .select({ movie: schema.movies, kind: schema.libraries.kind })
       .from(schema.movies)
       .innerJoin(schema.libraries, eq(schema.libraries.id, schema.movies.libraryId))
       .where(where.length ? and(...where) : undefined)
-      .all()
-      .map((r) => movieSummary(r.movie, r.kind));
+      .all();
+    const durations = this.fileDurations(
+      'movie',
+      rows.map((r) => r.movie.id),
+    );
+    return rows.map((r) => movieSummary(r.movie, r.kind, durations.get(r.movie.id)));
   }
 
   private shows(q: ItemsQueryInput): Ranked[] {
@@ -250,7 +254,7 @@ export class ItemsService {
       : seasonId
         ? eq(schema.episodes.seasonId, seasonId)
         : eq(schema.episodes.showId, showId);
-    return this.db
+    const rows = this.db
       .select()
       .from(schema.episodes)
       .where(filter)
@@ -259,8 +263,30 @@ export class ItemsService {
         asc(schema.episodes.episodeNumber),
         asc(schema.episodes.absoluteNumber),
       )
-      .all()
-      .map((e) => episodeSummary(e, show, lib));
+      .all();
+    const durations = this.fileDurations(
+      'episode',
+      rows.map((e) => e.id),
+    );
+    return rows.map((e) => episodeSummary(e, show, lib, durations.get(e.id)));
+  }
+
+  /** Longest present file per movie or episode, for items TMDB gave no runtime. */
+  private fileDurations(kind: 'movie' | 'episode', ids: string[]): Map<string, number> {
+    const map = new Map<string, number>();
+    const column = kind === 'movie' ? schema.mediaFiles.movieId : schema.mediaFiles.episodeId;
+    for (let i = 0; i < ids.length; i += 500) {
+      const rows = this.db
+        .select({ id: column, durationMs: schema.mediaFiles.durationMs })
+        .from(schema.mediaFiles)
+        .where(and(inArray(column, ids.slice(i, i + 500)), eq(schema.mediaFiles.missing, false)))
+        .all();
+      for (const r of rows) {
+        if (r.id && r.durationMs && r.durationMs > (map.get(r.id) ?? 0))
+          map.set(r.id, r.durationMs);
+      }
+    }
+    return map;
   }
 
   private filesFor(condition: SQL): MediaFile[] {
@@ -315,9 +341,15 @@ interface Ranked {
   added: string;
 }
 
-const base = { progress: null, seasonNumber: null, episodeNumber: null, showTitle: null } as const;
+const base = {
+  progress: null,
+  seasonNumber: null,
+  episodeNumber: null,
+  showTitle: null,
+  runtimeMs: null,
+} as const;
 
-function movieSummary(m: Movie, libraryKind: Kind): Ranked {
+function movieSummary(m: Movie, libraryKind: Kind, fileDurationMs?: number): Ranked {
   return {
     added: m.createdAt,
     summary: {
@@ -330,6 +362,7 @@ function movieSummary(m: Movie, libraryKind: Kind): Ranked {
       posterKey: m.posterKey,
       backdropKey: m.backdropKey,
       needsReview: m.needsReview,
+      runtimeMs: m.runtimeMs ?? fileDurationMs ?? null,
     },
   };
 }
@@ -367,7 +400,12 @@ function seasonSummary(s: Season, show: Show, libraryKind: Kind): Ranked {
     },
   };
 }
-function episodeSummary(e: Episode, show: Show, libraryKind: Kind): Ranked {
+function episodeSummary(
+  e: Episode,
+  show: Show,
+  libraryKind: Kind,
+  fileDurationMs?: number,
+): Ranked {
   const number = e.episodeNumber ?? e.absoluteNumber;
   return {
     added: e.createdAt,
@@ -384,6 +422,7 @@ function episodeSummary(e: Episode, show: Show, libraryKind: Kind): Ranked {
       episodeNumber: number,
       showTitle: show.title,
       needsReview: e.episodeNumber === null && e.absoluteNumber === null,
+      runtimeMs: e.runtimeMs ?? fileDurationMs ?? null,
     },
   };
 }
@@ -394,9 +433,22 @@ function sortItems(items: Ranked[], sort: ItemsQueryInput['sort']): ItemSummary[
     sorted.sort((a, b) => (b.summary.year ?? 0) - (a.summary.year ?? 0) || compareTitles(a, b));
   else if (sort === 'added' || sort === 'lastPlayed')
     sorted.sort((a, b) => b.added.localeCompare(a.added));
-  else sorted.sort(compareTitles);
+  else sorted.sort(compareNatural);
   return sorted.map((r) => r.summary);
 }
+
+/**
+ * Default order: seasons, then episodes, as the query returned them (by season and episode
+ * number); movies and shows by title. Sorting episodes by title listed "A Chance to Blossom" first.
+ */
+const NUMBERED = new Set(['season', 'episode']);
+const compareNatural = (a: Ranked, b: Ranked) => {
+  const an = NUMBERED.has(a.summary.kind);
+  const bn = NUMBERED.has(b.summary.kind);
+  if (an && bn) return a.summary.kind === b.summary.kind ? 0 : a.summary.kind === 'season' ? -1 : 1;
+  if (an !== bn) return an ? 1 : -1;
+  return compareTitles(a, b);
+};
 
 const compareTitles = (a: Ranked, b: Ranked) =>
   a.summary.title.localeCompare(b.summary.title, undefined, { numeric: true, sensitivity: 'base' });

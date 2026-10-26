@@ -136,7 +136,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                 val seasons = children.filter { it.kind.value == "season" }
                 val episodes = children.filter { it.kind.value == "episode" }
                 if (seasons.isNotEmpty()) TileSection("Seasons", seasons, client, openItem)
-                if (episodes.isNotEmpty()) TileSection("Episodes", episodes, client, openItem)
+                if (episodes.isNotEmpty()) EpisodeSection(episodes, client, container.browsePrefs, openItem)
                 d.files.forEach { f -> FileInfo(f) }
                 Spacer(Modifier.height(24.dp))
             }

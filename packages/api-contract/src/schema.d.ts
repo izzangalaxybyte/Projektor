@@ -2882,6 +2882,8 @@ export interface components {
       showTitle: string | null;
       needsReview: boolean;
       progress: components['schemas']['ProgressStateInput'] | null;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
     };
     StreamInfoInput: {
       index: number;
@@ -2938,12 +2940,13 @@ export interface components {
       showTitle: string | null;
       needsReview: boolean;
       progress: components['schemas']['ProgressStateInput'] | null;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
       overview: string | null;
       tagline: string | null;
       genres: string[];
       rating: number | null;
       airDate: string | null;
-      runtimeMs: number | null;
       tmdbId: number | null;
       anilistId: number | null;
       files: components['schemas']['MediaFileInput'][];
@@ -3367,6 +3370,8 @@ export interface components {
       showTitle: string | null;
       needsReview: boolean;
       progress: components['schemas']['ProgressState'] | null;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
     };
     StreamInfo: {
       index: number;
@@ -3423,12 +3428,13 @@ export interface components {
       showTitle: string | null;
       needsReview: boolean;
       progress: components['schemas']['ProgressState'] | null;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
       overview: string | null;
       tagline: string | null;
       genres: string[];
       rating: number | null;
       airDate: string | null;
-      runtimeMs: number | null;
       tmdbId: number | null;
       anilistId: number | null;
       files: components['schemas']['MediaFile'][];

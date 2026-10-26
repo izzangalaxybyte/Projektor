@@ -25,6 +25,10 @@ export const ItemSummary = z
     showTitle: z.string().nullable(),
     needsReview: z.boolean(),
     progress: ProgressState.nullable(),
+    runtimeMs: z.number().int().nullable().meta({
+      description:
+        'Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons.',
+    }),
   })
   .meta({ id: 'ItemSummary' });
 export type ItemSummary = z.infer<typeof ItemSummary>;
@@ -86,7 +90,6 @@ export const ItemDetail = ItemSummary.extend({
   genres: z.string().array(),
   rating: z.number().nullable(),
   airDate: z.string().nullable(),
-  runtimeMs: z.number().int().nullable(),
   tmdbId: z.number().int().nullable(),
   anilistId: z.number().int().nullable(),
   files: MediaFile.array(),

@@ -421,6 +421,19 @@
                 "type": "null"
               }
             ]
+          },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           }
         },
         "required": [
@@ -435,7 +448,8 @@
           "episodeNumber",
           "showTitle",
           "needsReview",
-          "progress"
+          "progress",
+          "runtimeMs"
         ]
       },
       "StreamInfoInput": {
@@ -710,6 +724,19 @@
               }
             ]
           },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
+          },
           "overview": {
             "type": ["string", "null"]
           },
@@ -727,18 +754,6 @@
           },
           "airDate": {
             "type": ["string", "null"]
-          },
-          "runtimeMs": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "tmdbId": {
             "anyOf": [
@@ -791,12 +806,12 @@
           "showTitle",
           "needsReview",
           "progress",
+          "runtimeMs",
           "overview",
           "tagline",
           "genres",
           "rating",
           "airDate",
-          "runtimeMs",
           "tmdbId",
           "anilistId",
           "files",
@@ -2380,6 +2395,19 @@
                 "type": "null"
               }
             ]
+          },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           }
         },
         "required": [
@@ -2394,7 +2422,8 @@
           "episodeNumber",
           "showTitle",
           "needsReview",
-          "progress"
+          "progress",
+          "runtimeMs"
         ],
         "additionalProperties": false
       },
@@ -2673,6 +2702,19 @@
               }
             ]
           },
+          "runtimeMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
+          },
           "overview": {
             "type": ["string", "null"]
           },
@@ -2690,18 +2732,6 @@
           },
           "airDate": {
             "type": ["string", "null"]
-          },
-          "runtimeMs": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "tmdbId": {
             "anyOf": [
@@ -2754,12 +2784,12 @@
           "showTitle",
           "needsReview",
           "progress",
+          "runtimeMs",
           "overview",
           "tagline",
           "genres",
           "rating",
           "airDate",
-          "runtimeMs",
           "tmdbId",
           "anilistId",
           "files",
