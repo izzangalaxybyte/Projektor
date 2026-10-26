@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import app.projektor.core.DEFAULT_SERVER_URL
 import app.projektor.mobile.BuildConfig
@@ -41,10 +40,9 @@ private sealed interface Step {
     data object Server : Step
     data class Setup(val server: String) : Step
     data class Profiles(val server: String, val profiles: List<Profile>) : Step
-    data class Pin(val server: String, val profile: Profile) : Step
 }
 
-/** Server address → (first run: create admin) → profile → PIN. Writes the session into the store. */
+/** Server address → (first run: create admin) → pick a profile. Writes the session into the store. */
 @Composable
 fun SignInFlow(container: AppContainer) {
     val savedServer by container.sessions.serverUrl.collectAsState()
@@ -85,46 +83,24 @@ fun SignInFlow(container: AppContainer) {
             }
             is Step.Setup -> {
                 var name by remember { mutableStateOf("") }
-                var pin by remember { mutableStateOf("") }
                 Text("Welcome. Create the first profile; it will be the admin.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                PinField(pin, { pin = it })
-                Button(enabled = !busy && name.isNotBlank() && pin.length >= 4, onClick = { run { container.auth.setup(s.server, name.trim(), pin) } }) { Text("Create") }
+                Button(enabled = !busy && name.isNotBlank(), onClick = { run { container.auth.setup(s.server, name.trim()) } }) { Text("Create") }
                 TextButton(onClick = { step = Step.Server }) { Text("Back") }
             }
             is Step.Profiles -> {
                 Text("Who is watching?", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 LazyVerticalGrid(columns = GridCells.Adaptive(140.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(s.profiles, key = { it.id }) { p ->
-                        Card(onClick = { step = Step.Pin(s.server, p) }, modifier = Modifier.testTag("profile-${p.name}")) {
+                        Card(onClick = { if (!busy) run { container.auth.login(s.server, p.id) } }, modifier = Modifier.testTag("profile-${p.name}")) {
                             Text(p.name, Modifier.padding(20.dp), style = MaterialTheme.typography.titleMedium)
                         }
                     }
                 }
                 TextButton(onClick = { step = Step.Server }) { Text("Change server") }
             }
-            is Step.Pin -> {
-                var pin by remember { mutableStateOf("") }
-                Text("PIN for ${s.profile.name}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                PinField(pin, { pin = it })
-                Button(enabled = !busy && pin.length >= 4, modifier = Modifier.testTag("pin-submit"), onClick = { run { container.auth.login(s.server, s.profile.id, pin) } }) { Text("Sign in") }
-                TextButton(onClick = { step = Step.Profiles(s.server, listOf()); run { step = Step.Profiles(s.server, container.auth.profiles(s.server)) } }) { Text("Back") }
-            }
         }
         if (busy) CircularProgressIndicator()
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("auth-error")) }
     }
-}
-
-@Composable
-private fun PinField(value: String, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(6)) },
-        label = { Text("PIN") },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-        modifier = Modifier.fillMaxWidth().testTag("pin"),
-    )
 }

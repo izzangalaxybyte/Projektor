@@ -14,8 +14,8 @@ beforeAll(async () => {
   app = await buildApp({ config: t.config });
   await app.ready();
   admin = await setupAdmin(app);
-  const user = await app.auth.createUser('Kid', '0000', false);
-  userToken = (await app.auth.login(user.id, '0000', 'test')).token;
+  const user = await app.auth.createUser('Kid', false);
+  userToken = (await app.auth.login(user.id, 'test')).token;
 });
 afterAll(async () => {
   await app.close();

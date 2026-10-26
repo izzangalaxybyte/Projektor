@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Signs in by typing (the sign-in screen is the one place a keyboard is expected), then browses
+ * Signs in by typing the server address (the one place a keyboard is expected), then browses
  * with the D-pad only: down to the TV row, centre on Sample Show, down to Seasons, centre, down to
  * Episodes, centre, and expects the Episode 2 detail.
  */
@@ -62,11 +62,6 @@ class TvBrowseTest {
             throw AssertionError("sign-in failed: $msg")
         }
         Thread.sleep(400) // first profile card takes focus
-        key(KeyEvent.KEYCODE_DPAD_CENTER)
-        waitForTag("pin")
-        rule.onNodeWithTag("pin").performTextInput("1234")
-        key(KeyEvent.KEYCODE_BACK)
-        key(KeyEvent.KEYCODE_DPAD_DOWN) // PIN → Sign in
         key(KeyEvent.KEYCODE_DPAD_CENTER)
 
         waitForTag("recent-tv", 20_000)

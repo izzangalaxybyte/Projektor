@@ -2,10 +2,10 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { schema } from '../db/index.js';
-import { ErrorResponse, Id, Pin, Profile } from '../schemas/index.js';
+import { ErrorResponse, Id, Profile } from '../schemas/index.js';
 
 export const CreateUserRequest = z
-  .object({ name: z.string().min(1).max(40), pin: Pin, isAdmin: z.boolean().default(false) })
+  .object({ name: z.string().min(1).max(40), isAdmin: z.boolean().default(false) })
   .meta({ id: 'CreateUserRequest' });
 
 /** Admin management of household profiles. */
@@ -39,9 +39,7 @@ export const usersRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) =>
-      reply
-        .code(201)
-        .send(await app.auth.createUser(request.body.name, request.body.pin, request.body.isAdmin)),
+      reply.code(201).send(await app.auth.createUser(request.body.name, request.body.isAdmin)),
   );
 
   app.delete(

@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
-import { MAX_FAILED_ATTEMPTS } from '../auth/service.js';
 import { makeTestConfig } from '../test-utils.js';
 
 let app: FastifyInstance;
@@ -42,7 +41,7 @@ describe('auth', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/setup',
-      payload: { name: 'Izzan', pin: '1234' },
+      payload: { name: 'Izzan' },
     });
     expect(res.statusCode).toBe(200);
     const body = json(res) as { token: string; profile: { id: string; isAdmin: boolean } };
@@ -57,7 +56,7 @@ describe('auth', () => {
         await app.inject({
           method: 'POST',
           url: '/api/auth/setup',
-          payload: { name: 'X', pin: '0000' },
+          payload: { name: 'X' },
         })
       ).statusCode,
     ).toBe(409);
@@ -71,20 +70,11 @@ describe('auth', () => {
     expect(profiles[0]).not.toHaveProperty('pinHash');
   });
 
-  it('rejects a malformed PIN at validation', async () => {
+  it('logs in by profile alone and serves /me and /sessions', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { profileId: adminId, pin: 'abcd', deviceName: 'test' },
-    });
-    expect(res.statusCode).toBe(400);
-  });
-
-  it('logs in with the right PIN and serves /me and /sessions', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { profileId: adminId, pin: '1234', deviceName: 'Living room TV' },
+      payload: { profileId: adminId, deviceName: 'Living room TV' },
     });
     expect(res.statusCode).toBe(200);
     const { token } = json(res) as { token: string };
@@ -110,7 +100,7 @@ describe('auth', () => {
     const login = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { profileId: adminId, pin: '1234', deviceName: 'Phone' },
+      payload: { profileId: adminId, deviceName: 'Phone' },
     });
     const { token } = json(login) as { token: string };
     const sessions = (
@@ -151,7 +141,7 @@ describe('auth', () => {
     const login = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { profileId: adminId, pin: '1234', deviceName: 'Tablet' },
+      payload: { profileId: adminId, deviceName: 'Tablet' },
     });
     const { token } = json(login) as { token: string };
     expect(
@@ -174,35 +164,20 @@ describe('auth', () => {
     ).toBe(401);
   });
 
-  it('locks the profile after repeated wrong PINs, even for the right PIN', async () => {
-    const user = await app.auth.createUser('Guest', '4321', false);
-    for (let i = 1; i < MAX_FAILED_ATTEMPTS; i++) {
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/auth/login',
-        payload: { profileId: user.id, pin: '9999', deviceName: 'x' },
-      });
-      expect(res.statusCode, `attempt ${i}`).toBe(401);
-    }
-    const fifth = await app.inject({
+  it('still accepts a PIN from older clients and ignores it', async () => {
+    const res = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { profileId: user.id, pin: '9999', deviceName: 'x' },
+      payload: { profileId: adminId, pin: '9999', deviceName: 'Old phone' },
     });
-    expect(fifth.statusCode).toBe(423);
-    const sixth = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { profileId: user.id, pin: '4321', deviceName: 'x' },
-    });
-    expect(sixth.statusCode).toBe(423);
+    expect(res.statusCode).toBe(200);
   });
 
   it('returns 401 for an unknown profile without leaking existence', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { profileId: 'does-not-exist', pin: '1234', deviceName: 'x' },
+      payload: { profileId: 'does-not-exist', deviceName: 'x' },
     });
     expect(res.statusCode).toBe(401);
   });
@@ -214,7 +189,7 @@ describe('auth', () => {
         method: 'POST',
         url: '/api/auth/login',
         remoteAddress: '10.0.0.9',
-        payload: { profileId: 'nobody', pin: '0000', deviceName: 'x' },
+        payload: { profileId: 'nobody', deviceName: 'x' },
       });
       if (res.statusCode === 429) limited = true;
     }

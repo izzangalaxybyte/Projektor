@@ -43,11 +43,6 @@ class TvRecordTest {
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("profile-Izzan").fetchSemanticsNodes().isNotEmpty() }
         Thread.sleep(400)
         key(KeyEvent.KEYCODE_DPAD_CENTER)
-        waitForTag("pin")
-        rule.onNodeWithTag("pin").performTextInput("1234")
-        key(KeyEvent.KEYCODE_BACK)
-        key(KeyEvent.KEYCODE_DPAD_DOWN)
-        key(KeyEvent.KEYCODE_DPAD_CENTER)
         waitForTag("tabs", 20_000)
 
         rule.onNodeWithTag("tab-live").requestFocus()

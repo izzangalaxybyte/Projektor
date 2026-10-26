@@ -21,13 +21,14 @@ class AuthRepository(
 
     suspend fun profiles(serverUrl: String): List<Profile> = client(serverUrl).auth.apiAuthProfilesGet().bodyOrThrow()
 
-    suspend fun setup(serverUrl: String, name: String, pin: String): Session {
-        val res = client(serverUrl).auth.apiAuthSetupPost(SetupRequestInput(name = name, pin = pin)).bodyOrThrow()
+    suspend fun setup(serverUrl: String, name: String): Session {
+        val res = client(serverUrl).auth.apiAuthSetupPost(SetupRequestInput(name = name)).bodyOrThrow()
         return signIn(serverUrl, res.token, res.profile)
     }
 
-    suspend fun login(serverUrl: String, profileId: String, pin: String): Session {
-        val res = client(serverUrl).auth.apiAuthLoginPost(LoginRequestInput(profileId = profileId, pin = pin, deviceName = deviceName)).bodyOrThrow()
+    /** Signs in as a profile; there is no PIN. */
+    suspend fun login(serverUrl: String, profileId: String): Session {
+        val res = client(serverUrl).auth.apiAuthLoginPost(LoginRequestInput(profileId = profileId, deviceName = deviceName)).bodyOrThrow()
         return signIn(serverUrl, res.token, res.profile)
     }
 

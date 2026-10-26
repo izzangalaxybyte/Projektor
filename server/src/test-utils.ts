@@ -26,9 +26,8 @@ export async function setupAdmin(
     }) => Promise<{ json: () => unknown }>;
   },
   name = 'Admin',
-  pin = '1234',
 ): Promise<{ token: string; id: string }> {
-  const res = await app.inject({ method: 'POST', url: '/api/auth/setup', payload: { name, pin } });
+  const res = await app.inject({ method: 'POST', url: '/api/auth/setup', payload: { name } });
   const body = res.json() as { token: string; profile: { id: string } };
   return { token: body.token, id: body.profile.id };
 }

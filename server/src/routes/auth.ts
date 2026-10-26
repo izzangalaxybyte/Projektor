@@ -50,8 +50,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => {
-      const profile = await app.auth.setup(request.body.name, request.body.pin);
-      const { token } = await app.auth.login(profile.id, request.body.pin, 'Setup');
+      const profile = await app.auth.setup(request.body.name);
+      const { token } = await app.auth.login(profile.id, 'Setup');
       return { token, profile };
     },
   );
@@ -78,22 +78,17 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       },
       schema: {
         tags: ['auth'],
-        summary: 'Exchange a profile id and PIN for a bearer token',
+        summary: 'Exchange a profile id for a bearer token',
         body: LoginRequest,
         response: {
           200: LoginResponse,
           401: ErrorResponse,
-          423: ErrorResponse,
           429: ErrorResponse,
         },
       },
     },
     async (request) => {
-      const { token, user } = await app.auth.login(
-        request.body.profileId,
-        request.body.pin,
-        request.body.deviceName,
-      );
+      const { token, user } = await app.auth.login(request.body.profileId, request.body.deviceName);
       return { token, profile: user };
     },
   );

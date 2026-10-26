@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { now, schema, type Db } from '../db/index.js';
-import { hashPin, verifyPin } from './pin.js';
 import { generateToken, hashToken } from './tokens.js';
 
-export const MAX_FAILED_ATTEMPTS = 5;
-export const LOCKOUT_MS = 15 * 60 * 1000;
 const LAST_SEEN_REFRESH_MS = 60 * 1000;
 
 const AVATAR_COLORS = [
@@ -58,17 +55,18 @@ export class AuthService {
   }
 
   /** Creates the first admin profile. Refuses once any user exists. */
-  async setup(name: string, pin: string): Promise<AuthUser> {
+  async setup(name: string): Promise<AuthUser> {
     if (!this.needsSetup()) throw new AuthError(409, 'Setup has already been completed');
-    return this.createUser(name, pin, true);
+    return this.createUser(name, true);
   }
 
-  async createUser(name: string, pin: string, isAdmin: boolean): Promise<AuthUser> {
+  async createUser(name: string, isAdmin: boolean): Promise<AuthUser> {
     const ts = now();
     const row: typeof schema.users.$inferInsert = {
       id: randomUUID(),
       name,
-      pinHash: await hashPin(pin),
+      // Profiles have no PIN; picking one signs in. The column stays for existing databases.
+      pinHash: '',
       isAdmin,
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]!,
       createdAt: ts,
@@ -82,57 +80,10 @@ export class AuthService {
     return this.db.select().from(schema.users).orderBy(schema.users.createdAt).all().map(toUser);
   }
 
-  /**
-   * Verifies a PIN and issues a session token. Wrong PINs increment a per-user counter; after
-   * MAX_FAILED_ATTEMPTS the profile is locked for LOCKOUT_MS regardless of the PIN supplied.
-   */
-  async login(
-    profileId: string,
-    pin: string,
-    deviceName: string,
-  ): Promise<{ token: string; user: AuthUser }> {
+  /** Issues a session token for a profile; there is no PIN, picking the profile is enough. */
+  async login(profileId: string, deviceName: string): Promise<{ token: string; user: AuthUser }> {
     const user = this.db.select().from(schema.users).where(eq(schema.users.id, profileId)).get();
-    if (!user) {
-      // Burn comparable time so a missing profile is not distinguishable by latency.
-      await verifyPin(
-        '$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        pin,
-      );
-      throw new AuthError(401, 'Invalid profile or PIN');
-    }
-    if (user.lockedUntil && Date.parse(user.lockedUntil) > Date.now()) {
-      throw new AuthError(
-        423,
-        'Profile is locked after too many failed attempts. Try again later.',
-      );
-    }
-    const ok = await verifyPin(user.pinHash, pin);
-    if (!ok) {
-      const failed = user.failedAttempts + 1;
-      const lock = failed >= MAX_FAILED_ATTEMPTS;
-      this.db
-        .update(schema.users)
-        .set({
-          failedAttempts: lock ? 0 : failed,
-          lockedUntil: lock ? new Date(Date.now() + LOCKOUT_MS).toISOString() : null,
-          updatedAt: now(),
-        })
-        .where(eq(schema.users.id, user.id))
-        .run();
-      throw new AuthError(
-        lock ? 423 : 401,
-        lock
-          ? 'Profile is locked after too many failed attempts. Try again later.'
-          : 'Invalid profile or PIN',
-      );
-    }
-    if (user.failedAttempts !== 0 || user.lockedUntil) {
-      this.db
-        .update(schema.users)
-        .set({ failedAttempts: 0, lockedUntil: null, updatedAt: now() })
-        .where(eq(schema.users.id, user.id))
-        .run();
-    }
+    if (!user) throw new AuthError(401, 'Unknown profile');
     const token = generateToken();
     const ts = now();
     this.db

@@ -353,3 +353,7 @@ Measured on the owner's four-core Skylake with the 4K HDR test file: software de
 ## 2026-09-05 — The fMP4 init file is served only after the first segment
 
 hls.js reported "Found no media" on the first 4K HDR transcode after the pipeline fallback. Two causes fixed together: the failed GPU run could leave an init file or a partial segment in the session folder that the fallback run then served, so the folder is cleared before a retry; and ffmpeg writes the fMP4 init file in place (segments go through `temp_file`, the init does not), so a fast player could read it half-written. The init file is now handed out only once the run's first segment exists, at which point it is complete.
+
+## 2026-10-26 — No PINs: picking a profile signs in
+
+The owner found the PIN step pointless for a household server on the LAN and asked for it gone. Login now takes a profile id and a device name; setup and new profiles take only a name. The server ignores a `pin` sent by an older app build, so phones and TVs keep working until they update. The per-IP rate limit stays; the per-profile lockout went with the PIN, and so did Argon2. The `pin_hash`, `failed_attempts` and `locked_until` columns stay in the table (new profiles store an empty hash) to avoid a migration. Anyone who can reach the server can now sign in as any profile, admin included, so the server must not be exposed beyond the LAN. This supersedes the 2026-09-05 PIN and lockout entries.

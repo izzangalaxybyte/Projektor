@@ -37,8 +37,6 @@ class BrowseTest {
         rule.onNodeWithTag("server-continue").performClick()
         rule.waitUntil(15_000) { rule.onAllNodesWithTag("profile-Izzan").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("profile-Izzan").performClick()
-        rule.onNodeWithTag("pin").performTextInput("1234")
-        rule.onNodeWithTag("pin-submit").performClick()
 
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("recent-tv").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("recent-movie").assertIsDisplayed()

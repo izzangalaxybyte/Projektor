@@ -23,7 +23,7 @@ describe('users', () => {
       method: 'POST',
       url: '/api/users',
       headers: headers(),
-      payload: { name: 'Kid', pin: '0000' },
+      payload: { name: 'Kid' },
     });
     expect(create.statusCode).toBe(201);
     const kid = create.json() as { id: string; isAdmin: boolean };
@@ -33,7 +33,7 @@ describe('users', () => {
     ).json() as Array<{ name: string }>;
     expect(list.map((u) => u.name).sort()).toEqual(['Admin', 'Kid']);
 
-    const kidToken = (await app.auth.login(kid.id, '0000', 't')).token;
+    const kidToken = (await app.auth.login(kid.id, 't')).token;
     expect(
       (
         await app.inject({
@@ -70,7 +70,7 @@ describe('users', () => {
           method: 'POST',
           url: '/api/users',
           headers: headers(),
-          payload: { name: 'X', pin: '12' },
+          payload: { name: '' },
         })
       ).statusCode,
     ).toBe(400);

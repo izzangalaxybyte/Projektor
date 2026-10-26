@@ -49,9 +49,6 @@ class TvPlayerTest {
         key(KeyEvent.KEYCODE_BACK); key(KeyEvent.KEYCODE_DPAD_DOWN); key(KeyEvent.KEYCODE_DPAD_CENTER)
         waitForTag("profile-Izzan", 20_000)
         Thread.sleep(400); key(KeyEvent.KEYCODE_DPAD_CENTER)
-        waitForTag("pin")
-        rule.onNodeWithTag("pin").performTextInput("1234")
-        key(KeyEvent.KEYCODE_BACK); key(KeyEvent.KEYCODE_DPAD_DOWN); key(KeyEvent.KEYCODE_DPAD_CENTER)
 
         // Home: the focused tile is a movie (first row). Open it and press Play.
         waitForTag("recent-movie", 20_000)

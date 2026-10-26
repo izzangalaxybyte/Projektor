@@ -24,8 +24,8 @@ beforeAll(async () => {
   app = await buildApp({ config: t.config });
   await app.ready();
   headers = { authorization: `Bearer ${(await setupAdmin(app)).token}` };
-  const kid = await app.auth.createUser('Kid', '0000', false);
-  kidHeaders = { authorization: `Bearer ${(await app.auth.login(kid.id, '0000', 't')).token}` };
+  const kid = await app.auth.createUser('Kid', false);
+  kidHeaders = { authorization: `Bearer ${(await app.auth.login(kid.id, 't')).token}` };
   if (!existsSync(fixtures)) return;
   for (const [name, kind, dir] of [
     ['Movies', 'movie', 'movies'],

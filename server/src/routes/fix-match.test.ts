@@ -222,8 +222,8 @@ describe.skipIf(!existsSync(fixtures))('scan matching and fix-match over the fix
         })
       ).statusCode,
     ).toBe(404);
-    const kid = await app.auth.createUser('Kid', '0000', false);
-    const kidToken = (await app.auth.login(kid.id, '0000', 't')).token;
+    const kid = await app.auth.createUser('Kid', false);
+    const kidToken = (await app.auth.login(kid.id, 't')).token;
     expect(
       (
         await app.inject({

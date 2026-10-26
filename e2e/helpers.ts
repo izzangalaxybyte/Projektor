@@ -3,13 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fixtures');
-export const ADMIN = { name: 'Izzan', pin: '1234' };
-
-/** Enters a PIN through the on-screen pad and presses OK. */
-export async function enterPin(page: Page, pin: string) {
-  for (const digit of pin) await page.getByRole('button', { name: digit, exact: true }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
-}
+export const ADMIN = { name: 'Izzan' };
 
 /** First-run setup through the API if needed; returns a bearer token for API seeding. */
 export async function ensureAdmin(request: APIRequestContext): Promise<string> {
@@ -20,7 +14,7 @@ export async function ensureAdmin(request: APIRequestContext): Promise<string> {
   }
   const profiles = await (await request.get('/api/auth/profiles')).json();
   const res = await request.post('/api/auth/login', {
-    data: { profileId: profiles[0].id, pin: ADMIN.pin, deviceName: 'e2e' },
+    data: { profileId: profiles[0].id, deviceName: 'e2e' },
   });
   return (await res.json()).token;
 }
@@ -61,6 +55,5 @@ export async function seedLibrary(
 export async function signIn(page: Page) {
   await page.goto('/login');
   await page.getByTestId(`profile-${ADMIN.name}`).click();
-  await enterPin(page, ADMIN.pin);
   await expect(page).toHaveURL(/\/$/);
 }

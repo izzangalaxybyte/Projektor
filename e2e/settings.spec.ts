@@ -54,7 +54,6 @@ test('users: adds a profile that then appears on the login screen', async ({ pag
   await page.goto('/settings/users');
   const form = page.getByTestId('add-user');
   await form.getByLabel('Name').fill('Kid');
-  await form.getByLabel('PIN').fill('0000');
   await form.getByRole('button', { name: 'Add profile' }).click();
   await expect(page.getByTestId('user-list')).toContainText('Kid');
   await expect(page.getByText('Your devices')).toBeVisible();

@@ -51,7 +51,7 @@ class AuthRepositoryTest {
         val profiles = repo.profiles(server)
         assertEquals(listOf("Izzan"), profiles.map { it.name })
 
-        val session = repo.login(server, profiles.first().id, "1234")
+        val session = repo.login(server, profiles.first().id)
         assertEquals("tok123", session.token)
         assertEquals("http://server.test:8096", session.serverUrl)
         assertTrue(session.isAdmin)

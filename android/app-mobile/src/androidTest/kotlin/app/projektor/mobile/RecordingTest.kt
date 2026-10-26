@@ -35,8 +35,6 @@ class RecordingTest {
         rule.onNodeWithTag("server-continue").performClick()
         rule.waitUntil(15_000) { rule.onAllNodesWithTag("profile-Izzan").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("profile-Izzan").performClick()
-        rule.onNodeWithTag("pin").performTextInput("1234")
-        rule.onNodeWithTag("pin-submit").performClick()
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("tab-live").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("tab-live").performClick()
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("channel-1001").fetchSemanticsNodes().isNotEmpty() }

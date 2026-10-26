@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import app.projektor.tv.BuildConfig
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.Card
@@ -50,10 +49,9 @@ private sealed interface Step {
     data object Server : Step
     data class Setup(val server: String) : Step
     data class Profiles(val server: String, val profiles: List<Profile>) : Step
-    data class Pin(val server: String, val profile: Profile) : Step
 }
 
-/** Server address → (first run: create admin) → profile → PIN, laid out for a 10-foot screen. */
+/** Server address → (first run: create admin) → pick a profile, laid out for a 10-foot screen. */
 @Composable
 fun TvSignIn(container: TvContainer) {
     val savedServer by container.sessions.serverUrl.collectAsState()
@@ -93,11 +91,9 @@ fun TvSignIn(container: TvContainer) {
             }
             is Step.Setup -> {
                 var name by remember { mutableStateOf("") }
-                var pin by remember { mutableStateOf("") }
                 Text("Create the first profile; it will be the admin.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, modifier = Modifier.width(520.dp).moveDownOnDpad(focusManager))
-                PinField(pin, Modifier.moveDownOnDpad(focusManager)) { pin = it }
-                Button(enabled = !busy && name.isNotBlank() && pin.length >= 4, onClick = { run { container.auth.setup(s.server, name.trim(), pin) } }) { Text("Create") }
+                Button(enabled = !busy && name.isNotBlank(), onClick = { run { container.auth.setup(s.server, name.trim()) } }) { Text("Create") }
             }
             is Step.Profiles -> {
                 Text("Who is watching?", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -105,35 +101,15 @@ fun TvSignIn(container: TvContainer) {
                 LaunchedEffect(s.profiles) { delay(100); runCatching { firstCard.requestFocus() } }
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     s.profiles.forEachIndexed { i, p ->
-                        Card(onClick = { step = Step.Pin(s.server, p) }, modifier = Modifier.testTag("profile-${p.name}").let { if (i == 0) it.focusRequester(firstCard) else it }) {
+                        Card(onClick = { if (!busy) run { container.auth.login(s.server, p.id) } }, modifier = Modifier.testTag("profile-${p.name}").let { if (i == 0) it.focusRequester(firstCard) else it }) {
                             Text(p.name, Modifier.padding(horizontal = 32.dp, vertical = 24.dp), style = MaterialTheme.typography.titleLarge)
                         }
                     }
                 }
             }
-            is Step.Pin -> {
-                var pin by remember { mutableStateOf("") }
-                val pinFocus = remember { FocusRequester() }
-                LaunchedEffect(Unit) { delay(100); runCatching { pinFocus.requestFocus() } }
-                Text("PIN for ${s.profile.name}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                PinField(pin, Modifier.focusRequester(pinFocus).moveDownOnDpad(focusManager)) { pin = it }
-                Button(enabled = !busy && pin.length >= 4, modifier = Modifier.testTag("pin-submit"), onClick = { run { container.auth.login(s.server, s.profile.id, pin) } }) { Text("Sign in") }
-            }
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("auth-error")) }
     }
-}
-
-@Composable
-private fun PinField(value: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
-    val focusManager = LocalFocusManager.current
-    OutlinedTextField(
-        value = value, onValueChange = { onChange(it.filter(Char::isDigit).take(6)) }, singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { focusManager.moveFocus(FocusDirection.Down) }),
-        modifier = modifier.width(320.dp).testTag("pin"),
-    )
 }
 
 /**

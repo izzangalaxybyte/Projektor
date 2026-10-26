@@ -60,13 +60,16 @@ button {
   grid-gap: 1rem;
   gap: 1rem;
 }
-.field-label,
-.pinpad-label {
+.auth-form {
+  display: grid;
+  grid-gap: 1rem;
+  gap: 1rem;
+}
+.field-label {
   color: var(--muted);
   font-size: 0.9rem;
 }
-.text-input,
-.pinpad-input {
+.text-input {
   width: 100%;
   padding: 0.75rem 0.9rem;
   border-radius: var(--radius);
@@ -74,32 +77,6 @@ button {
   background: var(--surface);
   color: var(--text);
   font-size: 1.1rem;
-}
-.pinpad-input {
-  letter-spacing: 0.4em;
-  text-align: center;
-  font-size: 1.6rem;
-}
-.pinpad {
-  display: grid;
-  grid-gap: 0.75rem;
-}
-.pinpad-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 0.5rem;
-}
-.pinpad-key {
-  padding: 0.9rem 0;
-  border-radius: var(--radius);
-  border: 1px solid var(--surface-2);
-  background: var(--surface);
-  font-size: 1.2rem;
-}
-.pinpad-key:hover,
-.pinpad-key:focus-visible {
-  background: var(--surface-2);
-  outline: 2px solid var(--accent);
 }
 .profile-grid {
   display: grid;

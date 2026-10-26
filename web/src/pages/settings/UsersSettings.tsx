@@ -15,14 +15,12 @@ export function UsersSettings() {
     queryFn: async () => unwrap(await api.GET('/api/auth/sessions')),
   });
   const [name, setName] = useState('');
-  const [pin, setPin] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const create = useMutation({
     mutationFn: async () =>
-      unwrap(await api.POST('/api/users', { body: { name: name.trim(), pin, isAdmin } })),
+      unwrap(await api.POST('/api/users', { body: { name: name.trim(), isAdmin } })),
     onSuccess: () => {
       setName('');
-      setPin('');
       void qc.invalidateQueries({ queryKey: ['users'] });
     },
   });
@@ -77,17 +75,6 @@ export function UsersSettings() {
             maxLength={40}
           />
         </label>
-        <label>
-          PIN{' '}
-          <input
-            className="text-input"
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            inputMode="numeric"
-            required
-            minLength={4}
-          />
-        </label>
         <label className="check">
           <input type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} />{' '}
           Admin
@@ -95,7 +82,7 @@ export function UsersSettings() {
         <button
           type="submit"
           className="button primary"
-          disabled={create.isPending || pin.length < 4}
+          disabled={create.isPending || !name.trim()}
         >
           Add profile
         </button>
