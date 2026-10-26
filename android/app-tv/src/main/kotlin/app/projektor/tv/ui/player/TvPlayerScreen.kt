@@ -112,7 +112,17 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
         try {
             val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = DeviceProfiles.current(), audioStreamIndex = audioIndex, startPositionMs = resumeAt))
             decision = d
-            player.load(mediaSpecFor(d, client), startMs = resumeAt, rate = settings.rate, knownDurationMs = f.durationMs.toLong())
+            // Direct play keeps every audio track; pin the chosen one (or the server's default pick).
+            val audio = f.streams.filter { it.type.value == "audio" }
+            val wanted = audio.indexOfFirst { it.index == audioIndex }.takeIf { it >= 0 }
+                ?: audio.indexOfFirst { it.isDefault }.takeIf { it >= 0 } ?: 0
+            player.load(
+                mediaSpecFor(d, client),
+                startMs = resumeAt,
+                rate = settings.rate,
+                knownDurationMs = f.durationMs.toLong(),
+                audioOrdinal = wanted.takeIf { d.method == PlaybackMethod.DIRECT && audio.size > 1 },
+            )
             rootFocus.requestFocus()
         } catch (e: Exception) { error = e.userMessage() }
     }

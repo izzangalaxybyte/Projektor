@@ -48,6 +48,7 @@ class ProjektorPlayer(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var ticker: Job? = null
     private var knownDurationMs: Long = 0
+    private var audioOrdinal: Int? = null
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state
 
@@ -64,7 +65,10 @@ class ProjektorPlayer(
             override fun onPlayerError(error: PlaybackException) {
                 _state.value = _state.value.copy(error = error.errorCodeName)
             }
-            override fun onTracksChanged(tracks: Tracks) { publish() }
+            override fun onTracksChanged(tracks: Tracks) {
+                applyAudioChoice()
+                publish()
+            }
         })
         ticker = scope.launch {
             while (true) {
@@ -81,8 +85,16 @@ class ProjektorPlayer(
     }
 
     /** Loads a spec and starts at [startMs] with [rate]. [knownDurationMs] covers EVENT playlists that report no duration. */
-    fun load(spec: MediaSpec, startMs: Long = 0, rate: Float = 1f, knownDurationMs: Long = 0) {
+    /**
+     * Loads a spec and starts at [startMs] with [rate]. [audioOrdinal] is the wanted audio track's
+     * position among the file's audio streams; pass it for direct play, where the file keeps all its
+     * tracks. Left to itself the player picks among tracks flagged default by the device language,
+     * so a file with Japanese and English both flagged played English whatever was chosen.
+     */
+    fun load(spec: MediaSpec, startMs: Long = 0, rate: Float = 1f, knownDurationMs: Long = 0, audioOrdinal: Int? = null) {
         this.knownDurationMs = knownDurationMs
+        this.audioOrdinal = audioOrdinal
+        exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon().clearOverridesOfType(C.TRACK_TYPE_AUDIO).build()
         exo.setMediaItem(spec.toMediaItem(), startMs)
         exo.setPlaybackSpeed(rate)
         exo.prepare()
@@ -97,6 +109,18 @@ class ProjektorPlayer(
     /** Jump by exactly the chosen amount, forwards or backwards. */
     fun skip(deltaMs: Long) { seekTo(exo.currentPosition + deltaMs) }
     fun setRate(rate: Float) { exo.setPlaybackSpeed(rate) }
+
+    /** Pins the audio track asked for in [load] once the tracks are known; a no-op after that. */
+    private fun applyAudioChoice() {
+        val ordinal = audioOrdinal ?: return
+        val groups = exo.currentTracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+        if (groups.isEmpty()) return
+        audioOrdinal = null
+        val group = groups.getOrNull(ordinal) ?: return
+        exo.trackSelectionParameters = exo.trackSelectionParameters.buildUpon()
+            .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, 0))
+            .build()
+    }
 
     /** Selects a subtitle track by id (see [PlayerState.subtitleTracks]), or none. */
     fun selectSubtitle(id: String?) {

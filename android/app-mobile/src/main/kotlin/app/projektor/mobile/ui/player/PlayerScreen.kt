@@ -114,7 +114,17 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             val profile = DeviceProfiles.current()
             val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = profile, audioStreamIndex = audioIndex, startPositionMs = resumeAt))
             decision = d
-            player.load(mediaSpecFor(d, client), startMs = resumeAt, rate = settings.rate, knownDurationMs = f.durationMs.toLong())
+            // Direct play keeps every audio track; pin the chosen one (or the server's default pick).
+            val audio = f.streams.filter { it.type.value == "audio" }
+            val wanted = audio.indexOfFirst { it.index == audioIndex }.takeIf { it >= 0 }
+                ?: audio.indexOfFirst { it.isDefault }.takeIf { it >= 0 } ?: 0
+            player.load(
+                mediaSpecFor(d, client),
+                startMs = resumeAt,
+                rate = settings.rate,
+                knownDurationMs = f.durationMs.toLong(),
+                audioOrdinal = wanted.takeIf { d.method == PlaybackMethod.DIRECT && audio.size > 1 },
+            )
         } catch (e: Exception) { error = e.userMessage() }
     }
     // Holding the screen plays at the hold speed until it's let go.
