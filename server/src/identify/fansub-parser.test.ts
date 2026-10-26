@@ -149,4 +149,31 @@ describe('parseFansubName', () => {
   it('covers at least 30 real-world names', () => {
     expect(cases.length).toBeGreaterThanOrEqual(30);
   });
+
+  it('finds episode numbers in names without the usual dash', () => {
+    const cases: Array<[string, number | null, string]> = [
+      ['Dragon Ball GT 01 A Devastating Wish.mkv', 1, 'Dragon Ball GT'],
+      ['[Samir755] Nana 10 - The Handsome Youth Shin Appears!.mkv', 10, 'Nana'],
+      ['[Samir755] Nana 11.5 - Junkos.Room 01.mkv', null, 'Nana'],
+      ['Hana.Yori.Dango.01.(Dual.Audio).[AM].XVID.mkv', 1, 'Hana Yori Dango'],
+      ['069 - Big Trouble In Little Edo.mkv', 69, '069 - Big Trouble In Little Edo'],
+      ['OuranHostClub-23.mkv', 23, 'OuranHostClub'],
+      ['Hinamatsuri 03 Hobo Life 101.mkv', 3, 'Hinamatsuri'],
+      ['Mob Psycho 100 12.mkv', 12, 'Mob Psycho 100'],
+      ['Wolverine and the X-Men - Ep. 15 - Hunting Grounds.mp4', 15, 'Wolverine and the X-Men'],
+      [
+        'Watch Bokura wa Minna Kawaisou 01 English Subbed in HD on 9anime.to.MP4',
+        1,
+        'Bokura wa Minna Kawaisou',
+      ],
+      [
+        'The Quintessential Quintuplets - 1x02 - Rooftop Confession.mkv',
+        2,
+        'The Quintessential Quintuplets',
+      ],
+    ];
+    for (const [name, episode, title] of cases) {
+      expect(parseFansubName(name), name).toMatchObject({ episode, title });
+    }
+  });
 });

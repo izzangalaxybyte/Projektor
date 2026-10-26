@@ -201,4 +201,91 @@ describe('identifyFiles', () => {
     expect(identifyFiles(db, scan.changedFileIds)).toEqual({ movies: 0, episodes: 0, skipped: 1 });
     expect(db.select().from(schema.episodes).all()).toHaveLength(1);
   });
+
+  it('names anime shows by folder and numbers episodes from awkward file names', async () => {
+    const root = tree([
+      'Digimon 02/069 - Big Trouble In Little Edo.mkv',
+      'Digimon 02/070 - Kyoto Dragon.mkv',
+      'Cowboy Bebop/Ep-01 Asteroid Blues.mkv',
+      'Dragon Ball GT/01. Black Star Dragon Ball Saga/Dragon Ball GT 01 A Devastating Wish.mkv',
+      'Hana Yori Dango/Hana.Yori.Dango.01.(Dual.Audio).[AM].XVID.mkv',
+      'One Piece/Movies/(2000) One Piece - The Movie/One Piece the Movie.mkv',
+      'One Piece/[SubsPlease] One Piece - 1071 (1080p).mkv',
+      'Gintama/Extras/[Judas] Gintama - NCOP 16a.mkv',
+      'Bleach/[AnimeRG] Bleach - 183 -the Darkness Which Moves! [480p].mkv',
+      'Bleach/Thousand Year Blood War/BLEACH Sennen Kessen-hen 09 1080p.mkv',
+    ]);
+    const { db, id } = library('anime', root);
+    const scan = await scanLibrary(db, id);
+    identifyFiles(db, scan.changedFileIds);
+    const shows = db.select().from(schema.shows).orderBy(schema.shows.title).all();
+    expect(shows.map((s) => s.title)).toEqual([
+      'BLEACH Sennen Kessen-hen',
+      'Bleach',
+      'Cowboy Bebop',
+      'Digimon 02',
+      'Dragon Ball GT',
+      'Hana Yori Dango',
+      'One Piece',
+    ]);
+    const episodes = (title: string) => {
+      const show = shows.find((s) => s.title === title)!;
+      return db
+        .select()
+        .from(schema.episodes)
+        .where(eq(schema.episodes.showId, show.id))
+        .all()
+        .map((e) => [e.seasonNumber, e.absoluteNumber, e.title])
+        .sort();
+    };
+    expect(episodes('Digimon 02')).toEqual([
+      [null, 69, null],
+      [null, 70, null],
+    ]);
+    expect(episodes('Cowboy Bebop')).toEqual([[null, 1, null]]);
+    expect(episodes('Dragon Ball GT')).toEqual([[null, 1, null]]);
+    expect(episodes('Hana Yori Dango')).toEqual([[null, 1, null]]);
+    expect(episodes('Bleach')).toEqual([[null, 183, null]]);
+    // The film goes to the show's specials with its own title; the extra is not scanned at all.
+    expect(episodes('One Piece')).toEqual([
+      [null, 1071, null],
+      [0, null, 'One Piece the Movie'],
+    ]);
+  });
+
+  it('names TV shows by a cleaned folder and parks unnumbered extras in specials', async () => {
+    const root = tree([
+      'Futurama (1999) Season 1-7 S01-S07 + Extras (Mixed x265 RCVR)/Season 1/Futurama (1999) - S01E01 - Space Pilot 3000.mkv',
+      'Futurama (1999) Season 1-7 S01-S07 + Extras (Mixed x265 RCVR)/Featurettes/Blooperama 2.mkv',
+      'Futurama (1999) Season 1-7 S01-S07 + Extras (Mixed x265 RCVR)/Other/Futurama Benders Big Score (2008)/Futurama Benders Big Score (2008).mkv',
+      "Death Note/[FMA1394] Death Note 01 'Rebirth' [v4] [Dual Audio].mkv",
+      'Firefly/01 Firefly The Train Job - S01E01 2002 Eng Subs 1080p.mp4',
+      'Family Guy/Star Wars Parodies/Star Wars Parody 1 - Family Guy Presents Blue Harvest (2007).mp4',
+      'Family Guy/Season 1/Family.Guy.S01E01.mkv',
+    ]);
+    const { db, id } = library('tv', root);
+    const scan = await scanLibrary(db, id);
+    identifyFiles(db, scan.changedFileIds);
+    const shows = db.select().from(schema.shows).orderBy(schema.shows.title).all();
+    expect(shows.map((s) => [s.title, s.year])).toEqual([
+      ['Death Note', null],
+      ['Family Guy', null],
+      ['Firefly', null],
+      ['Futurama', 1999],
+    ]);
+    const rows = db
+      .select()
+      .from(schema.episodes)
+      .all()
+      .map((e) => [shows.find((s) => s.id === e.showId)!.title, e.seasonNumber, e.episodeNumber])
+      .sort();
+    expect(rows).toEqual([
+      ['Death Note', 1, 1],
+      ['Family Guy', 0, null],
+      ['Family Guy', 1, 1],
+      ['Firefly', 1, 1],
+      ['Futurama', 0, null],
+      ['Futurama', 1, 1],
+    ]);
+  });
 });

@@ -6,6 +6,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { now, schema, type Db } from '../db/index.js';
 import { parseFansubName } from './fansub-parser.js';
+import { isSpecialName, isSpecialsDir, showFolder } from './folders.js';
 import { parseSceneName, type ParsedName } from './scene-parser.js';
 
 export interface IdentifySummary {
@@ -31,18 +32,78 @@ export type NameParser = (
   libraryKind: LibraryKind,
 ) => ParsedName;
 
+const SEASON_DIR = /^(?:Season|Series|S)[ ._-]?\d{1,2}$/i;
+
 /**
- * Default parser: fansub rules for anime libraries, scene rules for everything else. An anime
- * file whose name gives no season keeps its number as absoluteEpisode for later season mapping.
+ * Default parser: scene rules for movie libraries. In TV and anime libraries the show is named by
+ * its folder (see folders.ts) and the file name supplies the numbers: fansub rules for anime,
+ * scene rules for TV with fansub numbering as a fallback for anime-style names. Films, OVAs, and
+ * specials inside a show folder, and TV files with no season or episode at all, go to season 0. An anime file whose name gives no season keeps its
+ * number as absoluteEpisode for later season mapping.
  */
 export const defaultParser: NameParser = (fileName, parentDirs, libraryKind) => {
-  if (libraryKind !== 'anime') return parseSceneName(fileName, parentDirs);
-  const parsed = parseFansubName(fileName, parentDirs);
-  if (parsed.season === null && parsed.episode !== null) {
+  if (libraryKind === 'movie') return parseSceneName(fileName, parentDirs);
+  const folder = showFolder(parentDirs);
+  const inner = folder ? parentDirs.slice(folder.index + 1) : [];
+  let parsed: ParsedName =
+    libraryKind === 'anime'
+      ? parseFansubName(fileName, parentDirs)
+      : parseTv(fileName, parentDirs, inner);
+  const special =
+    inner.some(isSpecialsDir) ||
+    (libraryKind === 'anime' && isSpecialName(fileName)) ||
+    (libraryKind === 'tv' && parsed.episode === null && parsed.season === null);
+  const fileTitle = parsed.title;
+  if (special && parsed.season !== 0) {
+    parsed = { ...parsed, season: 0, episode: null, episodeEnd: null };
+  }
+  // An anime folder named only by the start of the title ("demon" for "Demon Lord", "Bleach"
+  // around "Bleach Sennen Kessen-hen") yields to the fuller title in the file name, which is the
+  // AniList entry; a fuller folder name ("Love Live! School Idol Project") wins as usual.
+  const ownTitle = libraryKind === 'anime' ? parseFansubName(fileName).title : '';
+  const fileExtendsFolder =
+    libraryKind === 'anime' &&
+    !special &&
+    folder !== null &&
+    sortKey(ownTitle).startsWith(sortKey(folder.title) + ' ');
+  if (folder && !fileExtendsFolder) {
+    // A special's own year (a film's release) says nothing about when the show began.
+    parsed = {
+      ...parsed,
+      title: folder.title,
+      year: folder.year ?? (special ? null : parsed.year),
+    };
+  } else if (fileExtendsFolder) {
+    parsed = { ...parsed, title: ownTitle };
+  }
+  if (parsed.episode === null) parsed = { ...parsed, episodeTitle: fileTitle };
+  if (libraryKind === 'anime' && parsed.season === null && parsed.episode !== null) {
     return { ...parsed, episode: null, episodeEnd: null, absoluteEpisode: parsed.episode };
   }
   return { ...parsed, absoluteEpisode: null };
 };
+
+/**
+ * Scene rules, then fansub numbering for anime-style names in a TV library ("Death Note 01
+ * 'Rebirth'", "Wolverine and the X-Men - Ep. 15") as season 1, but only for files in the show or
+ * a season folder: anywhere else an unmarked file is a special, not episode one.
+ */
+function parseTv(fileName: string, parentDirs: string[], inner: string[]): ParsedName {
+  const scene = parseSceneName(fileName, parentDirs);
+  if (scene.kind === 'episode' && scene.episode !== null) return scene;
+  if (!inner.every((d) => SEASON_DIR.test(d))) return { ...scene, kind: 'episode' };
+  const fansub = parseFansubName(fileName, parentDirs);
+  if (fansub.episode === null) return { ...scene, kind: 'episode' };
+  return {
+    kind: 'episode',
+    title: fansub.title,
+    year: fansub.year,
+    season: fansub.season ?? scene.season ?? 1,
+    episode: fansub.episode,
+    episodeEnd: fansub.episodeEnd,
+    confidence: 'low',
+  };
+}
 
 /** Links each unlinked file in fileIds to a movie or episode, creating items as needed. */
 export function identifyFiles(
@@ -237,7 +298,10 @@ function linkEpisode(db: Db, fileId: string, libraryId: string, parsed: ParsedNa
         seasonNumber: parsed.season,
         episodeNumber: parsed.episode,
         absoluteNumber: absolute,
-        title: parsed.episode === null && absolute === null ? parsed.title : null,
+        title:
+          parsed.episode === null && absolute === null
+            ? (parsed.episodeTitle ?? parsed.title)
+            : null,
         createdAt: ts,
         updatedAt: ts,
       })

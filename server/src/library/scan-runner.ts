@@ -111,7 +111,11 @@ export class ScanRunner {
         walked.changedFileIds,
       );
       set({ phase: 'identifying', filesProbed: probed.probed, filesFailed: probed.failed });
-      const identified = identifyFiles(this.app.db, walked.changedFileIds, this.log);
+      const identified = identifyFiles(
+        this.app.db,
+        [...walked.changedFileIds, ...walked.unlinkedFileIds],
+        this.log,
+      );
       set({ phase: 'matching', itemsLinked: identified.movies + identified.episodes });
       const deps = metadataDeps(this.app, this.log);
       const matched = deps.matcher

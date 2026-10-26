@@ -20,6 +20,8 @@ export interface ParsedName {
    * parser adapter; scene names never carry it.
    */
   absoluteEpisode?: number | null;
+  /** Title for an episode with no number (a film or special), when `title` names the show. */
+  episodeTitle?: string | null;
 }
 
 const EPISODE_PATTERNS: RegExp[] = [
@@ -41,7 +43,11 @@ const SPECIALS_FOLDER = /^Specials$/i;
 const TITLE_YEAR_FOLDER = /^(.+?)[ ._]?\((\d{4})\)/;
 
 export function parseSceneName(fileName: string, parentDirs: string[] = []): ParsedName {
-  const base = stripExtension(fileName);
+  // Site watermarks: "www.HDSector.com - A.Cinderella.Story.2004.BluRay.mkv".
+  const base = stripExtension(fileName).replace(
+    /^www[ .][\w-]+[ .](?:com|net|org|to)\s*-?\s*/i,
+    '',
+  );
   const parent = parentDirs[parentDirs.length - 1] ?? null;
   const grandparent = parentDirs[parentDirs.length - 2] ?? null;
   const seasonFolder = parent
@@ -91,6 +97,14 @@ export function parseSceneName(fileName: string, parentDirs: string[] = []): Par
   const parsed = ptt.parse(base);
   let title = parsed.title ? cleanTitle(parsed.title) : '';
   let year = parsed.year ?? null;
+  // Two years: the release year is the later one and the earlier belongs to the title
+  // ("Taylor.Swift.The.1989.World.Tour.2015").
+  const lastYear = extractYear(base);
+  if (year && lastYear && lastYear > year) {
+    const at = base.lastIndexOf(String(lastYear));
+    title = cleanTitle(base.slice(0, at));
+    year = lastYear;
+  }
   let confidence: ParsedName['confidence'] = year ? 'high' : 'low';
 
   // Plex style "Title (Year)/anything.mkv": the folder is more reliable than the file.
@@ -104,6 +118,16 @@ export function parseSceneName(fileName: string, parentDirs: string[] = []): Par
         year = folderYear;
         confidence = 'high';
       }
+    }
+  }
+  // A file name with no year ("oceans.12.1080p.x264-culthd.mkv") inside a release folder that has
+  // one ("Oceans.Twelve.2004.1080p.BluRay"): the folder names the film.
+  if (!year && parent) {
+    const folder = ptt.parse(parent);
+    if (folder.year && folder.title) {
+      title = cleanTitle(folder.title);
+      year = folder.year;
+      confidence = 'high';
     }
   }
   if (!title) {

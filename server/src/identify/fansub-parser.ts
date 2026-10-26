@@ -18,14 +18,19 @@ const SEASON_FOLDER = /^(?:Season|Series|S)[ ._-]?(\d{1,2})$/i;
 const LEADING_GROUP = /^\[([^\]]+)\]\s*/;
 const YEAR_PAREN = /\((19[2-9]\d|20[0-4]\d)\)/;
 const SEASON_PAREN = /\((?:Season|S)\s*(\d{1,2})\)/i;
-const SXXEYY = /\bS(\d{1,2})E(\d{1,4})(?:-E?(\d{1,4}))?(?:v(\d))?\b/i;
+const SXXEYY = /\bS(\d{1,2})E(\d{1,4})(?:-E?(\d{1,4}))?(?:v(\d))?\b|\b(\d{1,2})x(\d{2,3})\b(?!\d)/i;
 // " - 13", " - 13v2", " - 13-14", " - 13 END", " - 1000", "- 05.5" (half episodes are floored)
 const DASH_EPISODE =
   /\s[-–]\s(\d{1,4})(?:\.\d)?(?:\s*[-~]\s*(\d{1,4}))?(?:v(\d))?(?:\s+(?:END|FINAL|OVA|SP))?\s*$/i;
 const DASH_EPISODE_MID =
   /\s[-–]\s(\d{1,4})(?:\.\d)?(?:\s*[-~]\s*(\d{1,4}))?(?:v(\d))?(?:\s+(?:END|FINAL))?(?=\s[-–]\s|\s*$)/i;
-const WORD_EPISODE = /\b(?:Episode|Ep\.?|E)\s?(\d{1,4})(?:v(\d))?\b/i;
-const TRAILING_NUMBER = /(?:^|\s)(\d{1,4})(?:v(\d))?$/;
+const WORD_EPISODE = /\b(?:Episode|Ep\.?|E)[\s.-]?(\d{1,4})(?:v(\d))?\b/i;
+const TRAILING_NUMBER = /(?:^|[\s-])(\d{1,4})(?:v(\d))?$/;
+// "069 - Big Trouble In Little Edo", "01 Firefly The Train Job"
+const LEADING_NUMBER = /^(\d{1,4})(?:\s*[-.]\s+|\s+)/;
+// The first bare number after the title: "Dragon Ball GT 01 A Devastating Wish",
+// "Nana 10 - The Handsome Youth Shin Appears!", "Bleach - 183 -the Darkness Which Moves!"
+const FIRST_NUMBER = /(?:^|[\s-])(\d{1,4})(\.5)?(?:\s?v(\d))?(?=[\s-]|$)/i;
 const SEASON_IN_TITLE: RegExp[] = [
   /\s(\d{1,2})(?:st|nd|rd|th)\s+Season\b/i,
   /\sSeason\s+(\d{1,2})\b/i,
@@ -38,6 +43,15 @@ export function parseFansubName(fileName: string, parentDirs: string[] = []): Pa
     .replace(/\.[a-z0-9]{2,4}$/i, '')
     .replace(/_/g, ' ')
     .trim();
+  // Streaming-site rips: "Fukumenkei Noise Episode 001 - Watch Fukumenkei Noise Episode 001
+  // online in high quality", "Watch Bokura wa Minna Kawaisou 01 English Subbed in HD on 9anime.to".
+  rest = rest
+    .replace(/\s[-–]\sWatch\s.*\sonline in high quality$/i, '')
+    .replace(/^Watch\s+/i, '')
+    .replace(/\s+English (?:Subbed|Dubbed)\b.*$/i, '')
+    .trim();
+  // Dotted names have no spaces: "Hana.Yori.Dango.01.(Dual.Audio).[AM].XVID".
+  if (!rest.includes(' ')) rest = rest.replace(/\.(?![^[(]*[\])])/g, ' ').trim();
 
   let group: string | null = null;
   const lead = LEADING_GROUP.exec(rest);
@@ -65,8 +79,9 @@ export function parseFansubName(fileName: string, parentDirs: string[] = []): Pa
 
   const sxe = SXXEYY.exec(rest);
   if (sxe) {
-    season = Number(sxe[1]);
-    episode = Number(sxe[2]);
+    // Either S01E02 or "1x02" ("The Quintessential Quintuplets - 1x01 - …").
+    season = Number(sxe[1] ?? sxe[5]);
+    episode = Number(sxe[2] ?? sxe[6]);
     episodeEnd = sxe[3] ? Number(sxe[3]) : null;
     version = sxe[4] ? Number(sxe[4]) : null;
     titlePart = rest.slice(0, sxe.index);
@@ -84,17 +99,36 @@ export function parseFansubName(fileName: string, parentDirs: string[] = []): Pa
         version = word[2] ? Number(word[2]) : null;
         titlePart = rest.slice(0, word.index);
       } else {
-        const trailing = TRAILING_NUMBER.exec(rest);
-        if (trailing) {
+        const leading = LEADING_NUMBER.exec(rest);
+        const first = FIRST_NUMBER.exec(rest);
+        let trailing = TRAILING_NUMBER.exec(rest);
+        // "Hinamatsuri 03 Hobo Life 101": the number before the episode title wins over one at
+        // the end of it. "Mob Psycho 100 12" has nothing between, so the trailing one stays.
+        if (trailing && first && first.index < trailing.index) {
+          const between = rest.slice(first.index + first[0].length, trailing.index);
+          if (/\p{L}/u.test(between)) trailing = null;
+        }
+        if (first?.[2]) {
+          // A ".5" recap ("Nana 11.5 - Junko's Room") is not the episode it follows.
+          titlePart = rest.slice(0, first.index);
+        } else if (trailing) {
           episode = Number(trailing[1]);
           version = trailing[2] ? Number(trailing[2]) : null;
           titlePart = rest.slice(0, trailing.index);
+        } else if (leading) {
+          episode = Number(leading[1]);
+          titlePart = '';
+        } else if (first) {
+          episode = Number(first[1]);
+          version = first[3] ? Number(first[3]) : null;
+          titlePart = rest.slice(0, first.index);
         }
       }
     }
   }
   if (episodeEnd !== null && episodeEnd <= episode!) episodeEnd = null;
 
+  if (!titlePart.trim().includes(' ')) titlePart = titlePart.replace(/\./g, ' ');
   let searchTitle = tidy(titlePart);
   let title = searchTitle;
   for (const pattern of SEASON_IN_TITLE) {

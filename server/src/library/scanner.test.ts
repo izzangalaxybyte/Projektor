@@ -97,6 +97,29 @@ describe('scanLibrary', () => {
     expect(backRow?.missing).toBe(false);
   });
 
+  it('reports unchanged files that are linked to no item, so they can be identified again', async () => {
+    const t = makeTestConfig();
+    cleanups.push(t.cleanup);
+    const { db, id } = makeLibrary(t.config.dbPath, makeTree());
+    await scanLibrary(db, id);
+    expect((await scanLibrary(db, id)).unlinkedFileIds).toHaveLength(2);
+
+    const ts = now();
+    const movieId = randomUUID();
+    db.insert(schema.movies)
+      .values({
+        id: movieId,
+        libraryId: id,
+        title: 'Movie',
+        sortTitle: 'movie',
+        createdAt: ts,
+        updatedAt: ts,
+      })
+      .run();
+    db.update(schema.mediaFiles).set({ movieId }).run();
+    expect((await scanLibrary(db, id)).unlinkedFileIds).toHaveLength(0);
+  });
+
   it('continues past unreadable directories', async () => {
     const t = makeTestConfig();
     cleanups.push(t.cleanup);

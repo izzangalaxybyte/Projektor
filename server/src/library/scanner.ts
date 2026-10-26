@@ -11,6 +11,11 @@ export interface ScanResult {
   filesMissing: number;
   /** Ids of files that need probing (new or changed). */
   changedFileIds: string[];
+  /**
+   * Unchanged files that are not linked to any item, for example because an item was removed to
+   * be identified again. They need identifying but not probing.
+   */
+  unlinkedFileIds: string[];
 }
 
 /**
@@ -37,6 +42,8 @@ export async function scanLibrary(
         path: schema.mediaFiles.path,
         sizeBytes: schema.mediaFiles.sizeBytes,
         mtimeMs: schema.mediaFiles.mtimeMs,
+        movieId: schema.mediaFiles.movieId,
+        episodeId: schema.mediaFiles.episodeId,
         missing: schema.mediaFiles.missing,
       })
       .from(schema.mediaFiles)
@@ -45,7 +52,13 @@ export async function scanLibrary(
       .map((r) => [r.path, r]),
   );
 
-  const result: ScanResult = { filesSeen: 0, filesChanged: 0, filesMissing: 0, changedFileIds: [] };
+  const result: ScanResult = {
+    filesSeen: 0,
+    filesChanged: 0,
+    filesMissing: 0,
+    changedFileIds: [],
+    unlinkedFileIds: [],
+  };
   const seen = new Set<string>();
   const stale = staleProbeFileIds(db, libraryId);
 
@@ -92,11 +105,14 @@ export async function scanLibrary(
           .run();
         result.filesChanged += 1;
         result.changedFileIds.push(existing.id);
-      } else if (existing.missing) {
-        db.update(schema.mediaFiles)
-          .set({ missing: false, updatedAt: ts })
-          .where(eq(schema.mediaFiles.id, existing.id))
-          .run();
+      } else {
+        if (existing.missing) {
+          db.update(schema.mediaFiles)
+            .set({ missing: false, updatedAt: ts })
+            .where(eq(schema.mediaFiles.id, existing.id))
+            .run();
+        }
+        if (!existing.movieId && !existing.episodeId) result.unlinkedFileIds.push(existing.id);
       }
     }
   }

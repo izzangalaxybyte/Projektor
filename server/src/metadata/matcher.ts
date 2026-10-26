@@ -4,6 +4,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import pLimit from 'p-limit';
 import { now, schema, type Db } from '../db/index.js';
 import type { ImageStore } from '../images/store.js';
+import { movieSearchTitles } from './movie-queries.js';
 import { ACCEPT_THRESHOLD, rankCandidates } from './score.js';
 import { TmdbClient, TmdbError, type MovieDetails, type TvDetails } from './tmdb.js';
 
@@ -71,31 +72,43 @@ export class Matcher {
     }
   }
 
-  /** Searches TMDB for the movie's parsed title/year and applies the top result if confident. */
+  /**
+   * Searches TMDB for the movie's parsed title/year, then alternative titles (movie-queries.ts),
+   * and applies the first confident result.
+   */
   async matchMovie(movieId: string): Promise<boolean> {
     const { db, tmdb } = this.deps;
     const movie = db.select().from(schema.movies).where(eq(schema.movies.id, movieId)).get();
     if (!movie) return false;
-    const results = await tmdb.searchMovies(movie.title, movie.year);
-    const ranked = rankCandidates(
-      movie.title,
-      movie.year,
-      results.map((r) => ({
-        id: r.id,
-        titles: [r.title, r.original_title ?? ''],
-        year: yearOf(r.release_date),
-        popularity: r.popularity ?? 0,
-        raw: r,
-      })),
-    );
-    const top = ranked[0];
+    const file = db
+      .select({ path: schema.mediaFiles.path })
+      .from(schema.mediaFiles)
+      .where(eq(schema.mediaFiles.movieId, movieId))
+      .get();
     db.update(schema.movies)
       .set({ matchAttemptedAt: now() })
       .where(eq(schema.movies.id, movieId))
       .run();
-    if (!top || top.score < ACCEPT_THRESHOLD) return false;
-    await this.applyMovie(movieId, top.candidate.id);
-    return true;
+    // The parsed title first; alternatives only cost a search when it found nothing confident.
+    for (const query of movieSearchTitles(movie.title, file?.path ?? null)) {
+      const results = await tmdb.searchMovies(query, movie.year);
+      const top = rankCandidates(
+        query,
+        movie.year,
+        results.map((r) => ({
+          id: r.id,
+          titles: [r.title, r.original_title ?? ''],
+          year: yearOf(r.release_date),
+          popularity: r.popularity ?? 0,
+          raw: r,
+        })),
+      )[0];
+      if (top && top.score >= ACCEPT_THRESHOLD) {
+        await this.applyMovie(movieId, top.candidate.id);
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Fetches full details for a TMDB movie id and writes them to the movie row. */
