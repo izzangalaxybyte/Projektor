@@ -17,6 +17,7 @@ data/
 android/.gradle/
 android/**/build/
 android/local.properties
+android/keystore.properties
 ios/**/xcuserdata/
 ios/**/DerivedData/
 tizen/.buildResult/

@@ -89,6 +89,16 @@ Every APK carries a build number taken from git at build time: `versionCode` is 
 
 The generated client maps JSON `number` to `Double` and `integer` to `Long` (`typeMappings` in `core/build.gradle.kts`). The generator's defaults were `BigDecimal`, which kotlinx.serialization cannot decode, and `Int`, which a 7 GB file's `sizeBytes` overflows; the contract's integers are JS safe integers, so `Long` is the honest type.
 
+## Publishing to apphound
+
+Release builds are signed with the apphound release key through `android/keystore.properties` (gitignored; `storeFile`, `storePassword`, `keyAlias`). Keep that key forever: devices refuse an update signed with a different one. To build both release APKs and publish them to the apphound store, which installs and updates them over the air:
+
+```bash
+./gradlew publishToApphound
+```
+
+The phone app is listed as "Projektor" and the TV app as "Projektor TV"; the changelog is the last commit's subject. `publishPhoneToApphound` and `publishTvToApphound` publish one app each. The store refuses a `versionCode` that is not higher than the published one, so commit before publishing again (the build number is the commit count). A plain `assembleRelease` never publishes.
+
 ## Installing
 
 ```bash
