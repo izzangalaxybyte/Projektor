@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import app.projektor.player.showWithStackedSubtitles
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -199,7 +200,7 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
                 }
             },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } }, modifier = Modifier.fillMaxSize())
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player.exo) } }, modifier = Modifier.fillMaxSize())
         Text(state.positionMs.toString(), Modifier.width(1.dp).height(1.dp).testTag("position-ms"), color = Color.Transparent)
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(32.dp), color = MaterialTheme.colorScheme.error) }
         if (state.isBuffering && error == null) Text("…", Modifier.align(Alignment.Center), style = MaterialTheme.typography.displayMedium)

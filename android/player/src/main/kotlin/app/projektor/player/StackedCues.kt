@@ -1,10 +1,10 @@
 package app.projektor.player
 
 import android.text.SpannableStringBuilder
-import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
+import androidx.media3.ui.PlayerView
 
 /**
  * WebVTT stacks cues that show at the same time exactly one line apart (line -1, -2, …), measured
@@ -23,25 +23,22 @@ fun stackCues(cues: List<Cue>): List<Cue> {
     return placed + ordered.last().buildUpon().setText(text).setLine(-1f, Cue.LINE_TYPE_NUMBER).build()
 }
 
-/** The player a PlayerView should show: [player] with its cues passed through [stackCues]. */
-internal class StackedCuesPlayer(player: Player) : ForwardingPlayer(player) {
-    private val wrapped = mutableMapOf<Player.Listener, Player.Listener>()
-
-    override fun getCurrentCues(): CueGroup = super.getCurrentCues().stacked()
-
-    override fun addListener(listener: Player.Listener) {
-        val wrapper = object : Player.Listener by listener {
-            override fun onCues(cueGroup: CueGroup) = listener.onCues(cueGroup.stacked())
-            @Deprecated("Deprecated in Java")
-            override fun onCues(cues: List<Cue>) = listener.onCues(stackCues(cues))
-        }
-        wrapped[listener] = wrapper
-        super.addListener(wrapper)
-    }
-
-    override fun removeListener(listener: Player.Listener) {
-        super.removeListener(wrapped.remove(listener) ?: listener)
-    }
-
-    private fun CueGroup.stacked() = CueGroup(stackCues(cues), presentationTimeUs)
+/**
+ * Shows [player] in this PlayerView with simultaneous subtitle cues stacked by [stackCues].
+ *
+ * PlayerView feeds its subtitle view from its own listener; this one is added after it, so for each
+ * cue update ours runs last and its stacked cues are what stays on screen. (An earlier version
+ * wrapped the player in a ForwardingPlayer whose listener used Kotlin `by` delegation. Kotlin does
+ * not delegate Java default methods, so every event but onCues was dropped, including
+ * onRenderedFirstFrame, and PlayerView never lifted its black shutter: all video was black.)
+ */
+fun PlayerView.showWithStackedSubtitles(player: Player) {
+    this.player = player
+    player.addListener(
+        object : Player.Listener {
+            override fun onCues(cueGroup: CueGroup) {
+                subtitleView?.setCues(stackCues(cueGroup.cues))
+            }
+        },
+    )
 }

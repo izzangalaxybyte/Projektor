@@ -76,12 +76,14 @@ object DeviceProfiles {
     )
 
     /**
-     * MIME types some decoder lists a 10-bit profile for. Without this a phone reported 10-bit AV1
-     * as unsupported and the server, which has no AV1 hardware, transcoded it slowly.
+     * MIME types a hardware decoder lists a 10-bit profile for. Without this a phone reported 10-bit
+     * AV1 as unsupported and the server, which has no AV1 hardware, transcoded it slowly. Software
+     * decoders are left out: the emulator's dav1d decodes 10-bit AV1 but its output reaches the
+     * screen as garbage, and whether a device's graphics stack draws it right cannot be asked.
      */
     fun tenBitDecoderMimeTypes(): Set<String> =
-        MediaCodecList(MediaCodecList.ALL_CODECS).codecInfos
-            .filter { !it.isEncoder }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) emptySet() else MediaCodecList(MediaCodecList.ALL_CODECS).codecInfos
+            .filter { !it.isEncoder && it.isHardwareAccelerated }
             .flatMap { info ->
                 info.supportedTypes.filter { type ->
                     val wanted = TEN_BIT_PROFILES[type.lowercase()] ?: return@filter false

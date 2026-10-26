@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import app.projektor.player.showWithStackedSubtitles
 import app.projektor.core.api.models.CreateRecordingRequestInput
 import app.projektor.core.api.models.LiveChannel
 import app.projektor.core.api.models.LiveDecideRequestInput
@@ -143,7 +144,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
             detectTapGestures(onTap = { if (controlsVisible) controlsVisible = false else touched() })
         },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } }, modifier = Modifier.fillMaxSize())
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player.exo) } }, modifier = Modifier.fillMaxSize())
         Text(state.positionMs.toString(), Modifier.size(1.dp).testTag("position-ms"), color = Color.Transparent)
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }

@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import app.projektor.player.showWithStackedSubtitles
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.MediaFile
 import app.projektor.core.api.models.PlaybackDecideRequestInput
@@ -145,7 +146,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         },
     ) {
         AndroidView(
-            factory = { ctx -> PlayerView(ctx).apply { useController = false; this.player = player.viewPlayer } },
+            factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player.exo) } },
             modifier = Modifier.fillMaxSize(),
         )
         // Hidden probes for tests: position in ms and current rate.

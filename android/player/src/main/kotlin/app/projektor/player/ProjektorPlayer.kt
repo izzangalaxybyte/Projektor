@@ -45,8 +45,6 @@ class ProjektorPlayer(
     private val progressIntervalMs: Long = 10_000,
 ) {
     val exo: ExoPlayer = ExoPlayer.Builder(context).build()
-    /** What a PlayerView should show: [exo] with simultaneous subtitle cues laid out so they don't overlap. */
-    val viewPlayer: Player = StackedCuesPlayer(exo)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var ticker: Job? = null
     private var knownDurationMs: Long = 0
