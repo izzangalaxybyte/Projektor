@@ -184,6 +184,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       },
     ),
   );
+  let periodicScan: NodeJS.Timeout | null = null;
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
@@ -198,8 +199,23 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       .all()) {
       if (staleProbeFileIds(database.db, lib.id).size > 0) scans.request(lib.id, 'reprobe');
     }
+    const interval = options.config.scanIntervalMinutes;
+    if (interval > 0) {
+      const scanAll = (reason: string) => {
+        for (const lib of database.db
+          .select({ id: schema.libraries.id })
+          .from(schema.libraries)
+          .all()) {
+          scans.request(lib.id, reason);
+        }
+      };
+      scanAll('startup');
+      periodicScan = setInterval(() => scanAll('interval'), interval * 60_000);
+      periodicScan.unref();
+    }
   });
   app.addHook('onClose', async () => {
+    if (periodicScan) clearInterval(periodicScan);
     app.live.stop();
     await app.recorder.close();
     await app.liveHls.close();

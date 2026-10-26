@@ -31,6 +31,7 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
+  SCAN_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(15),
 });
 
 export interface Config {
@@ -63,6 +64,11 @@ export interface Config {
   authRateLimitPerMinute: number;
   /** Whether to watch library folders for changes. */
   watchLibraries: boolean;
+  /**
+   * Every library is scanned at startup and then this often, catching changes the watcher cannot
+   * see (files written straight to a pooled disk, changes while the server was down). 0 disables.
+   */
+  scanIntervalMinutes: number;
   /** Absolute root for all server-owned state. */
   dataDir: string;
   dbPath: string;
@@ -102,6 +108,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     hdrTonemapMaxWidth: parsed.HDR_TONEMAP_MAX_WIDTH,
     ...(parsed.RECORDINGS_DIR ? { recordingsDir: path.resolve(parsed.RECORDINGS_DIR) } : {}),
     watchLibraries: parsed.WATCH_LIBRARIES,
+    scanIntervalMinutes: parsed.SCAN_INTERVAL_MINUTES,
   });
 }
 
@@ -133,6 +140,7 @@ export function configForDataDir(
     recordingPaddingMs: 120_000,
     hdrTonemapMaxWidth: 1280,
     watchLibraries: true,
+    scanIntervalMinutes: 0,
     ...overrides,
     dataDir,
     dbPath: path.join(dataDir, 'projektor.sqlite'),

@@ -51,14 +51,23 @@ export class ScanRunner {
     );
   }
 
-  /** Queues a scan. A library already queued is not queued twice; one already running reruns when done. */
+  /**
+   * Queues a scan. A library already queued is not queued twice; one already running reruns when
+   * done. Changes seen by the watcher, and reruns, go to the front of the queue: someone just added
+   * files and is waiting for them, while a queued full scan of another library can take minutes.
+   */
   request(libraryId: string, reason: string): ScanStatus {
     if (this.running === libraryId) {
+      if (!this.rerun.has(libraryId)) this.log.info({ libraryId, reason }, 'scan rerun queued');
       this.rerun.add(libraryId);
     } else if (!this.queue.includes(libraryId)) {
-      this.queue.push(libraryId);
+      if (reason === 'watcher') this.queue.unshift(libraryId);
+      else this.queue.push(libraryId);
       this.log.info({ libraryId, reason }, 'scan queued');
       if (!this.running) void this.drain();
+    } else if (reason === 'watcher') {
+      this.queue.splice(this.queue.indexOf(libraryId), 1);
+      this.queue.unshift(libraryId);
     }
     return this.statusOf(libraryId);
   }
@@ -75,7 +84,7 @@ export class ScanRunner {
         this.running = next;
         await this.run(next);
         this.running = null;
-        if (this.rerun.delete(next)) this.queue.push(next);
+        if (this.rerun.delete(next)) this.queue.unshift(next);
       }
     } finally {
       this.running = null;
