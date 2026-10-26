@@ -1,8 +1,8 @@
 package app.projektor.core.items
 
 import app.projektor.core.ProjektorClient
-import app.projektor.core.bodyOrThrow
 import app.projektor.core.api.models.ApiItemsGet200Response
+import app.projektor.core.api.models.ApiProgressItemIdWatchedPutRequest
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemKindInput
 import app.projektor.core.api.models.ItemSummary
@@ -10,6 +10,7 @@ import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.ProgressUpdateRequestInput
+import app.projektor.core.bodyOrThrow
 
 /** Ergonomic browse calls over the generated client, which takes every query parameter positionally. */
 class ItemsRepository(private val client: ProjektorClient) {
@@ -41,5 +42,10 @@ class ItemsRepository(private val client: ProjektorClient) {
 
     suspend fun reportProgress(itemId: String, positionMs: Long, durationMs: Long) {
         client.progress.apiProgressPost(ProgressUpdateRequestInput(itemId = itemId, positionMs = positionMs, durationMs = durationMs))
+    }
+
+    /** Marks a movie or episode watched (position at the end) or unwatched (progress cleared). */
+    suspend fun setWatched(itemId: String, watched: Boolean) {
+        client.progress.apiProgressItemIdWatchedPut(itemId, ApiProgressItemIdWatchedPutRequest(watched)).bodyOrThrow()
     }
 }
