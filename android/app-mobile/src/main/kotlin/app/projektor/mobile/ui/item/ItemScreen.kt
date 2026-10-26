@@ -4,13 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,17 +39,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemSummary
+import app.projektor.core.api.models.MediaFile
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.ui.Bg
+import app.projektor.mobile.ui.Surface2
 import app.projektor.mobile.ui.UiState
 import app.projektor.mobile.ui.components.PosterTile
 import app.projektor.mobile.ui.components.subtitle
 import app.projektor.mobile.ui.userMessage
 import coil3.compose.AsyncImage
+import java.util.Locale
 
 fun formatMs(ms: Long): String {
     val total = ms / 1000
@@ -52,6 +67,7 @@ fun formatMs(ms: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Unit, play: (fileId: String, itemId: String, startMs: Long) -> Unit, back: () -> Unit) {
     val items = container.items() ?: return
@@ -72,56 +88,111 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
         is UiState.Ready -> {
             val (d, children) = s.value
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                Box(Modifier.fillMaxWidth().height(200.dp)) {
-                    client.imageUrl(d.backdropKey, 1280)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.4f) }
-                    IconButton(onClick = back, modifier = Modifier.padding(8.dp).testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                // Backdrop fading into the page, with the back button clear of the status bar.
+                Box(Modifier.fillMaxWidth().height(240.dp)) {
+                    client.imageUrl(d.backdropKey, 1280)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Bg.copy(alpha = 0.35f), 0.5f to Color.Transparent, 1f to Bg)))
+                    IconButton(
+                        onClick = back,
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(8.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape).testTag("back"),
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White) }
                 }
-                Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Box(Modifier.width(110.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface)) {
+                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Box(Modifier.width(112.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface)) {
                         client.imageUrl(d.posterKey, 300)?.let { AsyncImage(it, null, Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth) }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (d.showTitle != null && d.kind.value != "show") Text(d.showTitle!!, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(d.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.testTag("item-title"))
-                        val meta = listOfNotNull(d.subtitle().takeIf { it.isNotBlank() }, d.runtimeMs?.let { "${it / 60000} min" }, d.rating?.let { "★ %.1f".format(it) }).plus(d.genres).joinToString(" · ")
-                        if (meta.isNotBlank()) Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        d.files.firstOrNull()?.let { file ->
-                            val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
-                            Button(onClick = { play(file.id, d.id, resume) }, modifier = Modifier.testTag("play")) {
-                                Icon(Icons.Filled.PlayArrow, null)
-                                Text(if (resume > 0) " Resume from ${formatMs(resume)}" else " Play")
-                            }
-                            if (resume > 0) OutlinedButton(onClick = { play(file.id, d.id, 0) }) { Text("Start over") }
+                        if (d.showTitle != null && d.kind.value != "show") Text(d.showTitle!!, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(d.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold, color = Color.White, modifier = Modifier.testTag("item-title"))
+                        val meta = listOfNotNull(d.subtitle().takeIf { it.isNotBlank() }, d.runtimeMs?.let { formatRuntime(it.toLong()) }).joinToString(" · ")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (meta.isNotBlank()) Text(meta, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.8f))
+                            d.rating?.let { Text("★ %.1f".format(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
                         }
                     }
                 }
-                d.tagline?.let { Text(it, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                d.overview?.let { Text(it, Modifier.padding(16.dp), style = MaterialTheme.typography.bodyMedium) }
+                if (d.genres.isNotEmpty()) {
+                    FlowRow(Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        d.genres.forEach { g ->
+                            Text(g, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f), modifier = Modifier.clip(RoundedCornerShape(50)).background(Surface2).padding(horizontal = 12.dp, vertical = 6.dp))
+                        }
+                    }
+                }
+                d.files.firstOrNull()?.let { file ->
+                    val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
+                    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { play(file.id, d.id, resume) }, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("play")) {
+                            Icon(Icons.Filled.PlayArrow, null)
+                            Text(if (resume > 0) " Resume from ${formatMs(resume)}" else " Play", style = MaterialTheme.typography.titleMedium)
+                        }
+                        if (resume > 0) OutlinedButton(onClick = { play(file.id, d.id, 0) }, modifier = Modifier.fillMaxWidth()) { Text("Start over", color = Color.White) }
+                    }
+                }
+                d.tagline?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), style = MaterialTheme.typography.titleMedium, fontStyle = FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)) }
+                d.overview?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp), style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.85f)) }
                 next?.let { n ->
-                    Text("Next: ${n.subtitle()} ${n.title}", Modifier.padding(horizontal = 16.dp).testTag("next"), color = MaterialTheme.colorScheme.primary)
+                    Text("Next: ${n.subtitle()} ${n.title}", Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp).testTag("next"), color = MaterialTheme.colorScheme.primary)
                 }
                 val seasons = children.filter { it.kind.value == "season" }
                 val episodes = children.filter { it.kind.value == "episode" }
                 if (seasons.isNotEmpty()) TileSection("Seasons", seasons, client, openItem)
                 if (episodes.isNotEmpty()) TileSection("Episodes", episodes, client, openItem)
-                d.files.forEach { f ->
-                    Column(Modifier.padding(16.dp).fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface).padding(12.dp).testTag("file-info")) {
-                        Text("${f.fileName} · ${f.container} · ${formatMs(f.durationMs.toLong())}", style = MaterialTheme.typography.bodySmall)
-                        f.streams.forEach { st ->
-                            Text("${st.type.value}: ${st.codec} ${st.language ?: ""} ${st.width?.let { w -> "${w}×${st.height}" } ?: ""}".trim(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        f.subtitles.forEach { sub -> Text("subtitle: ${sub.format} ${sub.language ?: ""} (${sub.source.value})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    }
-                }
+                d.files.forEach { f -> FileInfo(f) }
+                Spacer(Modifier.height(24.dp))
             }
         }
     }
 }
 
+/** What's in the file, one labelled line per kind of stream. */
+@Composable
+private fun FileInfo(f: MediaFile) {
+    val video = f.streams.filter { it.type.value == "video" }.map { v ->
+        listOfNotNull(v.codec.uppercase(), v.width?.let { w -> "$w×${v.height}" }, v.bitDepth?.let { "$it-bit" }, "HDR".takeIf { v.hdr }).joinToString(" · ")
+    }
+    val audio = f.streams.filter { it.type.value == "audio" }.map { a ->
+        listOfNotNull(a.title ?: languageName(a.language), a.codec.uppercase(), a.channels?.let { channelLayout(it) }).joinToString(" · ")
+    }
+    val subs = (f.subtitles.map { it.title ?: languageName(it.language) } + f.streams.filter { it.type.value == "subtitle" && f.subtitles.none { s -> s.streamIndex == it.index } }.map { languageName(it.language) })
+        .filterNotNull().distinct()
+    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).padding(16.dp).testTag("file-info"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(f.fileName, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+        InfoLine("File", listOfNotNull(f.container.uppercase(), formatMs(f.durationMs), formatSize(f.sizeBytes)).joinToString(" · "))
+        video.forEach { InfoLine("Video", it) }
+        audio.forEachIndexed { i, a -> InfoLine(if (i == 0) "Audio" else "", a) }
+        if (subs.isNotEmpty()) InfoLine("Subtitles", subs.joinToString(", "))
+    }
+}
+
+@Composable
+private fun InfoLine(label: String, value: String) {
+    Row {
+        Text(label, Modifier.width(84.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+    }
+}
+
+private fun languageName(code: String?): String? = code?.takeIf { it.isNotBlank() && it != "und" }?.let { Locale.forLanguageTag(it).displayLanguage.ifBlank { it } }
+
+private fun channelLayout(channels: Long): String = when (channels) {
+    1L -> "Mono"
+    2L -> "Stereo"
+    6L -> "5.1"
+    8L -> "7.1"
+    else -> "$channels ch"
+}
+
+private fun formatRuntime(ms: Long): String {
+    val minutes = ms / 60_000
+    return if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "${minutes}m"
+}
+
+private fun formatSize(bytes: Long): String = if (bytes >= 1L shl 30) "%.1f GB".format(bytes / (1L shl 30).toDouble()) else "${bytes / (1L shl 20)} MB"
+
 @Composable
 private fun TileSection(title: String, list: List<ItemSummary>, client: app.projektor.core.ProjektorClient, openItem: (String) -> Unit) {
-    Column(Modifier.padding(16.dp).testTag("children")) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp).testTag("children")) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
         list.chunked(if (list.first().kind.value == "episode") 1 else 3).forEach { row ->
             Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { item -> PosterTile(item, client, onClick = { openItem(item.id) }, modifier = Modifier.weight(1f)) }
