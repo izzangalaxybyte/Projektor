@@ -41,6 +41,7 @@ import { liveRoutes } from './routes/live.js';
 import { liveVodRoutes } from './routes/live-vod.js';
 import { recordingsRoutes } from './routes/recordings.js';
 import { playbackRoutes } from './routes/playback.js';
+import { favoritesRoutes } from './routes/favorites.js';
 import { progressRoutes } from './routes/progress.js';
 import { settingsRoutes } from './routes/settings.js';
 import { subtitlesRoutes } from './routes/subtitles.js';
@@ -261,6 +262,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(playbackRoutes, { prefix: '/playback' });
       await api.register(subtitlesRoutes, { prefix: '/subtitles' });
       await api.register(progressRoutes, { prefix: '/progress' });
+      await api.register(favoritesRoutes, { prefix: '/favorites' });
       await api.register(usersRoutes, { prefix: '/users' });
       await api.register(liveRoutes, { prefix: '/live' });
 

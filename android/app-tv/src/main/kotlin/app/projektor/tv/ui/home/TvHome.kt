@@ -73,7 +73,7 @@ fun TvHome(container: TvContainer, openItem: (String) -> Unit, openChannel: (Str
     }
 }
 
-data class HomeRows(val continueWatching: Map<LibraryKindInput, List<ItemSummary>>, val recent: Map<LibraryKindInput, List<ItemSummary>>)
+data class HomeRows(val continueWatching: Map<LibraryKindInput, List<ItemSummary>>, val favorites: List<ItemSummary>, val recent: Map<LibraryKindInput, List<ItemSummary>>)
 
 @Composable
 private fun HomeRows(container: TvContainer, openItem: (String) -> Unit) {
@@ -85,8 +85,9 @@ private fun HomeRows(container: TvContainer, openItem: (String) -> Unit) {
         state = try {
             coroutineScope {
                 val cont = KINDS.associateWith { k -> async { items.continueWatching(k) } }
+                val favorites = async { items.favorites() }
                 val recent = KINDS.associateWith { k -> async { items.recentlyAdded(k) } }
-                UiState.Ready(HomeRows(cont.mapValues { it.value.await() }, recent.mapValues { it.value.await() }))
+                UiState.Ready(HomeRows(cont.mapValues { it.value.await() }, favorites.await(), recent.mapValues { it.value.await() }))
             }
         } catch (e: Exception) { UiState.Failed(e.userMessage()) }
     }
@@ -96,6 +97,7 @@ private fun HomeRows(container: TvContainer, openItem: (String) -> Unit) {
         is UiState.Ready -> {
             val rows = buildList {
                 KINDS.forEach { k -> s.value.continueWatching[k]?.takeIf { it.isNotEmpty() }?.let { add(Triple("Continue watching · ${LABEL[k]}", it, "continue-${k.value}")) } }
+                s.value.favorites.takeIf { it.isNotEmpty() }?.let { add(Triple("Favorites", it, "favorites")) }
                 KINDS.forEach { k -> s.value.recent[k]?.takeIf { it.isNotEmpty() }?.let { add(Triple("Recently added · ${LABEL[k]}", it, "recent-${k.value}")) } }
             }
             // The first tile of the first row requests focus itself (see TvTile).

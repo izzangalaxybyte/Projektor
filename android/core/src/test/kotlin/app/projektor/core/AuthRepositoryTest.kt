@@ -32,7 +32,7 @@ class AuthRepositoryTest {
             )
             "/api/items/m1" -> respond(
                 """{"id":"m1","kind":"movie","libraryKind":"movie","title":"Shrek 2","year":2004,"posterKey":null,"backdropKey":null,
-                   "seasonNumber":null,"episodeNumber":null,"showTitle":null,"needsReview":false,"progress":null,"overview":null,
+                   "seasonNumber":null,"episodeNumber":null,"showTitle":null,"needsReview":false,"progress":null,"favorite":false,"overview":null,
                    "tagline":null,"genres":["Animation"],"rating":7.3,"airDate":null,"runtimeMs":5580000,"tmdbId":809,"anilistId":null,
                    "files":[{"id":"f1","fileName":"Shrek 2 (2004).mkv","sizeBytes":7012093037,"container":"mkv","durationMs":5580000,"bitrate":10053000,"streams":[],"subtitles":[]}],"children":[]}""",
                 HttpStatusCode.OK, json,

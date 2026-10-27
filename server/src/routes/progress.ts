@@ -1,4 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { FavoritesService } from '../favorites/service.js';
 import { z } from 'zod';
 import { ItemsService } from '../items/service.js';
 import { ProgressError, ProgressService } from '../progress/service.js';
@@ -18,6 +19,7 @@ export const progressRoutes: FastifyPluginAsyncZod = async (app) => {
     app.db,
     new SubtitleService(app.db, app.config, app.log),
     progress,
+    new FavoritesService(app.db),
   );
 
   app.setErrorHandler((error, _request, reply) => {

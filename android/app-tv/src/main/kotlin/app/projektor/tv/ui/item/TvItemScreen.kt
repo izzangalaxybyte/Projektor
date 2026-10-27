@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import app.projektor.tv.ui.components.TvRow
 import app.projektor.tv.ui.formatMs
 import app.projektor.tv.ui.userMessage
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
 
 @Composable
 fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> Unit, play: (fileId: String, itemId: String, startMs: Long) -> Unit, back: () -> Unit) {
@@ -46,12 +48,15 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
     val client = container.client() ?: return
     var state by remember(itemId) { mutableStateOf<UiState<Pair<ItemDetail, List<ItemSummary>>>>(UiState.Loading) }
     var next by remember(itemId) { mutableStateOf<ItemSummary?>(null) }
+    var favorite by remember(itemId) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val primaryFocus = remember { FocusRequester() }
     LaunchedEffect(itemId) {
         state = try {
             val d = items.detail(itemId)
             val children = if (d.kind.value == "show" || d.kind.value == "season") items.children(itemId) else emptyList()
             if (d.kind.value == "episode") next = runCatching { items.nextEpisode(itemId) }.getOrNull()
+            favorite = d.favorite
             UiState.Ready(d to children)
         } catch (e: Exception) { UiState.Failed(e.userMessage()) }
     }
@@ -88,6 +93,10 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
                                         }
                                         if (resume > 0) Button(onClick = { start(file.id, 0) }) { Text("Start over") }
                                     }
+                                    if (d.kind.value == "movie" || d.kind.value == "show") Button(
+                                        onClick = { val want = !favorite; favorite = want; scope.launch { if (runCatching { items.setFavorite(d.id, want) }.isFailure) favorite = !want } },
+                                        modifier = Modifier.testTag("favorite"),
+                                    ) { Text(if (favorite) "♥ Favorited" else "♡ Favorite") }
                                     Button(onClick = back, modifier = Modifier.testTag("back").let { if (file == null) it.focusRequester(primaryFocus) else it }) { Text("Back") }
                                 }
                                 next?.let { n -> Text("Next: ${n.caption()} ${n.title}", color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("next")) }

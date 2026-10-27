@@ -252,6 +252,23 @@ export const playbackState = sqliteTable(
   ],
 );
 
+/** Movies and shows a user has favorited, shown as a row on home. */
+export const favorites = sqliteTable(
+  'favorites',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull(),
+    itemKind: text('item_kind', { enum: ['movie', 'show'] }).notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index('favorites_user_created_idx').on(t.userId, t.createdAt),
+  ],
+);
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

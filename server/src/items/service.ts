@@ -1,5 +1,6 @@
 import { desc, and, asc, eq, inArray, like, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
+import type { FavoritesService } from '../favorites/service.js';
 import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
 import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
@@ -30,6 +31,7 @@ export class ItemsService {
     private readonly db: Db,
     private readonly subtitles?: SubtitleService,
     private readonly progress?: ProgressService,
+    private readonly favorites?: FavoritesService,
   ) {}
 
   list(q: ItemsQueryInput, userId?: string): ItemsPage {
@@ -45,7 +47,7 @@ export class ItemsService {
     if (wantShows && q.libraryKind !== 'movie') ranked.push(...this.shows(q));
     if (wantSeasons && q.parentId) ranked.push(...this.seasons(q.parentId));
     if (wantEpisodes && q.parentId) ranked.push(...this.episodes(q.parentId, q.parentId));
-    const items = this.withProgress(sortItems(ranked, q.sort), userId);
+    const items = this.withUserState(sortItems(ranked, q.sort), userId);
     return {
       items: items.slice(q.offset, q.offset + q.limit),
       total: items.length,
@@ -57,8 +59,8 @@ export class ItemsService {
   get(id: string, userId?: string): ItemDetail {
     const detail = this.detail(id);
     if (!userId) return detail;
-    const [withSelf] = this.withProgress([detail], userId) as ItemDetail[];
-    return { ...withSelf!, children: this.withProgress(detail.children, userId) };
+    const [withSelf] = this.withUserState([detail], userId) as ItemDetail[];
+    return { ...withSelf!, children: this.withUserState(detail.children, userId) };
   }
 
   /** Summaries for specific ids (any kind), in the given order, skipping unknown ids. */
@@ -83,16 +85,24 @@ export class ItemsService {
         if (!(error instanceof ItemNotFound)) throw error;
       }
     }
-    return this.withProgress(out, userId);
+    return this.withUserState(out, userId);
   }
 
-  private withProgress<T extends ItemSummary>(items: T[], userId: string | undefined): T[] {
-    if (!userId || !this.progress) return items;
-    const map = this.progress.getMany(
+  private withUserState<T extends ItemSummary>(items: T[], userId: string | undefined): T[] {
+    if (!userId) return items;
+    const progress = this.progress?.getMany(
       userId,
       items.filter((i) => i.kind === 'movie' || i.kind === 'episode').map((i) => i.id),
     );
-    return items.map((i) => (map.has(i.id) ? { ...i, progress: map.get(i.id)! } : i));
+    const favorites = this.favorites?.getMany(
+      userId,
+      items.filter((i) => i.kind === 'movie' || i.kind === 'show').map((i) => i.id),
+    );
+    return items.map((i) => ({
+      ...i,
+      progress: progress?.get(i.id) ?? i.progress,
+      favorite: favorites?.has(i.id) ?? i.favorite,
+    }));
   }
 
   private detail(id: string): ItemDetail {
@@ -343,6 +353,7 @@ interface Ranked {
 
 const base = {
   progress: null,
+  favorite: false,
   seasonNumber: null,
   episodeNumber: null,
   showTitle: null,

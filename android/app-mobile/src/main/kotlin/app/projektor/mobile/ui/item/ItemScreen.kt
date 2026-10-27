@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +67,7 @@ import app.projektor.mobile.ui.components.subtitle
 import app.projektor.mobile.ui.userMessage
 import coil3.compose.AsyncImage
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 fun formatMs(ms: Long): String {
     val total = ms / 1000
@@ -79,11 +84,23 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
     val client = container.client() ?: return
     var state by remember(itemId) { mutableStateOf<UiState<Pair<ItemDetail, List<ItemSummary>>>>(UiState.Loading) }
     var next by remember(itemId) { mutableStateOf<ItemSummary?>(null) }
+    var favorite by remember(itemId) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    fun toggleFavorite() = scope.launch {
+        val want = !favorite
+        favorite = want
+        try { items.setFavorite(itemId, want) } catch (e: Exception) {
+            favorite = !want
+            android.widget.Toast.makeText(context, e.userMessage(), android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     LaunchedEffect(itemId) {
         state = try {
             val d = items.detail(itemId)
             val children = if (d.kind.value == "show" || d.kind.value == "season") items.children(itemId) else emptyList()
             if (d.kind.value == "episode") next = runCatching { items.nextEpisode(itemId) }.getOrNull()
+            favorite = d.favorite
             UiState.Ready(d to children)
         } catch (e: Exception) { UiState.Failed(e.userMessage()) }
     }
@@ -101,6 +118,16 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                         onClick = back,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(8.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape).testTag("back"),
                     ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White) }
+                    if (d.kind.value == "movie" || d.kind.value == "show") IconButton(
+                        onClick = { toggleFavorite() },
+                        modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(8.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape).testTag("favorite"),
+                    ) {
+                        Icon(
+                            if (favorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            if (favorite) "Remove from favorites" else "Add to favorites",
+                            tint = if (favorite) MaterialTheme.colorScheme.primary else Color.White,
+                        )
+                    }
                 }
                 Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Box(Modifier.width(112.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface)) {

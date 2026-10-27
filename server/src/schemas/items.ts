@@ -25,6 +25,9 @@ export const ItemSummary = z
     showTitle: z.string().nullable(),
     needsReview: z.boolean(),
     progress: ProgressState.nullable(),
+    favorite: z
+      .boolean()
+      .meta({ description: "Movies and shows in the user's favorites; always false otherwise." }),
     runtimeMs: z.number().int().nullable().meta({
       description:
         'Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons.',
@@ -68,6 +71,7 @@ export const SubtitleTrack = z
     url: z.string().meta({ description: 'WebVTT URL under /api/subtitles' }),
   })
   .meta({ id: 'SubtitleTrack' });
+
 export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
 
 export const MediaFile = z

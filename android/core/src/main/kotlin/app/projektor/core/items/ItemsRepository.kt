@@ -1,6 +1,7 @@
 package app.projektor.core.items
 
 import app.projektor.core.ProjektorClient
+import app.projektor.core.api.models.ApiFavoritesItemIdPutRequest
 import app.projektor.core.api.models.ApiItemsGet200Response
 import app.projektor.core.api.models.ApiProgressItemIdWatchedPutRequest
 import app.projektor.core.api.models.ItemDetail
@@ -31,6 +32,15 @@ class ItemsRepository(private val client: ProjektorClient) {
 
     suspend fun continueWatching(libraryKind: LibraryKindInput? = null, limit: Int = 20): List<ItemSummary> =
         client.progress.apiProgressContinueGet(libraryKind, limit.toLong()).bodyOrThrow()
+
+    /** Favorite movies and shows, most recently added first. */
+    suspend fun favorites(libraryKind: LibraryKindInput? = null, limit: Int = 50): List<ItemSummary> =
+        client.favorites.apiFavoritesGet(libraryKind, limit.toLong()).bodyOrThrow()
+
+    /** Adds a movie or show to favorites, or removes it. */
+    suspend fun setFavorite(itemId: String, favorite: Boolean) {
+        client.favorites.apiFavoritesItemIdPut(itemId, ApiFavoritesItemIdPutRequest(favorite)).bodyOrThrow()
+    }
 
     suspend fun detail(id: String): ItemDetail = client.items.apiItemsIdGet(id).bodyOrThrow()
 

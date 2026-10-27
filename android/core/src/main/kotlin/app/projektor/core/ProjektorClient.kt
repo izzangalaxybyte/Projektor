@@ -1,6 +1,7 @@
 package app.projektor.core
 
 import app.projektor.core.api.apis.AuthApi
+import app.projektor.core.api.apis.FavoritesApi
 import app.projektor.core.api.apis.ItemsApi
 import app.projektor.core.api.apis.LibrariesApi
 import app.projektor.core.api.apis.LiveApi
@@ -59,6 +60,7 @@ class ProjektorClient(
     val items by lazy { ItemsApi(base, httpEngine, configure) }
     val playback by lazy { PlaybackApi(base, httpEngine, configure) }
     val progress by lazy { ProgressApi(base, httpEngine, configure) }
+    val favorites by lazy { FavoritesApi(base, httpEngine, configure) }
     val settings by lazy { SettingsApi(base, httpEngine, configure) }
     val live by lazy { LiveApi(base, httpEngine, configure) }
     val recordings by lazy { RecordingsApi(base, httpEngine, configure) }

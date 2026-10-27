@@ -11,6 +11,7 @@ let headers: Record<string, string>;
 let kidHeaders: Record<string, string>;
 let movieId: string;
 let episodeId: string;
+let showId: string;
 
 type Summary = {
   id: string;
@@ -18,6 +19,7 @@ type Summary = {
   title: string;
   libraryKind: string;
   progress: { positionMs: number; watched: boolean } | null;
+  favorite: boolean;
 };
 
 beforeAll(async () => {
@@ -46,8 +48,9 @@ beforeAll(async () => {
   const shows = (
     await app.inject({ method: 'GET', url: '/api/items?libraryKind=tv', headers })
   ).json() as { items: Summary[] };
+  showId = shows.items[0]!.id;
   const show = (
-    await app.inject({ method: 'GET', url: `/api/items/${shows.items[0]!.id}`, headers })
+    await app.inject({ method: 'GET', url: `/api/items/${showId}`, headers })
   ).json() as { children: Summary[] };
   const eps = (
     await app.inject({ method: 'GET', url: `/api/items?parentId=${show.children[0]!.id}`, headers })
@@ -169,5 +172,46 @@ describe.skipIf(!existsSync(fixtures))('progress routes', () => {
     expect(
       (await app.inject({ method: 'GET', url: `/api/items/${movieId}/next`, headers })).statusCode,
     ).toBe(404);
+  });
+
+  it('favorites movies and shows per user, newest first, and rejects episodes', async () => {
+    const put = (itemId: string, favorite: boolean, h = headers) =>
+      app.inject({
+        method: 'PUT',
+        url: `/api/favorites/${itemId}`,
+        headers: h,
+        payload: { favorite },
+      });
+    expect((await put(movieId, true)).json()).toEqual({ favorite: true });
+    await new Promise((r) => setTimeout(r, 5));
+    expect((await put(showId, true)).json()).toEqual({ favorite: true });
+    expect((await put(showId, true)).statusCode).toBe(200);
+    expect((await put(episodeId, true)).statusCode).toBe(404);
+
+    const list = (
+      await app.inject({ method: 'GET', url: '/api/favorites', headers })
+    ).json() as Summary[];
+    expect(list.map((i) => i.id)).toEqual([showId, movieId]);
+    expect(list.every((i) => i.favorite)).toBe(true);
+    const tv = (
+      await app.inject({ method: 'GET', url: '/api/favorites?libraryKind=tv', headers })
+    ).json() as Summary[];
+    expect(tv.map((i) => i.id)).toEqual([showId]);
+    expect(
+      (
+        (
+          await app.inject({ method: 'GET', url: `/api/items/${showId}`, headers })
+        ).json() as Summary
+      ).favorite,
+    ).toBe(true);
+    expect(
+      (await app.inject({ method: 'GET', url: '/api/favorites', headers: kidHeaders })).json(),
+    ).toEqual([]);
+
+    expect((await put(showId, false)).json()).toEqual({ favorite: false });
+    const after = (
+      await app.inject({ method: 'GET', url: '/api/items?libraryKind=tv', headers })
+    ).json() as { items: Summary[] };
+    expect(after.items.find((i) => i.id === showId)?.favorite).toBe(false);
   });
 });
