@@ -68,6 +68,11 @@ import app.projektor.mobile.ui.item.formatMs
 import app.projektor.mobile.ui.userMessage
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.mediaSpecFor
+import app.projektor.player.subtitleFor
+import app.projektor.player.applyRememberedSubtitle
+import app.projektor.player.TrackOption
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 
 /**
@@ -83,6 +88,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
 
     var detail by remember { mutableStateOf<ItemDetail?>(null) }
     var file by remember { mutableStateOf<MediaFile?>(null) }
+    val scope = rememberCoroutineScope()
     var decision by remember { mutableStateOf<PlaybackDecision?>(null) }
     var audioIndex by remember { mutableStateOf<Long?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -120,9 +126,11 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             val profile = DeviceProfiles.current()
             val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = profile, audioStreamIndex = audioIndex, startPositionMs = resumeAt))
             decision = d
-            // Direct play keeps every audio track; pin the chosen one (or the server's default pick).
+            // Direct play keeps every audio track; pin the chosen one, the one remembered for the
+            // show, or the server's default pick.
             val audio = f.streams.filter { it.type.value == "audio" }
-            val wanted = audio.indexOfFirst { it.index == audioIndex }.takeIf { it >= 0 }
+            val chosen = audioIndex ?: d.audioStreamIndex
+            val wanted = audio.indexOfFirst { it.index == chosen }.takeIf { it >= 0 }
                 ?: audio.indexOfFirst { it.isDefault }.takeIf { it >= 0 } ?: 0
             player.load(
                 mediaSpecFor(d, client),
@@ -132,6 +140,19 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                 audioOrdinal = wanted.takeIf { d.method == PlaybackMethod.DIRECT && audio.size > 1 },
             )
         } catch (e: Exception) { error = e.userMessage() }
+    }
+    // Turn on the subtitle remembered for the show once the player lists its tracks.
+    var subtitleApplied by remember(decision) { mutableStateOf(false) }
+    LaunchedEffect(decision, state.subtitleTracks) {
+        val d = decision ?: return@LaunchedEffect
+        if (!subtitleApplied) subtitleApplied = player.applyRememberedSubtitle(d, state.subtitleTracks)
+    }
+    // Picks are remembered for the show, so its other episodes start with the same tracks.
+    fun rememberChoice(audio: Long? = null, subtitle: TrackOption? = null, off: Boolean = false) {
+        val f = file ?: return
+        val subtitleId = subtitle?.let { decision?.subtitleFor(it)?.id }
+        if (audio == null && subtitleId == null && !off) return
+        scope.launch { runCatching { items.rememberTrackChoice(f.id, audio, subtitleId, off.takeIf { it }) } }
     }
     // Holding the screen plays at the hold speed until it's let go.
     var boosting by remember { mutableStateOf(false) }
@@ -234,11 +255,11 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     )
                     val audioTracks = file?.streams?.filter { it.type.value == "audio" }.orEmpty()
                     if (audioTracks.size > 1) {
-                        val current = audioTracks.firstOrNull { it.index == audioIndex } ?: audioTracks.firstOrNull { it.isDefault } ?: audioTracks.first()
+                        val current = audioTracks.firstOrNull { it.index == (audioIndex ?: decision?.audioStreamIndex) } ?: audioTracks.firstOrNull { it.isDefault } ?: audioTracks.first()
                         Picker(
                             label = "Audio: ${current.title ?: current.language ?: current.index}",
                             options = audioTracks.map { it.index to "${it.title ?: it.language ?: "Track ${it.index}"} (${it.codec})" },
-                            onPick = { resumeAt = state.positionMs; audioIndex = it; touched() },
+                            onPick = { resumeAt = state.positionMs; audioIndex = it; rememberChoice(audio = it); touched() },
                             tag = "audio-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                         )
                     }
@@ -247,7 +268,11 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                         Picker(
                             label = "Subtitles: ${current?.label ?: "off"}",
                             options = listOf<Pair<String?, String>>(null to "Off") + state.subtitleTracks.map { it.id to it.label },
-                            onPick = { player.selectSubtitle(it); touched() },
+                            onPick = { id ->
+                                player.selectSubtitle(id)
+                                rememberChoice(subtitle = state.subtitleTracks.firstOrNull { it.id == id }, off = id == null)
+                                touched()
+                            },
                             tag = "subtitle-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                         )
                     }

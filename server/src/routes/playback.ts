@@ -1,15 +1,23 @@
 import { readFile } from 'node:fs/promises';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { schema } from '../db/index.js';
 import { decide } from '../playback/decision.js';
 import { HlsError, withToken } from '../playback/hls.js';
+import { matchTrack, TrackPreferences } from '../playback/track-preferences.js';
 import { SubtitleService } from '../subtitles/service.js';
 import { z } from 'zod';
-import { ErrorResponse, Id, PlaybackDecideRequest, PlaybackDecision } from '../schemas/index.js';
+import {
+  ErrorResponse,
+  Id,
+  PlaybackDecideRequest,
+  PlaybackDecision,
+  TrackChoiceRequest,
+} from '../schemas/index.js';
 
 export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
   const subtitles = new SubtitleService(app.db, app.config, app.log);
+  const trackPrefs = new TrackPreferences(app.db);
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HlsError) {
       const names = {
@@ -53,6 +61,19 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         .where(eq(schema.streams.fileId, file.id))
         .orderBy(asc(schema.streams.streamIndex))
         .all();
+      const fileSubtitles = subtitles.list(file.id);
+      // An episode takes the tracks last picked for its show, unless the request names one.
+      const showId = trackPrefs.showOfFile(file.id);
+      const pref = showId ? trackPrefs.get(request.user!.id, showId) : {};
+      const audioStreamIndex =
+        request.body.audioStreamIndex ??
+        (pref.audio
+          ? matchTrack(
+              streams.filter((s) => s.type === 'audio'),
+              pref.audio,
+            )?.streamIndex
+          : undefined);
+      const preferredSubtitle = pref.subtitle ? matchTrack(fileSubtitles, pref.subtitle) : null;
       const decision = decide(
         {
           container: file.container,
@@ -71,14 +92,17 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
           })),
         },
         request.body.profile,
-        { audioStreamIndex: request.body.audioStreamIndex },
+        audioStreamIndex === undefined ? {} : { audioStreamIndex },
       );
       const base = {
         method: decision.method,
         video: decision.video,
         audio: decision.audio,
         reason: decision.reasons.join('; '),
-        subtitles: subtitles.list(file.id),
+        subtitles: fileSubtitles,
+        audioStreamIndex: audioStreamIndex ?? null,
+        preferredSubtitleId: preferredSubtitle?.id ?? null,
+        subtitlesOff: pref.subtitle === null,
       };
       if (decision.method === 'direct') {
         return { ...base, url: `/api/files/${file.id}/stream`, sessionId: null };
@@ -96,6 +120,54 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         url: `/api/playback/sessions/${session.id}/master.m3u8`,
         sessionId: session.id,
       };
+    },
+  );
+
+  app.post(
+    '/track-choice',
+    {
+      schema: {
+        tags: ['playback'],
+        summary: "Remember an audio or subtitle pick for the file's show",
+        description:
+          'Later episodes of the show start with the same tracks, matched by language and title. Movies are ignored.',
+        security: [{ bearerAuth: [] }],
+        body: TrackChoiceRequest,
+        response: { 204: z.null(), 404: ErrorResponse },
+      },
+    },
+    async (request, reply) => {
+      const { fileId, audioStreamIndex, subtitleId, subtitlesOff } = request.body;
+      const file = app.db
+        .select({ id: schema.mediaFiles.id })
+        .from(schema.mediaFiles)
+        .where(eq(schema.mediaFiles.id, fileId))
+        .get();
+      if (!file) return reply.notFound('No such file');
+      const showId = trackPrefs.showOfFile(fileId);
+      if (!showId) return reply.code(204).send(null);
+      const pick: Parameters<typeof trackPrefs.save>[2] = {};
+      if (audioStreamIndex !== undefined) {
+        const stream = app.db
+          .select()
+          .from(schema.streams)
+          .where(
+            and(
+              eq(schema.streams.fileId, fileId),
+              eq(schema.streams.streamIndex, audioStreamIndex),
+            ),
+          )
+          .get();
+        if (stream?.type === 'audio')
+          pick.audio = { language: stream.language, title: stream.title };
+      }
+      if (subtitlesOff) pick.subtitle = null;
+      else if (subtitleId !== undefined) {
+        const track = subtitles.list(fileId).find((t) => t.id === subtitleId);
+        if (track) pick.subtitle = { language: track.language, title: track.title };
+      }
+      trackPrefs.save(request.user!.id, showId, pick);
+      return reply.code(204).send(null);
     },
   );
 

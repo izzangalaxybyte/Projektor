@@ -38,6 +38,8 @@ export function PlayerPage() {
   const knownDurationMs = file?.durationMs ?? 0;
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
   const [subtitleId, setSubtitleId] = useState<string | null>(null);
+  // Stream numbers belong to one file: the next episode starts from the show's remembered pick.
+  useEffect(() => setAudioIndex(undefined), [fileId]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HtmlVideoPlayer | null>(null);
@@ -209,10 +211,31 @@ export function PlayerPage() {
     };
   }, [decision.data, knownDurationMs]);
 
+  // Picks are remembered for the show, so its other episodes start with the same tracks.
+  const rememberChoice = (choice: {
+    audioStreamIndex?: number;
+    subtitleId?: string;
+    subtitlesOff?: boolean;
+  }) => {
+    if (fileId) void api.POST('/api/playback/track-choice', { body: { fileId, ...choice } });
+  };
   const switchAudio = (index: number) => {
     resumeAt.current = (playerRef.current?.currentMs ?? 0) + offsetRef.current;
     setAudioIndex(index);
+    rememberChoice({ audioStreamIndex: index });
   };
+  const switchSubtitle = (id: string | null) => {
+    setSubtitleId(id);
+    rememberChoice(id ? { subtitleId: id } : { subtitlesOff: true });
+  };
+  // The first decision for a file carries the show's remembered subtitle.
+  const subtitleAppliedFor = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const d = decision.data;
+    if (!d || subtitleAppliedFor.current === fileId) return;
+    subtitleAppliedFor.current = fileId;
+    setSubtitleId(d.subtitlesOff ? null : d.preferredSubtitleId);
+  }, [decision.data, fileId]);
 
   // Keyboard: space, arrows, f, escape.
   useEffect(() => {
@@ -357,9 +380,10 @@ export function PlayerPage() {
           <select
             aria-label="Audio track"
             value={
-              (audioIndex ?? decision.data?.audio === 'none')
+              decision.data?.audio === 'none'
                 ? ''
                 : (audioIndex ??
+                  decision.data?.audioStreamIndex ??
                   audioTracks.find((t) => t.isDefault)?.index ??
                   audioTracks[0]!.index)
             }
@@ -378,7 +402,7 @@ export function PlayerPage() {
           <select
             aria-label="Subtitles"
             value={subtitleId ?? ''}
-            onChange={(e) => setSubtitleId(e.target.value || null)}
+            onChange={(e) => switchSubtitle(e.target.value || null)}
             data-testid="subtitle-select"
           >
             <option value="">Subtitles off</option>

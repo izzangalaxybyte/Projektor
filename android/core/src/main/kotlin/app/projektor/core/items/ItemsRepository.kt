@@ -11,6 +11,7 @@ import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.ProgressUpdateRequestInput
+import app.projektor.core.api.models.TrackChoiceRequestInput
 import app.projektor.core.bodyOrThrow
 import app.projektor.core.okOrThrow
 
@@ -50,6 +51,11 @@ class ItemsRepository(private val client: ProjektorClient) {
     suspend fun nextEpisode(episodeId: String): ItemSummary? = client.items.apiItemsIdNextGet(episodeId).bodyOrThrow()
 
     suspend fun decide(request: PlaybackDecideRequestInput): PlaybackDecision = client.playback.apiPlaybackDecidePost(request).bodyOrThrow()
+
+    /** Remembers an audio or subtitle pick for the file's show, so its other episodes start with it. */
+    suspend fun rememberTrackChoice(fileId: String, audioStreamIndex: Long? = null, subtitleId: String? = null, subtitlesOff: Boolean? = null) {
+        client.playback.apiPlaybackTrackChoicePost(TrackChoiceRequestInput(fileId, audioStreamIndex, subtitleId, subtitlesOff)).okOrThrow()
+    }
 
     suspend fun reportProgress(itemId: String, positionMs: Long, durationMs: Long) {
         client.progress.apiProgressPost(ProgressUpdateRequestInput(itemId = itemId, positionMs = positionMs, durationMs = durationMs))

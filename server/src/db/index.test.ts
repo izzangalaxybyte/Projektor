@@ -25,6 +25,7 @@ const EXPECTED_TABLES = [
   'favorites',
   'recordings',
   'settings',
+  'track_preferences',
 ];
 
 const cleanups: Array<() => void> = [];

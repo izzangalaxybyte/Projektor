@@ -269,6 +269,33 @@ export const favorites = sqliteTable(
   ],
 );
 
+/**
+ * The audio and subtitle tracks a user last picked for a show, applied to its other episodes.
+ * Tracks are kept by language and title, since stream numbers differ between files.
+ */
+export const trackPreferences = sqliteTable(
+  'track_preferences',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    showId: text('show_id')
+      .notNull()
+      .references(() => shows.id, { onDelete: 'cascade' }),
+    /** False until an audio track is picked for the show. */
+    audioSet: integer('audio_set', { mode: 'boolean' }).notNull().default(false),
+    audioLanguage: text('audio_language'),
+    audioTitle: text('audio_title'),
+    /** False until a subtitle (or off) is picked for the show. */
+    subtitleSet: integer('subtitle_set', { mode: 'boolean' }).notNull().default(false),
+    subtitleOff: integer('subtitle_off', { mode: 'boolean' }).notNull().default(false),
+    subtitleLanguage: text('subtitle_language'),
+    subtitleTitle: text('subtitle_title'),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.showId] })],
+);
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

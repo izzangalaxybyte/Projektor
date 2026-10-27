@@ -20,6 +20,7 @@ class MediaSpecTest {
     private fun decision(method: PlaybackMethod, url: String) = PlaybackDecision(
         method = method, video = PlaybackDecision.Video.COPY, audio = PlaybackDecision.Audio.COPY,
         url = url, sessionId = null, reason = "", subtitles = subs,
+        audioStreamIndex = null, preferredSubtitleId = null, subtitlesOff = false,
     )
 
     @Test

@@ -55,6 +55,9 @@ import app.projektor.core.playback.SKIP_OPTIONS
 import app.projektor.core.playback.formatRate
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.mediaSpecFor
+import app.projektor.player.subtitleFor
+import app.projektor.player.applyRememberedSubtitle
+import app.projektor.player.TrackOption
 import app.projektor.tv.TvContainer
 import app.projektor.tv.ui.formatMs
 import app.projektor.tv.ui.userMessage
@@ -114,9 +117,11 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
         try {
             val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = DeviceProfiles.current(), audioStreamIndex = audioIndex, startPositionMs = resumeAt))
             decision = d
-            // Direct play keeps every audio track; pin the chosen one (or the server's default pick).
+            // Direct play keeps every audio track; pin the chosen one, the one remembered for the
+            // show, or the server's default pick.
             val audio = f.streams.filter { it.type.value == "audio" }
-            val wanted = audio.indexOfFirst { it.index == audioIndex }.takeIf { it >= 0 }
+            val chosen = audioIndex ?: d.audioStreamIndex
+            val wanted = audio.indexOfFirst { it.index == chosen }.takeIf { it >= 0 }
                 ?: audio.indexOfFirst { it.isDefault }.takeIf { it >= 0 } ?: 0
             player.load(
                 mediaSpecFor(d, client),
@@ -129,6 +134,12 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
         } catch (e: Exception) { error = e.userMessage() }
     }
     LaunchedEffect(settings.rate) { player.setRate(settings.rate) }
+    // Turn on the subtitle remembered for the show once the player lists its tracks.
+    var subtitleApplied by remember(decision) { mutableStateOf(false) }
+    LaunchedEffect(decision, state.subtitleTracks) {
+        val d = decision ?: return@LaunchedEffect
+        if (!subtitleApplied) subtitleApplied = player.applyRememberedSubtitle(d, state.subtitleTracks)
+    }
     LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction, picker) {
         if (controlsVisible && state.isPlaying && picker == null) {
             delay(4_000)
@@ -144,6 +155,13 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
     }
 
     fun touched() { lastInteraction = System.currentTimeMillis() }
+    // Picks are remembered for the show, so its other episodes start with the same tracks.
+    fun rememberChoice(audio: Long? = null, subtitle: TrackOption? = null, off: Boolean = false) {
+        val f = file ?: return
+        val subtitleId = subtitle?.let { decision?.subtitleFor(it)?.id }
+        if (audio == null && subtitleId == null && !off) return
+        scope.launch { runCatching { items.rememberTrackChoice(f.id, audio, subtitleId, off.takeIf { it }) } }
+    }
     fun showControls() { touched(); if (!controlsVisible) { controlsVisible = true; scope.launch { delay(50); runCatching { toggleFocus.requestFocus() } } } }
     fun skip(direction: Int) { player.skip(direction * settings.skipMs); touched() }
 
@@ -225,8 +243,9 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
             val options: List<Pair<String, () -> Unit>> = when (which) {
                 Picker.SKIP -> SKIP_OPTIONS.map { n -> "+${n}s" to { container.playerPrefs.update(skipSeconds = n) } }
                 Picker.SPEED -> RATE_OPTIONS.map { r -> formatRate(r) to { container.playerPrefs.update(rate = r) } }
-                Picker.AUDIO -> audioTracks.map { t -> "${t.title ?: t.language ?: "Track ${t.index}"} (${t.codec})" to { resumeAt = state.positionMs; audioIndex = t.index } }
-                Picker.SUBTITLES -> listOf<Pair<String, () -> Unit>>("Off" to { player.selectSubtitle(null) }) + state.subtitleTracks.map { t -> t.label to { player.selectSubtitle(t.id) } }
+                Picker.AUDIO -> audioTracks.map { t -> "${t.title ?: t.language ?: "Track ${t.index}"} (${t.codec})" to { resumeAt = state.positionMs; audioIndex = t.index; rememberChoice(audio = t.index) } }
+                Picker.SUBTITLES -> listOf<Pair<String, () -> Unit>>("Off" to { player.selectSubtitle(null); rememberChoice(off = true) }) +
+                    state.subtitleTracks.map { t -> t.label to { player.selectSubtitle(t.id); rememberChoice(subtitle = t) } }
             }
             LaunchedEffect(which) { delay(50); runCatching { pickerFocus.requestFocus() } }
             Column(
