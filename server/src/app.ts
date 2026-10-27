@@ -3,6 +3,7 @@ import swagger from '@fastify/swagger';
 import sensible from '@fastify/sensible';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
+import { serializeRequest } from './logging/redact.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import {
@@ -86,7 +87,9 @@ export interface AppOptions {
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const app = fastify({
-    logger: options.logger ? { level: options.config.logLevel } : false,
+    logger: options.logger
+      ? { level: options.config.logLevel, serializers: { req: serializeRequest } }
+      : false,
     // Shutdown must not wait for live viewers to leave; their streams are cut with the server.
     forceCloseConnections: true,
   }).withTypeProvider<ZodTypeProvider>();
