@@ -158,7 +158,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         },
     ) {
         AndroidView(
-            factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player.exo) } },
+            factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } },
             modifier = Modifier.fillMaxSize(),
         )
         // Hidden probes for tests: position in ms and current rate.

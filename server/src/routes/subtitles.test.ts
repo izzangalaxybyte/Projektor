@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execa } from 'execa';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
@@ -52,6 +53,17 @@ beforeAll(async () => {
     '1\n00:00:01,000 --> 00:00:03,000\nErzwungen\n',
   );
   writeFileSync(path.join(mediaDir, 'Sample Movie (2019)/poster.jpg'), 'not a subtitle');
+  // The anime fixture again, with a font attached the way fansub releases ship them.
+  const fonted = path.join(mediaDir, 'Fonted Anime (2020)');
+  mkdirSync(fonted, { recursive: true });
+  writeFileSync(path.join(dataDir, 'Brush Script.ttf'), 'not really a font');
+  await execa('ffmpeg', [
+    ...['-v', 'error', '-y', '-i'],
+    `${fixtures}/anime/[SubGroup] Sample Anime - 13 [1080p][HEVC][Dual-Audio].mkv`,
+    ...['-map', '0', '-c', 'copy', '-attach', path.join(dataDir, 'Brush Script.ttf')],
+    ...['-metadata:s:t', 'mimetype=application/x-truetype-font'],
+    path.join(fonted, 'Fonted Anime (2020).mkv'),
+  ]);
   for (const [name, dir] of [
     ['Local', mediaDir],
     ['TV', `${fixtures}/tv`],
@@ -145,6 +157,44 @@ describe.skipIf(!existsSync(fixtures))('subtitles', () => {
     ).toBe(true);
     expect(
       (await app.inject({ method: 'GET', url: '/api/subtitles/nope.vtt', headers })).statusCode,
+    ).toBe(404);
+  });
+
+  it('serves ASS tracks as written, with the fonts attached to the file', async () => {
+    const anime = files['[SubGroup] Sample Anime - 13 [1080p][HEVC][Dual-Audio].mkv']!;
+    const sub = anime.subtitles[0]! as (typeof anime.subtitles)[number] & {
+      assUrl: string | null;
+      fontsUrl: string | null;
+    };
+    expect(sub.assUrl).toBe(`/api/subtitles/${sub.id}.ass`);
+    const ass = await app.inject({ method: 'GET', url: sub.assUrl!, headers });
+    expect(ass.statusCode).toBe(200);
+    expect(ass.headers['content-type']).toContain('text/x-ssa');
+    expect(ass.body).toContain('[V4+ Styles]');
+    expect(ass.body).toContain('Style: Default,Arial,24');
+    expect(ass.body).toContain('{\\an8}Styled first line');
+    expect((await app.inject({ method: 'GET', url: sub.fontsUrl!, headers })).json()).toEqual([]);
+
+    const fonted = files['Fonted Anime (2020).mkv']!.subtitles[0]! as typeof sub;
+    const fonts = (
+      await app.inject({ method: 'GET', url: `${fonted.fontsUrl}?access_token=${token}` })
+    ).json() as Array<{ name: string; url: string }>;
+    expect(fonts).toEqual([
+      { name: 'Brush Script.ttf', url: `/api/subtitles/${fonted.id}/fonts/0` },
+    ]);
+    const font = await app.inject({ method: 'GET', url: fonts[0]!.url, headers });
+    expect(font.headers['content-type']).toBe('font/ttf');
+    expect(font.body).toBe('not really a font');
+    expect(
+      (await app.inject({ method: 'GET', url: `/api/subtitles/${fonted.id}/fonts/1`, headers }))
+        .statusCode,
+    ).toBe(404);
+
+    const srt = files['Sample.Show.S01E02.1080p.WEB.H265-GRP.mkv']!.subtitles[0]! as typeof sub;
+    expect(srt.assUrl).toBeNull();
+    expect(
+      (await app.inject({ method: 'GET', url: `/api/subtitles/${srt.id}.ass`, headers }))
+        .statusCode,
     ).toBe(404);
   });
 

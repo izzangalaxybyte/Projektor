@@ -15,20 +15,11 @@
     "schemas": {
       "LibraryKindInput": {
         "type": "string",
-        "enum": [
-          "movie",
-          "tv",
-          "anime"
-        ]
+        "enum": ["movie", "tv", "anime"]
       },
       "ItemKindInput": {
         "type": "string",
-        "enum": [
-          "movie",
-          "show",
-          "season",
-          "episode"
-        ]
+        "enum": ["movie", "show", "season", "episode"]
       },
       "ErrorResponseInput": {
         "type": "object",
@@ -45,11 +36,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "statusCode",
-          "error",
-          "message"
-        ]
+        "required": ["statusCode", "error", "message"]
       },
       "ProfileInput": {
         "type": "object",
@@ -72,12 +59,7 @@
             "pattern": "^#[0-9a-f]{6}$"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "isAdmin",
-          "avatarColor"
-        ]
+        "required": ["id", "name", "isAdmin", "avatarColor"]
       },
       "SetupStatusInput": {
         "type": "object",
@@ -86,9 +68,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "needsSetup"
-        ],
+        "required": ["needsSetup"],
         "description": "True until the first admin profile exists"
       },
       "SetupRequestInput": {
@@ -100,9 +80,7 @@
             "maxLength": 40
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "LoginRequestInput": {
         "type": "object",
@@ -118,10 +96,7 @@
             "maxLength": 80
           }
         },
-        "required": [
-          "profileId",
-          "deviceName"
-        ]
+        "required": ["profileId", "deviceName"]
       },
       "LoginResponseInput": {
         "type": "object",
@@ -133,10 +108,7 @@
             "$ref": "#/components/schemas/ProfileInput"
           }
         },
-        "required": [
-          "token",
-          "profile"
-        ]
+        "required": ["token", "profile"]
       },
       "SessionInput": {
         "type": "object",
@@ -165,13 +137,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "deviceName",
-          "createdAt",
-          "lastSeenAt",
-          "current"
-        ]
+        "required": ["id", "deviceName", "createdAt", "lastSeenAt", "current"]
       },
       "LibraryInput": {
         "type": "object",
@@ -217,14 +183,7 @@
             ]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "paths",
-          "createdAt",
-          "lastScannedAt"
-        ]
+        "required": ["id", "name", "kind", "paths", "createdAt", "lastScannedAt"]
       },
       "CreateLibraryRequestInput": {
         "type": "object",
@@ -246,11 +205,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "kind",
-          "paths"
-        ]
+        "required": ["name", "kind", "paths"]
       },
       "ScanStatusInput": {
         "type": "object",
@@ -262,21 +217,13 @@
           },
           "state": {
             "type": "string",
-            "enum": [
-              "idle",
-              "running"
-            ]
+            "enum": ["idle", "running"]
           },
           "phase": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "walking",
-                  "probing",
-                  "identifying",
-                  "matching"
-                ]
+                "enum": ["walking", "probing", "identifying", "matching"]
               },
               {
                 "type": "null"
@@ -355,10 +302,7 @@
           },
           "error": {
             "description": "Set when the last scan failed",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -401,12 +345,7 @@
             "description": "ISO 8601 UTC timestamp"
           }
         },
-        "required": [
-          "positionMs",
-          "durationMs",
-          "watched",
-          "updatedAt"
-        ]
+        "required": ["positionMs", "durationMs", "watched", "updatedAt"]
       },
       "ItemSummaryInput": {
         "type": "object",
@@ -438,16 +377,10 @@
             ]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "seasonNumber": {
             "anyOf": [
@@ -474,10 +407,7 @@
             ]
           },
           "showTitle": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -537,26 +467,16 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "video",
-              "audio",
-              "subtitle"
-            ]
+            "enum": ["video", "audio", "subtitle"]
           },
           "codec": {
             "type": "string"
           },
           "language": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "isDefault": {
             "type": "boolean"
@@ -643,11 +563,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "embedded",
-              "external",
-              "opensubtitles"
-            ]
+            "enum": ["embedded", "external", "opensubtitles"]
           },
           "streamIndex": {
             "anyOf": [
@@ -662,16 +578,10 @@
             ]
           },
           "language": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "format": {
             "type": "string",
@@ -680,6 +590,14 @@
           "url": {
             "type": "string",
             "description": "WebVTT URL under /api/subtitles"
+          },
+          "assUrl": {
+            "description": "ASS and SSA tracks: the original script, styling intact, for libass",
+            "type": ["string", "null"]
+          },
+          "fontsUrl": {
+            "description": "ASS and SSA tracks: lists the fonts attached to the media file",
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -689,8 +607,23 @@
           "language",
           "title",
           "format",
-          "url"
+          "url",
+          "assUrl",
+          "fontsUrl"
         ]
+      },
+      "SubtitleFontInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The attachment file name in the media file"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "url"]
       },
       "MediaFileInput": {
         "type": "object",
@@ -782,16 +715,10 @@
             ]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "seasonNumber": {
             "anyOf": [
@@ -818,10 +745,7 @@
             ]
           },
           "showTitle": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -854,16 +778,10 @@
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tagline": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -872,16 +790,10 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "airDate": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tmdbId": {
             "anyOf": [
@@ -952,10 +864,7 @@
         "properties": {
           "source": {
             "type": "string",
-            "enum": [
-              "tmdb",
-              "anilist"
-            ]
+            "enum": ["tmdb", "anilist"]
           },
           "id": {
             "type": "integer",
@@ -978,32 +887,18 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "posterUrl": {
             "description": "Remote poster URL for preview; not cached",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "score": {
             "type": "number",
             "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
           }
         },
-        "required": [
-          "source",
-          "id",
-          "title",
-          "year",
-          "overview",
-          "posterUrl",
-          "score"
-        ]
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"]
       },
       "FixMatchRequestInput": {
         "type": "object",
@@ -1082,10 +977,7 @@
           },
           "hlsSegmentContainer": {
             "type": "string",
-            "enum": [
-              "ts",
-              "fmp4"
-            ]
+            "enum": ["ts", "fmp4"]
           },
           "hdr": {
             "description": "Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR",
@@ -1130,18 +1022,11 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "fileId",
-          "profile"
-        ]
+        "required": ["fileId", "profile"]
       },
       "PlaybackMethodInput": {
         "type": "string",
-        "enum": [
-          "direct",
-          "remux",
-          "transcode"
-        ]
+        "enum": ["direct", "remux", "transcode"]
       },
       "PlaybackDecisionInput": {
         "type": "object",
@@ -1151,18 +1036,11 @@
           },
           "video": {
             "type": "string",
-            "enum": [
-              "copy",
-              "transcode"
-            ]
+            "enum": ["copy", "transcode"]
           },
           "audio": {
             "type": "string",
-            "enum": [
-              "copy",
-              "transcode",
-              "none"
-            ]
+            "enum": ["copy", "transcode", "none"]
           },
           "url": {
             "type": "string",
@@ -1191,15 +1069,7 @@
             "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": [
-          "method",
-          "video",
-          "audio",
-          "url",
-          "sessionId",
-          "reason",
-          "subtitles"
-        ]
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"]
       },
       "ProgressUpdateRequestInput": {
         "type": "object",
@@ -1220,11 +1090,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "itemId",
-          "positionMs",
-          "durationMs"
-        ]
+        "required": ["itemId", "positionMs", "durationMs"]
       },
       "SecretStatusInput": {
         "type": "object",
@@ -1234,16 +1100,10 @@
           },
           "hint": {
             "description": "Last characters of the stored value, for recognition",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "set",
-          "hint"
-        ]
+        "required": ["set", "hint"]
       },
       "SettingsViewInput": {
         "type": "object",
@@ -1255,10 +1115,7 @@
             "$ref": "#/components/schemas/SecretStatusInput"
           },
           "openSubtitlesUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesPassword": {
             "$ref": "#/components/schemas/SecretStatusInput"
@@ -1268,10 +1125,7 @@
             "description": "Xtream Codes server URL; defaults to the owner's provider"
           },
           "iptvUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvPassword": {
             "$ref": "#/components/schemas/SecretStatusInput"
@@ -1292,46 +1146,25 @@
         "properties": {
           "tmdbApiKey": {
             "description": "TMDB v3 API key or v4 read access token. Null clears it.",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesApiKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesPassword": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvPassword": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
         "description": "Only fields present are changed"
@@ -1347,18 +1180,10 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "live",
-              "vod",
-              "series"
-            ]
+            "enum": ["live", "vod", "series"]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind"
-        ]
+        "required": ["id", "name", "kind"]
       },
       "LiveProgrammeInput": {
         "type": "object",
@@ -1370,10 +1195,7 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "startAt": {
             "type": "string",
@@ -1388,13 +1210,7 @@
             "description": "ISO 8601 UTC timestamp"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "description",
-          "startAt",
-          "endAt"
-        ]
+        "required": ["id", "title", "description", "startAt", "endAt"]
       },
       "LiveChannelInput": {
         "type": "object",
@@ -1418,16 +1234,10 @@
             ]
           },
           "logoUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "hasArchive": {
             "type": "boolean"
@@ -1495,10 +1305,7 @@
             ]
           },
           "lastError": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "channels": {
             "type": "integer",
@@ -1512,10 +1319,7 @@
           },
           "accountStatus": {
             "description": "Provider's account status, e.g. Active",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "accountExpiresAt": {
             "anyOf": [
@@ -1586,19 +1390,14 @@
             "type": "string"
           }
         },
-        "required": [
-          "profile"
-        ]
+        "required": ["profile"]
       },
       "LivePlaybackDecisionInput": {
         "type": "object",
         "properties": {
           "method": {
             "type": "string",
-            "enum": [
-              "direct",
-              "hls"
-            ],
+            "enum": ["direct", "hls"],
             "description": "direct: raw MPEG-TS relay; hls: live playlist"
           },
           "url": {
@@ -1606,22 +1405,14 @@
             "description": "Relative URL of the TS stream or the HLS playlist"
           },
           "sessionId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "reason": {
             "type": "string"
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "live",
-              "catchup",
-              "vod",
-              "recording"
-            ]
+            "enum": ["live", "catchup", "vod", "recording"]
           },
           "durationMs": {
             "anyOf": [
@@ -1638,21 +1429,10 @@
           },
           "title": {
             "description": "Programme title for catch-up",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "method",
-          "url",
-          "sessionId",
-          "reason",
-          "kind",
-          "durationMs",
-          "title"
-        ]
+        "required": ["method", "url", "sessionId", "reason", "kind", "durationMs", "title"]
       },
       "IptvMovieInput": {
         "type": "object",
@@ -1676,10 +1456,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -1688,10 +1465,7 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "runtimeMs": {
             "anyOf": [
@@ -1707,29 +1481,17 @@
           },
           "posterKey": {
             "description": "Cached TMDB artwork; null when unmatched",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "logoUrl": {
             "description": "The provider's own cover image URL",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "containerExtension": {
             "type": "string"
@@ -1801,11 +1563,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "items",
-          "total",
-          "offset"
-        ]
+        "required": ["items", "total", "offset"]
       },
       "IptvSeriesInput": {
         "type": "object",
@@ -1829,10 +1587,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -1841,34 +1596,19 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "coverUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -1921,11 +1661,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "items",
-          "total",
-          "offset"
-        ]
+        "required": ["items", "total", "offset"]
       },
       "IptvEpisodeInput": {
         "type": "object",
@@ -1950,16 +1686,10 @@
             "type": "string"
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "imageUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "durationMs": {
             "anyOf": [
@@ -2011,10 +1741,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -2023,34 +1750,19 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "coverUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -2084,10 +1796,7 @@
                   }
                 }
               },
-              "required": [
-                "number",
-                "episodes"
-              ]
+              "required": ["number", "episodes"]
             }
           }
         },
@@ -2109,12 +1818,7 @@
       },
       "RecordingStateInput": {
         "type": "string",
-        "enum": [
-          "scheduled",
-          "recording",
-          "done",
-          "failed"
-        ]
+        "enum": ["scheduled", "recording", "done", "failed"]
       },
       "RecordingInput": {
         "type": "object",
@@ -2131,25 +1835,16 @@
             "type": "string"
           },
           "channelLogoUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "programmeId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "startAt": {
             "type": "string",
@@ -2219,10 +1914,7 @@
             "description": "Measured once the recording is done"
           },
           "error": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string",
@@ -2284,9 +1976,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "channelId"
-        ]
+        "required": ["channelId"]
       },
       "HealthResponseInput": {
         "type": "object",
@@ -2303,23 +1993,14 @@
           },
           "encoder": {
             "type": "string",
-            "enum": [
-              "h264_vaapi",
-              "libx264"
-            ],
+            "enum": ["h264_vaapi", "libx264"],
             "description": "Video encoder transcodes will use"
           },
           "encoderReason": {
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "version",
-          "time",
-          "encoder",
-          "encoderReason"
-        ]
+        "required": ["status", "version", "time", "encoder", "encoderReason"]
       },
       "CreateUserRequestInput": {
         "type": "object",
@@ -2334,26 +2015,15 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "LibraryKind": {
         "type": "string",
-        "enum": [
-          "movie",
-          "tv",
-          "anime"
-        ]
+        "enum": ["movie", "tv", "anime"]
       },
       "ItemKind": {
         "type": "string",
-        "enum": [
-          "movie",
-          "show",
-          "season",
-          "episode"
-        ]
+        "enum": ["movie", "show", "season", "episode"]
       },
       "ErrorResponse": {
         "type": "object",
@@ -2370,11 +2040,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "statusCode",
-          "error",
-          "message"
-        ],
+        "required": ["statusCode", "error", "message"],
         "additionalProperties": false
       },
       "Profile": {
@@ -2398,12 +2064,7 @@
             "pattern": "^#[0-9a-f]{6}$"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "isAdmin",
-          "avatarColor"
-        ],
+        "required": ["id", "name", "isAdmin", "avatarColor"],
         "additionalProperties": false
       },
       "SetupStatus": {
@@ -2413,9 +2074,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "needsSetup"
-        ],
+        "required": ["needsSetup"],
         "additionalProperties": false,
         "description": "True until the first admin profile exists"
       },
@@ -2428,9 +2087,7 @@
             "maxLength": 40
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "additionalProperties": false
       },
       "LoginRequest": {
@@ -2447,10 +2104,7 @@
             "maxLength": 80
           }
         },
-        "required": [
-          "profileId",
-          "deviceName"
-        ],
+        "required": ["profileId", "deviceName"],
         "additionalProperties": false
       },
       "LoginResponse": {
@@ -2463,10 +2117,7 @@
             "$ref": "#/components/schemas/Profile"
           }
         },
-        "required": [
-          "token",
-          "profile"
-        ],
+        "required": ["token", "profile"],
         "additionalProperties": false
       },
       "Session": {
@@ -2496,13 +2147,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "deviceName",
-          "createdAt",
-          "lastSeenAt",
-          "current"
-        ],
+        "required": ["id", "deviceName", "createdAt", "lastSeenAt", "current"],
         "additionalProperties": false
       },
       "Library": {
@@ -2549,14 +2194,7 @@
             ]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "paths",
-          "createdAt",
-          "lastScannedAt"
-        ],
+        "required": ["id", "name", "kind", "paths", "createdAt", "lastScannedAt"],
         "additionalProperties": false
       },
       "CreateLibraryRequest": {
@@ -2579,11 +2217,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "kind",
-          "paths"
-        ],
+        "required": ["name", "kind", "paths"],
         "additionalProperties": false
       },
       "ScanStatus": {
@@ -2596,21 +2230,13 @@
           },
           "state": {
             "type": "string",
-            "enum": [
-              "idle",
-              "running"
-            ]
+            "enum": ["idle", "running"]
           },
           "phase": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "walking",
-                  "probing",
-                  "identifying",
-                  "matching"
-                ]
+                "enum": ["walking", "probing", "identifying", "matching"]
               },
               {
                 "type": "null"
@@ -2689,10 +2315,7 @@
           },
           "error": {
             "description": "Set when the last scan failed",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -2736,12 +2359,7 @@
             "description": "ISO 8601 UTC timestamp"
           }
         },
-        "required": [
-          "positionMs",
-          "durationMs",
-          "watched",
-          "updatedAt"
-        ],
+        "required": ["positionMs", "durationMs", "watched", "updatedAt"],
         "additionalProperties": false
       },
       "ItemSummary": {
@@ -2774,16 +2392,10 @@
             ]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "seasonNumber": {
             "anyOf": [
@@ -2810,10 +2422,7 @@
             ]
           },
           "showTitle": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -2874,26 +2483,16 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "video",
-              "audio",
-              "subtitle"
-            ]
+            "enum": ["video", "audio", "subtitle"]
           },
           "codec": {
             "type": "string"
           },
           "language": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "isDefault": {
             "type": "boolean"
@@ -2981,11 +2580,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "embedded",
-              "external",
-              "opensubtitles"
-            ]
+            "enum": ["embedded", "external", "opensubtitles"]
           },
           "streamIndex": {
             "anyOf": [
@@ -3000,16 +2595,10 @@
             ]
           },
           "language": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "format": {
             "type": "string",
@@ -3018,6 +2607,14 @@
           "url": {
             "type": "string",
             "description": "WebVTT URL under /api/subtitles"
+          },
+          "assUrl": {
+            "description": "ASS and SSA tracks: the original script, styling intact, for libass",
+            "type": ["string", "null"]
+          },
+          "fontsUrl": {
+            "description": "ASS and SSA tracks: lists the fonts attached to the media file",
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -3027,8 +2624,24 @@
           "language",
           "title",
           "format",
-          "url"
+          "url",
+          "assUrl",
+          "fontsUrl"
         ],
+        "additionalProperties": false
+      },
+      "SubtitleFont": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The attachment file name in the media file"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "url"],
         "additionalProperties": false
       },
       "MediaFile": {
@@ -3122,16 +2735,10 @@
             ]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "seasonNumber": {
             "anyOf": [
@@ -3158,10 +2765,7 @@
             ]
           },
           "showTitle": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -3194,16 +2798,10 @@
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tagline": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -3212,16 +2810,10 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "airDate": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tmdbId": {
             "anyOf": [
@@ -3293,10 +2885,7 @@
         "properties": {
           "source": {
             "type": "string",
-            "enum": [
-              "tmdb",
-              "anilist"
-            ]
+            "enum": ["tmdb", "anilist"]
           },
           "id": {
             "type": "integer",
@@ -3319,32 +2908,18 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "posterUrl": {
             "description": "Remote poster URL for preview; not cached",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "score": {
             "type": "number",
             "description": "Ranking score, higher is better; 0.85 is the auto-accept threshold"
           }
         },
-        "required": [
-          "source",
-          "id",
-          "title",
-          "year",
-          "overview",
-          "posterUrl",
-          "score"
-        ],
+        "required": ["source", "id", "title", "year", "overview", "posterUrl", "score"],
         "additionalProperties": false
       },
       "FixMatchRequest": {
@@ -3425,10 +3000,7 @@
           },
           "hlsSegmentContainer": {
             "type": "string",
-            "enum": [
-              "ts",
-              "fmp4"
-            ]
+            "enum": ["ts", "fmp4"]
           },
           "hdr": {
             "description": "Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR",
@@ -3474,20 +3046,12 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "fileId",
-          "profile",
-          "startPositionMs"
-        ],
+        "required": ["fileId", "profile", "startPositionMs"],
         "additionalProperties": false
       },
       "PlaybackMethod": {
         "type": "string",
-        "enum": [
-          "direct",
-          "remux",
-          "transcode"
-        ]
+        "enum": ["direct", "remux", "transcode"]
       },
       "PlaybackDecision": {
         "type": "object",
@@ -3497,18 +3061,11 @@
           },
           "video": {
             "type": "string",
-            "enum": [
-              "copy",
-              "transcode"
-            ]
+            "enum": ["copy", "transcode"]
           },
           "audio": {
             "type": "string",
-            "enum": [
-              "copy",
-              "transcode",
-              "none"
-            ]
+            "enum": ["copy", "transcode", "none"]
           },
           "url": {
             "type": "string",
@@ -3537,15 +3094,7 @@
             "description": "Text subtitles available for this file as WebVTT"
           }
         },
-        "required": [
-          "method",
-          "video",
-          "audio",
-          "url",
-          "sessionId",
-          "reason",
-          "subtitles"
-        ],
+        "required": ["method", "video", "audio", "url", "sessionId", "reason", "subtitles"],
         "additionalProperties": false
       },
       "ProgressUpdateRequest": {
@@ -3567,11 +3116,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "itemId",
-          "positionMs",
-          "durationMs"
-        ],
+        "required": ["itemId", "positionMs", "durationMs"],
         "additionalProperties": false
       },
       "SecretStatus": {
@@ -3582,16 +3127,10 @@
           },
           "hint": {
             "description": "Last characters of the stored value, for recognition",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "set",
-          "hint"
-        ],
+        "required": ["set", "hint"],
         "additionalProperties": false
       },
       "SettingsView": {
@@ -3604,10 +3143,7 @@
             "$ref": "#/components/schemas/SecretStatus"
           },
           "openSubtitlesUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesPassword": {
             "$ref": "#/components/schemas/SecretStatus"
@@ -3617,10 +3153,7 @@
             "description": "Xtream Codes server URL; defaults to the owner's provider"
           },
           "iptvUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvPassword": {
             "$ref": "#/components/schemas/SecretStatus"
@@ -3642,46 +3175,25 @@
         "properties": {
           "tmdbApiKey": {
             "description": "TMDB v3 API key or v4 read access token. Null clears it.",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesApiKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "openSubtitlesPassword": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvUsername": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "iptvPassword": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
         "additionalProperties": false,
@@ -3698,18 +3210,10 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "live",
-              "vod",
-              "series"
-            ]
+            "enum": ["live", "vod", "series"]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind"
-        ],
+        "required": ["id", "name", "kind"],
         "additionalProperties": false
       },
       "LiveProgramme": {
@@ -3722,10 +3226,7 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "startAt": {
             "type": "string",
@@ -3740,13 +3241,7 @@
             "description": "ISO 8601 UTC timestamp"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "description",
-          "startAt",
-          "endAt"
-        ],
+        "required": ["id", "title", "description", "startAt", "endAt"],
         "additionalProperties": false
       },
       "LiveChannel": {
@@ -3771,16 +3266,10 @@
             ]
           },
           "logoUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "hasArchive": {
             "type": "boolean"
@@ -3849,10 +3338,7 @@
             ]
           },
           "lastError": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "channels": {
             "type": "integer",
@@ -3866,10 +3352,7 @@
           },
           "accountStatus": {
             "description": "Provider's account status, e.g. Active",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "accountExpiresAt": {
             "anyOf": [
@@ -3941,9 +3424,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "profile"
-        ],
+        "required": ["profile"],
         "additionalProperties": false
       },
       "LivePlaybackDecision": {
@@ -3951,10 +3432,7 @@
         "properties": {
           "method": {
             "type": "string",
-            "enum": [
-              "direct",
-              "hls"
-            ],
+            "enum": ["direct", "hls"],
             "description": "direct: raw MPEG-TS relay; hls: live playlist"
           },
           "url": {
@@ -3962,22 +3440,14 @@
             "description": "Relative URL of the TS stream or the HLS playlist"
           },
           "sessionId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "reason": {
             "type": "string"
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "live",
-              "catchup",
-              "vod",
-              "recording"
-            ]
+            "enum": ["live", "catchup", "vod", "recording"]
           },
           "durationMs": {
             "anyOf": [
@@ -3994,21 +3464,10 @@
           },
           "title": {
             "description": "Programme title for catch-up",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "method",
-          "url",
-          "sessionId",
-          "reason",
-          "kind",
-          "durationMs",
-          "title"
-        ],
+        "required": ["method", "url", "sessionId", "reason", "kind", "durationMs", "title"],
         "additionalProperties": false
       },
       "IptvMovie": {
@@ -4033,10 +3492,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -4045,10 +3501,7 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "runtimeMs": {
             "anyOf": [
@@ -4064,29 +3517,17 @@
           },
           "posterKey": {
             "description": "Cached TMDB artwork; null when unmatched",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "logoUrl": {
             "description": "The provider's own cover image URL",
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "containerExtension": {
             "type": "string"
@@ -4159,11 +3600,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "items",
-          "total",
-          "offset"
-        ],
+        "required": ["items", "total", "offset"],
         "additionalProperties": false
       },
       "IptvSeries": {
@@ -4188,10 +3625,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -4200,34 +3634,19 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "coverUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -4281,11 +3700,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "items",
-          "total",
-          "offset"
-        ],
+        "required": ["items", "total", "offset"],
         "additionalProperties": false
       },
       "IptvEpisode": {
@@ -4311,16 +3726,10 @@
             "type": "string"
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "imageUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "durationMs": {
             "anyOf": [
@@ -4373,10 +3782,7 @@
             ]
           },
           "overview": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "genres": {
             "type": "array",
@@ -4385,34 +3791,19 @@
             }
           },
           "rating": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           },
           "posterKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "backdropKey": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "coverUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "categoryId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "needsReview": {
             "type": "boolean"
@@ -4446,10 +3837,7 @@
                   }
                 }
               },
-              "required": [
-                "number",
-                "episodes"
-              ],
+              "required": ["number", "episodes"],
               "additionalProperties": false
             }
           }
@@ -4473,12 +3861,7 @@
       },
       "RecordingState": {
         "type": "string",
-        "enum": [
-          "scheduled",
-          "recording",
-          "done",
-          "failed"
-        ]
+        "enum": ["scheduled", "recording", "done", "failed"]
       },
       "Recording": {
         "type": "object",
@@ -4495,25 +3878,16 @@
             "type": "string"
           },
           "channelLogoUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "title": {
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "programmeId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "startAt": {
             "type": "string",
@@ -4583,10 +3957,7 @@
             "description": "Measured once the recording is done"
           },
           "error": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "createdAt": {
             "type": "string",
@@ -4649,9 +4020,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "channelId"
-        ],
+        "required": ["channelId"],
         "additionalProperties": false
       },
       "HealthResponse": {
@@ -4669,23 +4038,14 @@
           },
           "encoder": {
             "type": "string",
-            "enum": [
-              "h264_vaapi",
-              "libx264"
-            ],
+            "enum": ["h264_vaapi", "libx264"],
             "description": "Video encoder transcodes will use"
           },
           "encoderReason": {
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "version",
-          "time",
-          "encoder",
-          "encoderReason"
-        ],
+        "required": ["status", "version", "time", "encoder", "encoderReason"],
         "additionalProperties": false
       },
       "CreateUserRequest": {
@@ -4701,10 +4061,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "name",
-          "isAdmin"
-        ],
+        "required": ["name", "isAdmin"],
         "additionalProperties": false
       }
     }
@@ -4713,9 +4070,7 @@
     "/api/health": {
       "get": {
         "summary": "Liveness check",
-        "tags": [
-          "system"
-        ],
+        "tags": ["system"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -4733,9 +4088,7 @@
     "/api/auth/setup": {
       "get": {
         "summary": "Whether the first admin profile still needs creating",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -4751,9 +4104,7 @@
       },
       "post": {
         "summary": "Create the first admin profile and log it in",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -4791,9 +4142,7 @@
     "/api/auth/profiles": {
       "get": {
         "summary": "Profiles to pick from on the login screen",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -4814,9 +4163,7 @@
     "/api/auth/login": {
       "post": {
         "summary": "Exchange a profile id for a bearer token",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -4864,9 +4211,7 @@
     "/api/auth/me": {
       "get": {
         "summary": "The profile behind the current token",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "security": [
           {
             "bearerAuth": []
@@ -4889,9 +4234,7 @@
     "/api/auth/logout": {
       "post": {
         "summary": "Revoke the current token",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "security": [
           {
             "bearerAuth": []
@@ -4907,9 +4250,7 @@
     "/api/auth/sessions": {
       "get": {
         "summary": "Devices logged in to this profile",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "security": [
           {
             "bearerAuth": []
@@ -4935,9 +4276,7 @@
     "/api/auth/sessions/{id}": {
       "delete": {
         "summary": "Log out another device",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "parameters": [
           {
             "schema": {
@@ -4975,9 +4314,7 @@
     "/api/libraries": {
       "get": {
         "summary": "List libraries",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "security": [
           {
             "bearerAuth": []
@@ -5001,9 +4338,7 @@
       },
       "post": {
         "summary": "Create a library (admin)",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5056,9 +4391,7 @@
     "/api/libraries/{id}": {
       "get": {
         "summary": "Get a library",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "parameters": [
           {
             "schema": {
@@ -5101,9 +4434,7 @@
       },
       "delete": {
         "summary": "Delete a library and everything indexed from it (admin)",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "parameters": [
           {
             "schema": {
@@ -5151,9 +4482,7 @@
     "/api/libraries/{id}/scan": {
       "post": {
         "summary": "Queue a scan of this library (admin)",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "description": "Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.",
         "parameters": [
           {
@@ -5207,9 +4536,7 @@
       },
       "get": {
         "summary": "Status of the latest scan of this library",
-        "tags": [
-          "libraries"
-        ],
+        "tags": ["libraries"],
         "parameters": [
           {
             "schema": {
@@ -5254,9 +4581,7 @@
     "/api/items": {
       "get": {
         "summary": "Browse or search items",
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "description": "Without kind or parentId, lists movies and shows. With parentId set to a show, lists its seasons and season-less episodes; set to a season, lists its episodes.",
         "parameters": [
           {
@@ -5296,10 +4621,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             },
             "in": "query",
             "name": "needsReview",
@@ -5309,12 +4631,7 @@
             "schema": {
               "default": "title",
               "type": "string",
-              "enum": [
-                "title",
-                "year",
-                "added",
-                "lastPlayed"
-              ]
+              "enum": ["title", "year", "added", "lastPlayed"]
             },
             "in": "query",
             "name": "sort",
@@ -5378,12 +4695,7 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": [
-                    "items",
-                    "total",
-                    "offset",
-                    "limit"
-                  ],
+                  "required": ["items", "total", "offset", "limit"],
                   "additionalProperties": false
                 }
               }
@@ -5395,9 +4707,7 @@
     "/api/items/{id}": {
       "get": {
         "summary": "Item detail with files, streams, and children",
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "parameters": [
           {
             "schema": {
@@ -5442,9 +4752,7 @@
     "/api/items/{id}/candidates": {
       "get": {
         "summary": "Search TMDB (and AniList for anime) for possible matches (admin)",
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "parameters": [
           {
             "schema": {
@@ -5521,9 +4829,7 @@
     "/api/items/{id}/match": {
       "post": {
         "summary": "Apply a chosen match and refetch metadata (admin)",
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "description": "Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.",
         "requestBody": {
           "required": true,
@@ -5599,9 +4905,7 @@
     "/api/items/{id}/next": {
       "get": {
         "summary": "The episode that follows this one in its show",
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "parameters": [
           {
             "schema": {
@@ -5653,9 +4957,7 @@
     "/api/images/{key}": {
       "get": {
         "summary": "Cached artwork, optionally resized",
-        "tags": [
-          "images"
-        ],
+        "tags": ["images"],
         "parameters": [
           {
             "schema": {
@@ -5685,9 +4987,7 @@
     "/api/settings": {
       "get": {
         "summary": "Server settings (admin). Secrets are masked.",
-        "tags": [
-          "settings"
-        ],
+        "tags": ["settings"],
         "security": [
           {
             "bearerAuth": []
@@ -5718,9 +5018,7 @@
       },
       "patch": {
         "summary": "Update settings (admin)",
-        "tags": [
-          "settings"
-        ],
+        "tags": ["settings"],
         "requestBody": {
           "required": true,
           "content": {
@@ -5763,9 +5061,7 @@
     "/api/files/{id}/subtitles": {
       "get": {
         "summary": "Text subtitle tracks available for a file",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "parameters": [
           {
             "schema": {
@@ -5813,9 +5109,7 @@
     "/api/files/{id}/stream": {
       "get": {
         "summary": "Direct play: the original file with byte-range support",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "description": "Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.",
         "parameters": [
           {
@@ -5862,9 +5156,7 @@
     "/api/playback/decide": {
       "post": {
         "summary": "Choose direct play, remux, or transcode for a file and device profile",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "description": "Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.",
         "requestBody": {
           "required": true,
@@ -5908,9 +5200,7 @@
     "/api/playback/sessions/{id}/master.m3u8": {
       "get": {
         "summary": "HLS master playlist for a session",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "parameters": [
           {
             "schema": {
@@ -5953,9 +5243,7 @@
     "/api/playback/sessions/{id}/{name}": {
       "get": {
         "summary": "HLS media playlist, init segment, or media segment",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "description": "Starts ffmpeg on first request and waits up to 20 seconds for the requested file.",
         "parameters": [
           {
@@ -6038,9 +5326,7 @@
     "/api/playback/sessions/{id}": {
       "delete": {
         "summary": "Stop a session and delete its segments",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "parameters": [
           {
             "schema": {
@@ -6068,9 +5354,7 @@
     "/api/subtitles/{id}.vtt": {
       "get": {
         "summary": "A subtitle track as WebVTT, converted from its source on first request",
-        "tags": [
-          "playback"
-        ],
+        "tags": ["playback"],
         "parameters": [
           {
             "schema": {
@@ -6119,12 +5403,169 @@
         }
       }
     },
+    "/api/subtitles/{id}.ass": {
+      "get": {
+        "summary": "An ASS or SSA subtitle track as written, for clients that render it with libass",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subtitles/{id}/fonts": {
+      "get": {
+        "summary": "Fonts attached to the media file of an ASS or SSA subtitle",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleFont"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subtitles/{id}/fonts/{index}": {
+      "get": {
+        "summary": "One attached font, by its position in the font list",
+        "tags": ["playback"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "index",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/progress": {
       "post": {
         "summary": "Report the playback position of a movie or episode",
-        "tags": [
-          "progress"
-        ],
+        "tags": ["progress"],
         "description": "Positions at or past 90% of the duration mark the item watched. Send every few seconds and on pause or stop.",
         "requestBody": {
           "required": true,
@@ -6168,9 +5609,7 @@
     "/api/progress/{itemId}/watched": {
       "put": {
         "summary": "Mark a movie or episode watched or unwatched",
-        "tags": [
-          "progress"
-        ],
+        "tags": ["progress"],
         "requestBody": {
           "required": true,
           "content": {
@@ -6182,9 +5621,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "watched"
-                ]
+                "required": ["watched"]
               }
             }
           }
@@ -6240,9 +5677,7 @@
     "/api/progress/continue": {
       "get": {
         "summary": "In-progress movies and episodes, most recent first",
-        "tags": [
-          "progress"
-        ],
+        "tags": ["progress"],
         "parameters": [
           {
             "schema": {
@@ -6289,9 +5724,7 @@
     "/api/favorites": {
       "get": {
         "summary": "Favorite movies and shows, most recently added first",
-        "tags": [
-          "favorites"
-        ],
+        "tags": ["favorites"],
         "parameters": [
           {
             "schema": {
@@ -6338,9 +5771,7 @@
     "/api/favorites/{itemId}": {
       "put": {
         "summary": "Add or remove a movie or show from favorites",
-        "tags": [
-          "favorites"
-        ],
+        "tags": ["favorites"],
         "requestBody": {
           "required": true,
           "content": {
@@ -6352,9 +5783,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "favorite"
-                ]
+                "required": ["favorite"]
               }
             }
           }
@@ -6388,9 +5817,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "favorite"
-                  ],
+                  "required": ["favorite"],
                   "additionalProperties": false
                 }
               }
@@ -6412,9 +5839,7 @@
     "/api/users": {
       "get": {
         "summary": "All profiles (admin)",
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "security": [
           {
             "bearerAuth": []
@@ -6448,9 +5873,7 @@
       },
       "post": {
         "summary": "Create a profile (admin)",
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "requestBody": {
           "required": true,
           "content": {
@@ -6493,9 +5916,7 @@
     "/api/users/{id}": {
       "delete": {
         "summary": "Delete a profile and its sessions and watch state (admin). You cannot delete yourself.",
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "parameters": [
           {
             "schema": {
@@ -6553,9 +5974,7 @@
     "/api/live/status": {
       "get": {
         "summary": "Provider configuration and last refresh",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "security": [
           {
             "bearerAuth": []
@@ -6578,9 +5997,7 @@
     "/api/live/refresh": {
       "post": {
         "summary": "Pull channels and guide from the provider now (admin)",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "security": [
           {
             "bearerAuth": []
@@ -6613,9 +6030,7 @@
     "/api/live/categories": {
       "get": {
         "summary": "Live channel categories",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "security": [
           {
             "bearerAuth": []
@@ -6641,9 +6056,7 @@
     "/api/live/channels": {
       "get": {
         "summary": "Live channels with what is on now and next",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -6679,9 +6092,7 @@
     "/api/live/channels/{id}": {
       "get": {
         "summary": "One channel",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -6724,9 +6135,7 @@
     "/api/live/guide": {
       "get": {
         "summary": "Programmes for a channel in a time window",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -6784,9 +6193,7 @@
     "/api/live/decide": {
       "post": {
         "summary": "Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "description": "Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.",
         "requestBody": {
           "required": true,
@@ -6850,9 +6257,7 @@
     "/api/live/channels/{id}/stream": {
       "get": {
         "summary": "The channel's MPEG-TS stream, relayed from the provider",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "description": "One provider connection per channel is shared by every viewer and closes shortly after the last one leaves. Players that cannot set headers may pass `?access_token=`.",
         "parameters": [
           {
@@ -6914,9 +6319,7 @@
     "/api/live/sessions/{id}/{name}": {
       "get": {
         "summary": "Live HLS playlist or segment",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "description": "`index.m3u8` is a sliding window of the last six 4-second segments; `seg-N.ts` are the segments. The first request starts ffmpeg.",
         "parameters": [
           {
@@ -6996,9 +6399,7 @@
     "/api/live/sessions/{id}": {
       "delete": {
         "summary": "Stop a live HLS session",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -7024,9 +6425,7 @@
     "/api/live/vod/categories": {
       "get": {
         "summary": "IPTV movie categories",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "security": [
           {
             "bearerAuth": []
@@ -7052,9 +6451,7 @@
     "/api/live/vod": {
       "get": {
         "summary": "IPTV movies, paged",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -7075,10 +6472,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "title",
-                "added"
-              ]
+              "enum": ["title", "added"]
             },
             "in": "query",
             "name": "sort",
@@ -7129,9 +6523,7 @@
     "/api/live/vod/{id}": {
       "get": {
         "summary": "One IPTV movie",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -7174,9 +6566,7 @@
     "/api/live/vod/{id}/stream": {
       "get": {
         "summary": "The movie file, passed through from the provider with byte ranges",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "description": "Send `Range` to seek. Players that cannot set headers may pass `?access_token=`.",
         "parameters": [
           {
@@ -7238,9 +6628,7 @@
     "/api/live/series/categories": {
       "get": {
         "summary": "IPTV series categories",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "security": [
           {
             "bearerAuth": []
@@ -7266,9 +6654,7 @@
     "/api/live/series": {
       "get": {
         "summary": "IPTV series, paged",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -7289,10 +6675,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "title",
-                "added"
-              ]
+              "enum": ["title", "added"]
             },
             "in": "query",
             "name": "sort",
@@ -7343,9 +6726,7 @@
     "/api/live/series/{id}": {
       "get": {
         "summary": "One IPTV series with its seasons and episodes",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "description": "Episodes are pulled from the provider on first open and refreshed after a day.",
         "parameters": [
           {
@@ -7389,9 +6770,7 @@
     "/api/live/series/episodes/{id}/stream": {
       "get": {
         "summary": "The episode file, passed through from the provider with byte ranges",
-        "tags": [
-          "live"
-        ],
+        "tags": ["live"],
         "parameters": [
           {
             "schema": {
@@ -7452,9 +6831,7 @@
     "/api/recordings": {
       "get": {
         "summary": "Recordings, newest first",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "parameters": [
           {
             "schema": {
@@ -7488,9 +6865,7 @@
       },
       "post": {
         "summary": "Record a channel: now, at a time, or a guide programme",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "description": "With `programmeId` the recording runs from the programme start (or now) to its end plus padding. Otherwise it starts at `startAt` (default now) and runs `durationMinutes`, or until stopped.",
         "requestBody": {
           "required": true,
@@ -7544,9 +6919,7 @@
     "/api/recordings/{id}": {
       "get": {
         "summary": "One recording",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "parameters": [
           {
             "schema": {
@@ -7587,9 +6960,7 @@
       },
       "delete": {
         "summary": "Delete a recording and its file",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "parameters": [
           {
             "schema": {
@@ -7625,9 +6996,7 @@
     "/api/recordings/{id}/stop": {
       "post": {
         "summary": "Stop a running recording (kept as done) or cancel a scheduled one (removed)",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "parameters": [
           {
             "schema": {
@@ -7680,9 +7049,7 @@
     "/api/recordings/{id}/stream": {
       "get": {
         "summary": "The recorded MPEG-TS file with byte ranges; grows while recording",
-        "tags": [
-          "recordings"
-        ],
+        "tags": ["recordings"],
         "parameters": [
           {
             "schema": {
