@@ -365,3 +365,8 @@ The first real anime scan turned 299 show folders into 1,098 shows, 826 of them 
 ## 2026-10-26 — Rescan on a timer, and watcher changes jump the queue
 
 A folder copied into the anime library over Samba never appeared. The watcher did see it (a test on the owner's mergerfs pool showed events for writes through the pool mount, though not for writes straight to a member disk), but the copy landed while that library was mid-scan, and the resulting rerun was queued behind a ten-minute TV scan. A restart then dropped it, and nothing rescanned at startup. Reruns and watcher requests now go to the front of the queue, every library is scanned at startup, and a periodic rescan (`SCAN_INTERVAL_MINUTES`, default 15) catches whatever inotify misses. Scanning an unchanged library is a walk with a stat per file, a few seconds for fifteen thousand files.
+
+## 2026-10-27 — Items that match the same entry are merged
+
+A show kept in two folders (a sub and a dub release) was identified as two shows, both matched to the same AniList or TMDB entry, and listed twice. After matching, each scan now merges same-library shows that share an AniList id (or TMDB id when there is none) into the one with the most files, and movies that share a TMDB id likewise. Episodes pair up by season and episode or by absolute number; the files move onto the kept episode and the other is deleted, and episodes the kept show lacks move across with their season. Episode 0 and unnumbered files are never paired, since two OVAs both numbered "00" are different things. Watch progress follows the files; where a user has progress on both copies, the later one wins. The apps ask which version to play when an item has several files.
+

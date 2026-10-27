@@ -6,6 +6,7 @@ import { probeFiles } from '../media/probe-service.js';
 import { metadataDeps } from '../metadata/deps.js';
 import type { ScanStatus } from '../schemas/index.js';
 import { SubtitleService } from '../subtitles/service.js';
+import { mergeDuplicates } from './merge.js';
 import { scanLibrary } from './scanner.js';
 
 type Counters = Omit<
@@ -131,6 +132,8 @@ export class ScanRunner {
         ? await deps.matcher.matchPending()
         : { matched: 0, unmatched: 0, failed: 0 };
       const anime = await deps.animeMatcher.matchPending();
+      // Two folders of the same show (sub and dub) match the same entry; fold them into one.
+      mergeDuplicates(this.app.db, libraryId, this.log);
       set({
         state: 'idle',
         phase: null,
