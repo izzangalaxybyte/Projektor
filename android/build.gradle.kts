@@ -18,10 +18,10 @@ extra["projektorVersionCode"] = buildNumber
 extra["projektorVersionName"] = "0.1.$buildNumber-$gitSha"
 
 // ./gradlew publishToApphound builds both release APKs and publishes them to apphound, the private
-// store (~/Documents/GitHub/apphound) that installs and updates them on devices. The changelog is
+// store (~/Documents/GitHub/appster) that installs and updates them on devices. The changelog is
 // the last commit's subject; store-icon.png is the store listing's icon (adaptive icons aren't
 // extracted from the APK). A plain assembleRelease never publishes.
-val apphoundDir = File(System.getProperty("user.home"), "Documents/GitHub/apphound")
+val apphoundDir = File(System.getProperty("user.home"), "Documents/GitHub/appster")
 val uv = listOf("/opt/homebrew/bin/uv", "/usr/local/bin/uv").firstOrNull { File(it).exists() } ?: "uv"
 val changelog = git("log", "-1", "--pretty=%s")
 val apphoundApps = listOf(
@@ -44,6 +44,6 @@ val publishTasks = apphoundApps.map { (module, flavor, storeName) ->
 publishTasks.zipWithNext { earlier, later -> later.configure { mustRunAfter(earlier) } }
 tasks.register("publishToApphound") {
     group = "publishing"
-    description = "Builds and publishes the phone and TV release APKs to apphound."
+    description = "Builds and publishes the phone and TV release APKs to Appster."
     dependsOn(publishTasks)
 }
