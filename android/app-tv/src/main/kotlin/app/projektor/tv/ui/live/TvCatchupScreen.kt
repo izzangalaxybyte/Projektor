@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +49,7 @@ import app.projektor.core.playback.formatRate
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.liveMediaSpecFor
 import app.projektor.tv.TvContainer
+import app.projektor.tv.ui.player.TvPlayerLifecycle
 import app.projektor.tv.ui.formatMs
 import app.projektor.tv.ui.userMessage
 import kotlinx.coroutines.delay
@@ -82,14 +82,7 @@ fun TvCatchupScreen(container: TvContainer, channelId: String, programmeId: Stri
     val toggleFocus = remember { FocusRequester() }
     val pickerFocus = remember { FocusRequester() }
 
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
-        onDispose {
-            view.keepScreenOn = false
-            val sid = decision?.sessionId
-            scope.launch { player.release(); sid?.let { live.releaseSession(it) } }
-        }
-    }
+    TvPlayerLifecycle(player) { decision?.sessionId?.let { live.releaseSession(it) } }
     LaunchedEffect(programmeId) {
         try {
             val d = live.decide(if (recordingId != null) LiveDecideRequestInput(profile = DeviceProfiles.current(), recordingId = recordingId) else LiveDecideRequestInput(profile = DeviceProfiles.current(), channelId = channelId, programmeId = programmeId))

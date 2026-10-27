@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -98,10 +97,7 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
     val toggleFocus = remember { FocusRequester() }
     val pickerFocus = remember { FocusRequester() }
 
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false; scope.launch { player.release() } }
-    }
+    TvPlayerLifecycle(player)
     LaunchedEffect(itemId) {
         try {
             val d = items.detail(itemId)

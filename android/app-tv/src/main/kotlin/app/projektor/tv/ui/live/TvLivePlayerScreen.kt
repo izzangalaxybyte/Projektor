@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +54,7 @@ import app.projektor.core.playback.DeviceProfiles
 import app.projektor.player.ProjektorPlayer
 import app.projektor.player.liveMediaSpecFor
 import app.projektor.tv.TvContainer
+import app.projektor.tv.ui.player.TvPlayerLifecycle
 import app.projektor.tv.ui.userMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -115,14 +115,7 @@ fun TvLivePlayerScreen(container: TvContainer, channelId: String, openCatchup: (
     val rootFocus = remember { FocusRequester() }
     val guideFocus = remember { FocusRequester() }
 
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
-        onDispose {
-            view.keepScreenOn = false
-            val sid = decision?.sessionId
-            scope.launch { player.release(); sid?.let { live.releaseSession(it) } }
-        }
-    }
+    TvPlayerLifecycle(player) { decision?.sessionId?.let { live.releaseSession(it) } }
     LaunchedEffect(Unit) {
         while (true) {
             runCatching { live.channels() }.onSuccess { channels = it }
