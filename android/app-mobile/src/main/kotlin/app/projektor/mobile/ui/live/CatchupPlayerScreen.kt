@@ -110,8 +110,10 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
     // Holding the screen plays at the hold speed until it's let go.
     var boosting by remember { mutableStateOf(false) }
     LaunchedEffect(settings.rate, settings.holdRate, boosting) { player.setRate(if (boosting) settings.holdRate else settings.rate) }
-    LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction) {
-        if (controlsVisible && state.isPlaying) {
+    // Controls stay up while a picker's menu is open.
+    var menuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction, menuOpen) {
+        if (controlsVisible && state.isPlaying && !menuOpen) {
             delay(3_500)
             if (System.currentTimeMillis() - lastInteraction >= 3_400) controlsVisible = false
         }
@@ -166,9 +168,9 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
                     Text(formatMs(duration), style = MaterialTheme.typography.labelMedium)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Picker(label = "Skip +${settings.skipSeconds}s", options = SKIP_OPTIONS.map { it to "+${it}s" }, onPick = { container.playerPrefs.update(skipSeconds = it); touched() }, tag = "skip-select")
-                    Picker(label = formatRate(settings.rate), options = RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(rate = it); touched() }, tag = "speed-select")
-                    Picker(label = "Hold ${formatRate(settings.holdRate)}", options = HOLD_RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(holdRate = it); touched() }, tag = "hold-speed-select")
+                    Picker(label = "Skip +${settings.skipSeconds}s", options = SKIP_OPTIONS.map { it to "+${it}s" }, onPick = { container.playerPrefs.update(skipSeconds = it); touched() }, tag = "skip-select", onOpenChange = { menuOpen = it; if (!it) touched() })
+                    Picker(label = formatRate(settings.rate), options = RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(rate = it); touched() }, tag = "speed-select", onOpenChange = { menuOpen = it; if (!it) touched() })
+                    Picker(label = "Hold ${formatRate(settings.holdRate)}", options = HOLD_RATE_OPTIONS.map { it to formatRate(it) }, onPick = { container.playerPrefs.update(holdRate = it); touched() }, tag = "hold-speed-select", onOpenChange = { menuOpen = it; if (!it) touched() })
                 }
             }
         }

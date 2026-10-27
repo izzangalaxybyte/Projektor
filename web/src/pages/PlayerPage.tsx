@@ -47,6 +47,16 @@ export function PlayerPage() {
   const [ended, setEnded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(true);
+  // Height of the bottom controls; while they show, subtitles move up out of their way.
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [controlsHeight, setControlsHeight] = useState(0);
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setControlsHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [prefs, setPrefs] = useState<PlayerPrefs>(() => loadPrefs());
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
@@ -222,12 +232,18 @@ export function PlayerPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [navigate]);
 
-  // Hide controls while playing and idle.
+  // Hide controls while playing and idle, but not while one of their selects is in use (a
+  // focused select may have its list open); the wait then starts over.
+  const [idleEpoch, setIdleEpoch] = useState(0);
   useEffect(() => {
     if (paused || !showControls) return;
-    const t = setTimeout(() => setShowControls(false), 3500);
+    const t = setTimeout(() => {
+      const el = document.activeElement;
+      if (el?.tagName === 'SELECT' && controlsRef.current?.contains(el)) setIdleEpoch((n) => n + 1);
+      else setShowControls(false);
+    }, 3500);
     return () => clearTimeout(t);
-  }, [paused, showControls, currentMs]);
+  }, [paused, showControls, idleEpoch]);
 
   const subtitle = decision.data?.subtitles.find((s) => s.id === subtitleId) ?? null;
   const effectiveDurationMs = Math.max(knownDurationMs, durationMs + offsetRef.current);
@@ -237,6 +253,7 @@ export function PlayerPage() {
       : item.data.title
     : '';
 
+  const liftPx = showControls || paused ? controlsHeight : 0;
   return (
     <div
       className={`player ${showControls || paused ? 'controls-visible' : ''}`}
@@ -258,9 +275,10 @@ export function PlayerPage() {
           videoRef={videoRef}
           offsetMs={offsetRef.current}
           currentMs={currentMs}
+          liftPx={liftPx}
         />
       ) : (
-        <SubtitleOverlay url={subtitle?.url ?? null} currentMs={currentMs} />
+        <SubtitleOverlay url={subtitle?.url ?? null} currentMs={currentMs} liftPx={liftPx} />
       )}
       {(error || decision.isError) && (
         <div className="player-message" role="alert">
@@ -286,7 +304,14 @@ export function PlayerPage() {
         <span className="player-title">{title}</span>
         {decision.data && <DecisionBadge decision={decision.data} />}
       </div>
-      <div className="player-controls">
+      <div
+        className="player-controls"
+        ref={controlsRef}
+        onChange={(e) => {
+          // A choice made: hand the keys back to the player, and let the controls hide again.
+          if ((e.target as HTMLElement).tagName === 'SELECT') (e.target as HTMLElement).blur();
+        }}
+      >
         <button
           type="button"
           className="ctl"

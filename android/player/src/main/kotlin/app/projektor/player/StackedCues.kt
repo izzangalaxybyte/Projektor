@@ -5,7 +5,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.SubtitleView
 import io.github.peerless2012.ass.media.kt.withAssSupport
+import io.github.peerless2012.ass.media.widget.AssSubtitleView
 
 /**
  * WebVTT stacks cues that show at the same time exactly one line apart (line -1, -2, …), measured
@@ -46,3 +48,26 @@ fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
         },
     )
 }
+
+/**
+ * Keeps subtitles above the bottom [controlsPx] pixels of this view, where the player's controls
+ * are, or puts them back with 0. Cues get a larger bottom padding; the ASS layer, whose script
+ * places its own lines, slides up as a whole. Only the part of the controls that overlaps the
+ * picture counts, so letterboxed video with room below it does not move.
+ */
+fun PlayerView.liftSubtitles(controlsPx: Int) {
+    val subs = subtitleView ?: return
+    if (subs.height == 0) return
+    val loc = IntArray(2).also(subs::getLocationInWindow)
+    val own = IntArray(2).also(::getLocationInWindow)
+    val gapBelow = (own[1] + height) - (loc[1] + subs.height)
+    val overlap = (controlsPx - gapBelow).coerceAtLeast(0)
+    subs.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION + overlap.toFloat() / subs.height)
+    for (i in 0 until subs.childCount) {
+        val child = subs.getChildAt(i)
+        if (child is AssSubtitleView && child.translationY != -overlap.toFloat()) {
+            child.animate().translationY(-overlap.toFloat()).setDuration(150).start()
+        }
+    }
+}
+

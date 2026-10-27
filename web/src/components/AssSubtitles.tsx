@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { withAccessToken, type SubtitleTrack } from '../api/client.js';
 import { SubtitleOverlay } from './SubtitleOverlay.js';
 
@@ -8,6 +8,8 @@ interface Props {
   /** Where the video's own timeline starts in the file (remux sessions start at zero). */
   offsetMs: number;
   currentMs: number;
+  /** Height of controls covering the bottom of the player; the subtitles slide up above it. */
+  liftPx: number;
 }
 
 /**
@@ -16,7 +18,7 @@ interface Props {
  * Where JASSUB cannot run (no WebAssembly, workers or OffscreenCanvas), it falls back to the
  * plain WebVTT overlay.
  */
-export function AssSubtitles({ track, videoRef, offsetMs, currentMs }: Props) {
+export function AssSubtitles({ track, videoRef, offsetMs, currentMs, liftPx }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<{ timeOffset: number; destroy(): Promise<void> } | null>(null);
   const offsetRef = useRef(offsetMs);
@@ -68,6 +70,25 @@ export function AssSubtitles({ track, videoRef, offsetMs, currentMs }: Props) {
     if (instanceRef.current) instanceRef.current.timeOffset = offsetMs / 1000;
   }, [offsetMs]);
 
-  if (failed) return <SubtitleOverlay url={track.url} currentMs={currentMs} />;
+  // The script places its own lines, so the whole layer slides up, by as much of the controls as
+  // overlaps the picture (letterboxed video may already have room below it).
+  // JASSUB resizes its canvas with the video, so this runs again whenever the layer's size changes.
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const lift = () => {
+      const canvas = host.querySelector('canvas');
+      const below = canvas ? host.clientHeight - (canvas.offsetTop + canvas.offsetHeight) : 0;
+      const overlap = Math.max(0, liftPx - below);
+      host.style.transform = overlap > 0 ? `translateY(-${overlap}px)` : '';
+    };
+    lift();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(lift);
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [liftPx]);
+
+  if (failed) return <SubtitleOverlay url={track.url} currentMs={currentMs} liftPx={liftPx} />;
   return <div ref={hostRef} className="ass-host" data-testid="ass-subtitles" />;
 }

@@ -36,8 +36,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import app.projektor.player.liftSubtitles
 import app.projektor.player.showWithStackedSubtitles
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
@@ -82,6 +84,8 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
     var audioIndex by remember { mutableStateOf<Long?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var controlsVisible by remember { mutableStateOf(false) }
+    // Height of the control bar while it shows; subtitles move up out of its way.
+    var bottomBarPx by remember { mutableStateOf(0) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     var picker by remember { mutableStateOf<Picker?>(null) }
     var resumeAt by remember { mutableStateOf(startMs) }
@@ -179,7 +183,12 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
                 }
             },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } }, modifier = Modifier.fillMaxSize())
+        val barShown = controlsVisible || picker != null
+        AndroidView(
+            factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } },
+            update = { it.liftSubtitles(if (barShown) bottomBarPx else 0) },
+            modifier = Modifier.fillMaxSize(),
+        )
         Text(state.positionMs.toString(), Modifier.width(1.dp).height(1.dp).testTag("position-ms"), color = Color.Transparent)
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(32.dp), color = MaterialTheme.colorScheme.error) }
         if (state.isBuffering && error == null) Text("…", Modifier.align(Alignment.Center), style = MaterialTheme.typography.displayMedium)
@@ -192,7 +201,7 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
         }
         // Skip feedback flash: brief label near the bottom when jumping with controls hidden.
         if (controlsVisible || picker != null) {
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 40.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { bottomBarPx = it.height }.background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 40.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(detail?.let { d -> if (d.kind.value == "episode") "${d.showTitle ?: ""} · ${d.title}" else d.title } ?: "", style = MaterialTheme.typography.titleLarge)
                 decision?.let { Text(badge(it), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision")) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

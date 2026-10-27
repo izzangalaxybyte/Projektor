@@ -12,6 +12,7 @@ import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.ProgressUpdateRequestInput
 import app.projektor.core.bodyOrThrow
+import app.projektor.core.okOrThrow
 
 /** Ergonomic browse calls over the generated client, which takes every query parameter positionally. */
 class ItemsRepository(private val client: ProjektorClient) {
@@ -56,6 +57,7 @@ class ItemsRepository(private val client: ProjektorClient) {
 
     /** Marks a movie or episode watched (position at the end) or unwatched (progress cleared). */
     suspend fun setWatched(itemId: String, watched: Boolean) {
-        client.progress.apiProgressItemIdWatchedPut(itemId, ApiProgressItemIdWatchedPutRequest(watched)).bodyOrThrow()
+        // Unwatching answers `null` (no progress left), which the generated model cannot parse.
+        client.progress.apiProgressItemIdWatchedPut(itemId, ApiProgressItemIdWatchedPutRequest(watched)).okOrThrow()
     }
 }

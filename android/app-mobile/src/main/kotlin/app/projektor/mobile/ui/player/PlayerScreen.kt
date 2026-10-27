@@ -47,8 +47,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import app.projektor.player.liftSubtitles
 import app.projektor.player.showWithStackedSubtitles
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.MediaFile
@@ -85,6 +87,8 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var audioIndex by remember { mutableStateOf<Long?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
+    // Height of the bottom bar while it shows; subtitles move up out of its way.
+    var bottomBarPx by remember { mutableStateOf(0) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     var resumeAt by remember { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -134,8 +138,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     LaunchedEffect(settings.rate, settings.holdRate, boosting) { player.setRate(if (boosting) settings.holdRate else settings.rate) }
 
     // Auto-hide controls while playing.
-    LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction) {
-        if (controlsVisible && state.isPlaying) {
+    // Controls stay up while a picker's menu is open.
+    var menuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(controlsVisible, state.isPlaying, lastInteraction, menuOpen) {
+        if (controlsVisible && state.isPlaying && !menuOpen) {
             delay(3_500)
             if (System.currentTimeMillis() - lastInteraction >= 3_400) controlsVisible = false
         }
@@ -157,8 +163,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             )
         },
     ) {
+        val chromeShown = controlsVisible || state.isPaused
         AndroidView(
             factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } },
+            update = { it.liftSubtitles(if (chromeShown) bottomBarPx else 0) },
             modifier = Modifier.fillMaxSize(),
         )
         // Hidden probes for tests: position in ms and current rate.
@@ -172,7 +180,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             Button(onClick = { nextEpisode?.let { (f, i) -> playNext(f, i) } }, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
         }
 
-        if (controlsVisible || state.isPaused) PlayerChrome {
+        if (chromeShown) PlayerChrome {
             // Top bar
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
@@ -194,7 +202,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                 }
             }
             // Bottom bar
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
+            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { bottomBarPx = it.height }.then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(formatMs(state.positionMs), style = MaterialTheme.typography.labelMedium)
                     Slider(
@@ -210,19 +218,19 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                         label = "Skip +${settings.skipSeconds}s",
                         options = SKIP_OPTIONS.map { it to "+${it}s" },
                         onPick = { container.playerPrefs.update(skipSeconds = it); touched() },
-                        tag = "skip-select",
+                        tag = "skip-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                     )
                     Picker(
                         label = formatRate(settings.rate),
                         options = RATE_OPTIONS.map { it to formatRate(it) },
                         onPick = { container.playerPrefs.update(rate = it); touched() },
-                        tag = "speed-select",
+                        tag = "speed-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                     )
                     Picker(
                         label = "Hold ${formatRate(settings.holdRate)}",
                         options = HOLD_RATE_OPTIONS.map { it to formatRate(it) },
                         onPick = { container.playerPrefs.update(holdRate = it); touched() },
-                        tag = "hold-speed-select",
+                        tag = "hold-speed-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                     )
                     val audioTracks = file?.streams?.filter { it.type.value == "audio" }.orEmpty()
                     if (audioTracks.size > 1) {
@@ -231,7 +239,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                             label = "Audio: ${current.title ?: current.language ?: current.index}",
                             options = audioTracks.map { it.index to "${it.title ?: it.language ?: "Track ${it.index}"} (${it.codec})" },
                             onPick = { resumeAt = state.positionMs; audioIndex = it; touched() },
-                            tag = "audio-select",
+                            tag = "audio-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                         )
                     }
                     if (state.subtitleTracks.isNotEmpty()) {
@@ -240,7 +248,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                             label = "Subtitles: ${current?.label ?: "off"}",
                             options = listOf<Pair<String?, String>>(null to "Off") + state.subtitleTracks.map { it.id to it.label },
                             onPick = { player.selectSubtitle(it); touched() },
-                            tag = "subtitle-select",
+                            tag = "subtitle-select", onOpenChange = { menuOpen = it; if (!it) touched() },
                         )
                     }
                     Spacer(Modifier.width(4.dp))
@@ -251,13 +259,14 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
 }
 
 @Composable
-internal fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String) {
+internal fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String, onOpenChange: (Boolean) -> Unit = {}) {
     var open by remember { mutableStateOf(false) }
+    fun setOpen(value: Boolean) { open = value; onOpenChange(value) }
     Box {
-        OutlinedButton(onClick = { open = true }, modifier = Modifier.testTag(tag)) { Text(label, style = MaterialTheme.typography.labelMedium) }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        OutlinedButton(onClick = { setOpen(true) }, modifier = Modifier.testTag(tag)) { Text(label, style = MaterialTheme.typography.labelMedium) }
+        DropdownMenu(expanded = open, onDismissRequest = { setOpen(false) }) {
             options.forEach { (value, text) ->
-                DropdownMenuItem(text = { Text(text) }, onClick = { open = false; onPick(value) }, modifier = Modifier.testTag("$tag-$text"))
+                DropdownMenuItem(text = { Text(text) }, onClick = { setOpen(false); onPick(value) }, modifier = Modifier.testTag("$tag-$text"))
             }
         }
     }

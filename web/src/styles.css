@@ -498,6 +498,7 @@ select {
   left: 5%;
   right: 5%;
   bottom: 12%;
+  transition: bottom 0.15s;
   text-align: center;
   pointer-events: none;
   text-shadow:
@@ -509,7 +510,7 @@ select {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
+  transition: transform 0.15s;
 }
 .ass-canvas {
   position: absolute;

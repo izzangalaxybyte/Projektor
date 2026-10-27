@@ -84,7 +84,16 @@ class ApiException(val status: Int, val error: String, message: String) : Except
  * ErrorResponse. The generated client would otherwise try to parse the error as the model.
  */
 suspend fun <T : Any> app.projektor.core.api.infrastructure.HttpResponse<T>.bodyOrThrow(): T {
-    if (success) return body()
+    okOrThrow()
+    return body()
+}
+
+/**
+ * Throws [ApiException] unless the response succeeded, without reading the body: for calls whose
+ * answer is not needed, and whose answer may be a bare `null` the generated model cannot parse.
+ */
+suspend fun app.projektor.core.api.infrastructure.HttpResponse<*>.okOrThrow() {
+    if (success) return
     val text = runCatching { response.bodyAsText() }.getOrDefault("")
     val parsed = runCatching { Json { ignoreUnknownKeys = true }.decodeFromString<app.projektor.core.api.models.ErrorResponse>(text) }.getOrNull()
     throw ApiException(status, parsed?.error ?: "HTTP $status", parsed?.message ?: text.take(200))
