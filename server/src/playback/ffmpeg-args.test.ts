@@ -164,6 +164,16 @@ describe('buildTranscodeArgs', () => {
     expect(joined).toContain('-start_number 40');
   });
 
+  it('drops copied audio from before the seek point so it starts with the video', () => {
+    const s = session();
+    s.decision = { ...s.decision, audio: 'copy' };
+    const joined = buildTranscodeArgs(s, '/out', { startSegment: 40, hardware: null }).join(' ');
+    expect(joined).toContain('-c:a copy -copypriorss 0');
+    expect(
+      buildTranscodeArgs(session(), '/out', { startSegment: 40, hardware: null }),
+    ).not.toContain('-copypriorss');
+  });
+
   it('uses VAAPI decode, scale, and encode when hardware is available', () => {
     const args = buildTranscodeArgs(session(), '/out', {
       startSegment: 0,

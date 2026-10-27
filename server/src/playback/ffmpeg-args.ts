@@ -233,12 +233,16 @@ export function buildTranscodeArgs(
     '0',
   );
   const offset = seekSeconds > 0 ? ['-output_ts_offset', String(seekSeconds)] : [];
+  // A copied stream otherwise starts at the keyframe before -ss, so a run's first segment had
+  // seconds of audio from before its video, which set the two out of sync after every seek.
+  const priorAudio = decision.audio === 'copy' ? ['-copypriorss', '0'] : [];
 
   return [
     ...input,
     ...maps,
     ...video,
     ...audio,
+    ...priorAudio,
     ...offset,
     ...hlsOutput(session, outDir, options.startSegment, FFMPEG_PLAYLIST),
   ];
