@@ -42,6 +42,7 @@ export async function scanLibrary(
         path: schema.mediaFiles.path,
         sizeBytes: schema.mediaFiles.sizeBytes,
         mtimeMs: schema.mediaFiles.mtimeMs,
+        probedAt: schema.mediaFiles.probedAt,
         movieId: schema.mediaFiles.movieId,
         episodeId: schema.mediaFiles.episodeId,
         missing: schema.mediaFiles.missing,
@@ -88,9 +89,12 @@ export async function scanLibrary(
         result.changedFileIds.push(id);
         continue;
       }
+      // Never probed counts as changed: a scan interrupted mid-probe (a restart) left these behind,
+      // and they would otherwise never get durations or streams.
       const changed =
         existing.sizeBytes !== file.sizeBytes ||
         existing.mtimeMs !== file.mtimeMs ||
+        existing.probedAt === null ||
         stale.has(existing.id);
       if (changed) {
         db.update(schema.mediaFiles)

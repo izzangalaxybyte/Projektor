@@ -50,17 +50,21 @@ describe('scanLibrary', () => {
     expect(first).toMatchObject({ filesSeen: 2, filesChanged: 2, filesMissing: 0 });
     expect(first.changedFileIds).toHaveLength(2);
 
-    const second = await scanLibrary(db, id);
-    expect(second).toMatchObject({
+    const rows = db.select().from(schema.mediaFiles).all();
+    expect(rows.map((r) => r.fileName).sort()).toEqual(['Movie (2001).mkv', 'Show - S01E01.mp4']);
+    expect(rows.every((r) => r.probedAt === null)).toBe(true);
+
+    // Files never probed (a scan cut short before probing) are offered for probing again.
+    expect((await scanLibrary(db, id)).changedFileIds).toHaveLength(2);
+
+    db.update(schema.mediaFiles).set({ probedAt: now() }).run();
+    const third = await scanLibrary(db, id);
+    expect(third).toMatchObject({
       filesSeen: 2,
       filesChanged: 0,
       filesMissing: 0,
       changedFileIds: [],
     });
-
-    const rows = db.select().from(schema.mediaFiles).all();
-    expect(rows.map((r) => r.fileName).sort()).toEqual(['Movie (2001).mkv', 'Show - S01E01.mp4']);
-    expect(rows.every((r) => r.probedAt === null)).toBe(true);
   });
 
   it('detects modified files, flags missing ones, and clears the flag when they return', async () => {
@@ -102,6 +106,7 @@ describe('scanLibrary', () => {
     cleanups.push(t.cleanup);
     const { db, id } = makeLibrary(t.config.dbPath, makeTree());
     await scanLibrary(db, id);
+    db.update(schema.mediaFiles).set({ probedAt: now() }).run();
     expect((await scanLibrary(db, id)).unlinkedFileIds).toHaveLength(2);
 
     const ts = now();
