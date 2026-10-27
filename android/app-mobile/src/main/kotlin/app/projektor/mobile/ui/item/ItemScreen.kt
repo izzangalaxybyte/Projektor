@@ -1,6 +1,7 @@
 package app.projektor.mobile.ui.item
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -30,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,10 +48,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.MediaFile
+import app.projektor.core.items.describeVersion
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.Bg
 import app.projektor.mobile.ui.Surface2
@@ -120,12 +125,19 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                 }
                 d.files.firstOrNull()?.let { file ->
                     val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
+                    // Several files for one item (a sub and a dub release, say): ask which to play.
+                    var choosingFrom by remember(d.id) { mutableStateOf<Long?>(null) }
+                    fun start(at: Long) { if (d.files.size > 1) choosingFrom = at else play(file.id, d.id, at) }
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { play(file.id, d.id, resume) }, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("play")) {
+                        Button(onClick = { start(resume) }, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("play")) {
                             Icon(Icons.Filled.PlayArrow, null)
                             Text(if (resume > 0) " Resume from ${formatMs(resume)}" else " Play", style = MaterialTheme.typography.titleMedium)
                         }
-                        if (resume > 0) OutlinedButton(onClick = { play(file.id, d.id, 0) }, modifier = Modifier.fillMaxWidth()) { Text("Start over", color = Color.White) }
+                        if (resume > 0) OutlinedButton(onClick = { start(0) }, modifier = Modifier.fillMaxWidth()) { Text("Start over", color = Color.White) }
+                        if (d.files.size > 1) Text("${d.files.size} versions available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    choosingFrom?.let { at ->
+                        VersionDialog(d.files, onDismiss = { choosingFrom = null }) { chosen -> choosingFrom = null; play(chosen.id, d.id, at) }
                     }
                 }
                 d.tagline?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), style = MaterialTheme.typography.titleMedium, fontStyle = FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)) }
@@ -200,4 +212,27 @@ private fun TileSection(title: String, list: List<ItemSummary>, client: app.proj
             }
         }
     }
+}
+
+/** Lists every file of an item with what tells them apart; tapping one plays it. */
+@Composable
+private fun VersionDialog(files: List<MediaFile>, onDismiss: () -> Unit, onPick: (MediaFile) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose a version") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                files.forEach { f ->
+                    Column(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Surface2).clickable { onPick(f) }.padding(12.dp).testTag("version-${f.id}"),
+                    ) {
+                        Text(f.fileName, style = MaterialTheme.typography.bodyMedium, color = Color.White, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Text(describeVersion(f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

@@ -1,5 +1,6 @@
 package app.projektor.tv.ui.item
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemSummary
+import app.projektor.core.items.describeVersion
 import app.projektor.tv.TvContainer
 import app.projektor.tv.ui.UiState
 import app.projektor.tv.ui.captionFor
@@ -57,6 +60,9 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
         is UiState.Failed -> Text(s.message, Modifier.padding(48.dp), color = MaterialTheme.colorScheme.error)
         is UiState.Ready -> {
             val (d, children) = s.value
+            // Several files for one item (a sub and a dub release, say): ask which to play.
+            var choosingFrom by remember(d.id) { mutableStateOf<Long?>(null) }
+            fun start(fileId: String, at: Long) { if (d.files.size > 1) choosingFrom = at else play(fileId, d.id, at) }
             Box(Modifier.fillMaxSize()) {
                 client.imageUrl(d.backdropKey, 1280)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.25f) }
                 LazyColumn(contentPadding = PaddingValues(vertical = 40.dp), verticalArrangement = Arrangement.spacedBy(28.dp)) {
@@ -77,10 +83,10 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
                                     val file = d.files.firstOrNull()
                                     val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
                                     if (file != null) {
-                                        Button(onClick = { play(file.id, d.id, resume) }, modifier = Modifier.focusRequester(primaryFocus).testTag("play")) {
+                                        Button(onClick = { start(file.id, resume) }, modifier = Modifier.focusRequester(primaryFocus).testTag("play")) {
                                             Text(if (resume > 0) "Resume from ${formatMs(resume)}" else "Play")
                                         }
-                                        if (resume > 0) Button(onClick = { play(file.id, d.id, 0) }) { Text("Start over") }
+                                        if (resume > 0) Button(onClick = { start(file.id, 0) }) { Text("Start over") }
                                     }
                                     Button(onClick = back, modifier = Modifier.testTag("back").let { if (file == null) it.focusRequester(primaryFocus) else it }) { Text("Back") }
                                 }
@@ -95,6 +101,28 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
                     val episodes = children.filter { it.kind.value == "episode" }
                     if (seasons.isNotEmpty()) item { TvRow("Seasons", seasons, client, { openItem(it.id) }, "seasons") }
                     if (episodes.isNotEmpty()) item { TvRow("Episodes", episodes, client, { openItem(it.id) }, "episodes") }
+                }
+                choosingFrom?.let { at ->
+                    BackHandler { choosingFrom = null }
+                    val firstVersion = remember { FocusRequester() }
+                    Column(
+                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.85f)).padding(horizontal = 120.dp, vertical = 48.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text("Choose a version", style = MaterialTheme.typography.headlineSmall)
+                        d.files.forEachIndexed { i, f ->
+                            Button(
+                                onClick = { choosingFrom = null; play(f.id, d.id, at) },
+                                modifier = Modifier.fillMaxWidth().testTag("version-${f.id}").let { if (i == 0) it.focusRequester(firstVersion) else it },
+                            ) {
+                                Column {
+                                    Text(f.fileName, maxLines = 2)
+                                    Text(describeVersion(f), style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                        LaunchedEffect(Unit) { runCatching { firstVersion.requestFocus() } }
+                    }
                 }
             }
         }

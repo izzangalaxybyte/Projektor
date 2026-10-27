@@ -47,6 +47,7 @@ import app.projektor.core.api.models.MediaFile
 import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
 import app.projektor.core.api.models.PlaybackMethod
+import app.projektor.core.items.closestVersion
 import app.projektor.core.playback.DeviceProfiles
 import app.projektor.core.playback.RATE_OPTIONS
 import app.projektor.core.playback.SKIP_OPTIONS
@@ -103,7 +104,8 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
             detail = d
             file = d.files.firstOrNull { it.id == fileId } ?: d.files.firstOrNull()
             if (d.kind.value == "episode") runCatching { items.nextEpisode(d.id) }.getOrNull()?.let { n ->
-                runCatching { items.detail(n.id) }.getOrNull()?.files?.firstOrNull()?.let { f -> nextEpisode = f.id to n.id }
+                // Keep to the release being watched when the next episode has several files.
+                runCatching { items.detail(n.id) }.getOrNull()?.files?.let { closestVersion(file?.fileName, it) }?.let { f -> nextEpisode = f.id to n.id }
             }
         } catch (e: Exception) { error = e.userMessage() }
     }
