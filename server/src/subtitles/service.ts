@@ -1,8 +1,9 @@
 // Text subtitles for a media file: embedded tracks found by ffprobe and sidecar files beside
-// the media. Both are converted to WebVTT with ffmpeg on first request and cached.
+// the media. Both are converted to WebVTT with ffmpeg on first request and cached. ASS and SSA
+// tracks are also served as they are, with the file's attached fonts, for libass on the clients.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { execa } from 'execa';
@@ -22,6 +23,22 @@ export const TEXT_SUBTITLE_CODECS = new Set([
   'text',
 ]);
 const SIDECAR_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.vtt']);
+/** Formats the clients render themselves with libass, styling and all, from the raw track. */
+export const ASS_FORMATS = new Set(['ass', 'ssa']);
+const FONT_TYPES: Record<string, string> = {
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.ttc': 'font/collection',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
+/** A font attached to the media file (MKV attachments), cached under DATA_DIR/subtitles. */
+export interface SubtitleFont {
+  name: string;
+  path: string;
+  contentType: string;
+}
 
 export class SubtitleError extends Error {
   constructor(
@@ -35,7 +52,7 @@ export class SubtitleError extends Error {
 export class SubtitleService {
   constructor(
     private readonly db: Db,
-    private readonly config: Pick<Config, 'ffmpegPath' | 'subtitlesDir'>,
+    private readonly config: Pick<Config, 'ffmpegPath' | 'ffprobePath' | 'subtitlesDir'>,
     private readonly log?: FastifyBaseLogger,
   ) {}
 
@@ -172,6 +189,8 @@ export class SubtitleService {
         title: s.title,
         format: s.format,
         url: `/api/subtitles/${s.id}.vtt`,
+        assUrl: ASS_FORMATS.has(s.format) ? `/api/subtitles/${s.id}.ass` : null,
+        fontsUrl: ASS_FORMATS.has(s.format) ? `/api/subtitles/${s.id}/fonts` : null,
       }));
   }
 
@@ -214,6 +233,122 @@ export class SubtitleService {
       .run();
     return out;
   }
+
+  /** Path to the untouched ASS script for an ASS or SSA subtitle, extracted the first time. */
+  async ensureAss(subtitleId: string): Promise<string> {
+    const { sub, file } = this.lookup(subtitleId);
+    if (!ASS_FORMATS.has(sub.format)) throw new SubtitleError(404, 'Not an ASS subtitle');
+    const outDir = path.join(this.config.subtitlesDir, sub.fileId);
+    const out = path.join(outDir, `${sub.id}.ass`);
+    if (existsSync(out)) return out;
+    await mkdir(outDir, { recursive: true });
+    // ffmpeg undoes the zlib compression some MKVs use on subtitle tracks; copying keeps every
+    // style, override tag and drawing as the author wrote them.
+    const input = sub.source === 'embedded' ? file.path : sub.sourcePath!;
+    const tmp = `${out}.${randomUUID()}.tmp`;
+    const args = ['-hide_banner', '-loglevel', 'error', '-nostdin', '-y', '-i', input];
+    args.push('-map', sub.source === 'embedded' ? `0:${sub.streamIndex}` : '0:s:0');
+    args.push('-c:s', 'copy', '-f', 'ass', tmp);
+    const result = await execa(this.config.ffmpegPath, args, {
+      reject: false,
+      timeout: 120_000,
+      stdin: 'ignore',
+    });
+    if (result.exitCode !== 0 || !existsSync(tmp)) {
+      this.log?.warn({ subtitleId, stderr: result.stderr }, 'ASS extraction failed');
+      throw new SubtitleError(500, 'Subtitle extraction failed');
+    }
+    await rename(tmp, out);
+    return out;
+  }
+
+  /**
+   * Fonts attached to the subtitle's media file, which ASS styles name and VLC loads. They are
+   * dumped once per file; an empty list means the file has none.
+   */
+  async fonts(subtitleId: string): Promise<SubtitleFont[]> {
+    const { sub, file } = this.lookup(subtitleId);
+    if (!ASS_FORMATS.has(sub.format)) throw new SubtitleError(404, 'Not an ASS subtitle');
+    const dir = path.join(this.config.subtitlesDir, sub.fileId, 'fonts');
+    const manifest = path.join(dir, 'fonts.json');
+    if (!existsSync(manifest)) await this.dumpFonts(file.path, dir, manifest);
+    const listed = JSON.parse(await readFile(manifest, 'utf8')) as Array<{
+      name: string;
+      file: string;
+    }>;
+    return listed.map((f) => ({
+      name: f.name,
+      path: path.join(dir, f.file),
+      contentType: FONT_TYPES[path.extname(f.file)] ?? 'application/octet-stream',
+    }));
+  }
+
+  private lookup(subtitleId: string) {
+    const sub = this.db
+      .select()
+      .from(schema.subtitles)
+      .where(eq(schema.subtitles.id, subtitleId))
+      .get();
+    if (!sub) throw new SubtitleError(404, 'No such subtitle');
+    const file = this.db
+      .select()
+      .from(schema.mediaFiles)
+      .where(eq(schema.mediaFiles.id, sub.fileId))
+      .get();
+    if (!file) throw new SubtitleError(404, 'No such file');
+    return { sub, file };
+  }
+
+  private async dumpFonts(mediaPath: string, dir: string, manifest: string): Promise<void> {
+    await mkdir(dir, { recursive: true });
+    const probe = await execa(
+      this.config.ffprobePath,
+      ['-v', 'error', '-select_streams', 't', '-show_streams', '-of', 'json', mediaPath],
+      { reject: false, timeout: 60_000, stdin: 'ignore' },
+    );
+    const streams =
+      probe.exitCode === 0
+        ? ((JSON.parse(probe.stdout) as { streams?: AttachmentStream[] }).streams ?? [])
+        : [];
+    // Files are saved by position, never by the attachment's own file name, which the MKV sets.
+    const fonts = streams
+      .map((s) => ({ index: s.index, name: s.tags?.filename ?? '', ext: fontExtension(s) }))
+      .filter((f): f is { index: number; name: string; ext: string } => f.ext !== null)
+      .map((f, i) => ({ ...f, file: `${i}${f.ext}` }));
+    if (fonts.length) {
+      const args = ['-hide_banner', '-loglevel', 'error', '-nostdin', '-y'];
+      for (const f of fonts) args.push(`-dump_attachment:${f.index}`, path.join(dir, f.file));
+      // ffmpeg writes the attachments while opening the input, then stops for want of an output.
+      await execa(this.config.ffmpegPath, [...args, '-i', mediaPath], {
+        reject: false,
+        timeout: 120_000,
+        stdin: 'ignore',
+      });
+    }
+    const dumped = fonts.filter((f) => existsSync(path.join(dir, f.file)));
+    if (dumped.length < fonts.length)
+      this.log?.warn({ mediaPath, missing: fonts.length - dumped.length }, 'font dump incomplete');
+    await writeFile(
+      manifest,
+      JSON.stringify(dumped.map((f) => ({ name: f.name || f.file, file: f.file }))),
+    );
+  }
+}
+
+interface AttachmentStream {
+  index: number;
+  codec_name?: string;
+  tags?: Record<string, string>;
+}
+
+/** The extension a font attachment is saved under, or null when it is not a font. */
+function fontExtension(s: AttachmentStream): string | null {
+  const ext = path.extname(s.tags?.filename ?? '').toLowerCase();
+  if (ext in FONT_TYPES) return ext;
+  const mime = (s.tags?.mimetype ?? '').toLowerCase();
+  if (s.codec_name === 'otf' || mime.includes('opentype') || mime.endsWith('/otf')) return '.otf';
+  if (s.codec_name === 'ttf' || mime.includes('font') || mime.includes('truetype')) return '.ttf';
+  return null;
 }
 
 /**

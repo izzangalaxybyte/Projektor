@@ -66,9 +66,24 @@ export const SubtitleTrack = z
     title: z.string().nullable(),
     format: z.string().meta({ description: 'Source format: subrip, ass, mov_text, webvtt, ...' }),
     url: z.string().meta({ description: 'WebVTT URL under /api/subtitles' }),
+    assUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'ASS and SSA tracks: the original script, styling intact, for libass' }),
+    fontsUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'ASS and SSA tracks: lists the fonts attached to the media file' }),
   })
   .meta({ id: 'SubtitleTrack' });
 export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
+
+export const SubtitleFont = z
+  .object({
+    name: z.string().meta({ description: 'The attachment file name in the media file' }),
+    url: z.string(),
+  })
+  .meta({ id: 'SubtitleFont' });
 
 export const MediaFile = z
   .object({

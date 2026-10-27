@@ -7,6 +7,8 @@ composeBom = "2025.09.01"
 lifecycle = "2.9.4"
 tvMaterial = "1.0.1"
 media3 = "1.8.0"
+# libass for Media3; each release is built against one Media3 version (0.5.1: 1.8.0).
+libassAndroid = "0.5.1"
 serialization = "1.9.0"
 ktor = "3.3.0"
 openapiGenerator = "7.17.0"
@@ -44,6 +46,7 @@ androidx-test-core = { group = "androidx.test", name = "core-ktx", version = "1.
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version = "2.3.0" }
 tv-foundation = { group = "androidx.tv", name = "tv-foundation", version = "1.0.0-alpha12" }
 media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
+libass-media = { group = "io.github.peerless2012", name = "ass-media", version.ref = "libassAndroid" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }

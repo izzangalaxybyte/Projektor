@@ -1,6 +1,8 @@
 package app.projektor.player
 
 import android.content.Context
+import android.util.Log
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -8,7 +10,16 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import io.github.peerless2012.ass.media.AssHandler
+import io.github.peerless2012.ass.media.AssHandlerConfig
+import io.github.peerless2012.ass.media.kt.withAssSupport
+import io.github.peerless2012.ass.media.parser.AssSubtitleParserFactory
+import io.github.peerless2012.ass.media.type.AssRenderType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,7 +29,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
 
 /** Snapshot of playback for the UI. */
 data class PlayerState(
@@ -39,12 +54,26 @@ data class TrackOption(val id: String, val label: String, val language: String?)
  * play/pause, seek, skip by the chosen amount, set speed, pick subtitles, and report progress
  * every [progressIntervalMs] and on pause, end, and release.
  */
+@OptIn(UnstableApi::class)
 class ProjektorPlayer(
     context: Context,
     private val onProgress: suspend (positionMs: Long, durationMs: Long) -> Unit = { _, _ -> },
     private val progressIntervalMs: Long = 10_000,
 ) {
-    val exo: ExoPlayer = ExoPlayer.Builder(context).build()
+    /**
+     * Draws ASS and SSA subtitles with libass, styling and all, over the video (see
+     * [showWithStackedSubtitles]). Rendering is capped at 1080p, which keeps 4K TVs smooth.
+     */
+    val assHandler = AssHandler(AssRenderType.OVERLAY_CANVAS, AssHandlerConfig(maxRenderPixels = 1920 * 1080))
+    val exo: ExoPlayer = ExoPlayer.Builder(context)
+        .setMediaSourceFactory(
+            // Sideloaded subtitles are parsed by this factory: ASS goes to libass, the rest as usual.
+            DefaultMediaSourceFactory(DefaultDataSource.Factory(context))
+                .setSubtitleParserFactory(AssSubtitleParserFactory(assHandler)),
+        )
+        .setRenderersFactory(DefaultRenderersFactory(context).withAssSupport(assHandler))
+        .build()
+        .also(assHandler::init)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var ticker: Job? = null
     private var knownDurationMs: Long = 0
@@ -52,6 +81,9 @@ class ProjektorPlayer(
     /** Ids of the server's WebVTT tracks sideloaded with a direct-play file; empty otherwise. */
     private var sideloaded: Set<String> = emptySet()
     private var redirectEmbeddedText = false
+    /** Fonts attached to the file, fetched for its ASS tracks and handed to libass once it has one. */
+    private val pendingFonts = mutableListOf<Pair<String, ByteArray>>()
+    private var fontsJob: Job? = null
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state
 
@@ -69,6 +101,7 @@ class ProjektorPlayer(
                 _state.value = _state.value.copy(error = error.errorCodeName)
             }
             override fun onTracksChanged(tracks: Tracks) {
+                flushFonts()
                 applyAudioChoice()
                 preferSideloadedText()
                 publish()
@@ -106,6 +139,32 @@ class ProjektorPlayer(
         exo.prepare()
         exo.playWhenReady = true
         _state.value = PlayerState()
+        loadFonts(spec)
+    }
+
+    /**
+     * Fetches the fonts the server lists for the spec's ASS tracks. A failure only costs the
+     * styling's own fonts: libass falls back to the system's.
+     */
+    private fun loadFonts(spec: MediaSpec) {
+        fontsJob?.cancel()
+        pendingFonts.clear()
+        val lists = spec.subtitles.mapNotNull { it.fontsUri }.distinct()
+        if (lists.isEmpty()) return
+        fontsJob = scope.launch {
+            val fonts = withContext(Dispatchers.IO) {
+                lists.flatMap { list -> runCatching { fetchFonts(list) }.onFailure { Log.w(TAG, "fonts: $list", it) }.getOrDefault(emptyList()) }
+            }
+            pendingFonts += fonts.distinctBy { it.first }
+            flushFonts()
+        }
+    }
+
+    /** libass drops fonts given before its first track exists, so they wait for one. */
+    private fun flushFonts() {
+        if (pendingFonts.isEmpty() || !assHandler.hasTracks()) return
+        pendingFonts.forEach { (name, data) -> assHandler.addFont(name, data) }
+        pendingFonts.clear()
     }
 
     fun play() { exo.play() }
@@ -145,6 +204,7 @@ class ProjektorPlayer(
         report()
         scope.cancel()
         exo.release()
+        assHandler.release()
     }
 
     private suspend fun report() {
@@ -219,7 +279,7 @@ fun MediaSpec.toMediaItem(): MediaItem {
         builder.setSubtitleConfigurations(
             subtitles.map { s ->
                 MediaItem.SubtitleConfiguration.Builder(s.uri.toUri())
-                    .setMimeType(MimeTypes.TEXT_VTT)
+                    .setMimeType(if (s.mimeType == MIME_SSA) MimeTypes.TEXT_SSA else MimeTypes.TEXT_VTT)
                     .setId(s.id)
                     .setLabel(s.label)
                     .apply { s.language?.let { setLanguage(it) } }
@@ -228,4 +288,34 @@ fun MediaSpec.toMediaItem(): MediaItem {
         )
     }
     return builder.build()
+}
+
+private const val TAG = "ProjektorPlayer"
+
+/**
+ * The fonts behind [listUri] (the server's font list for a subtitle), as name and bytes. The list
+ * gives server paths; they are fetched from the same server with the same access token.
+ */
+private fun fetchFonts(listUri: String): List<Pair<String, ByteArray>> {
+    val base = URL(listUri)
+    val token = base.query?.split('&')?.firstOrNull { it.startsWith("access_token=") }
+    val list = JSONArray(String(get(base), Charsets.UTF_8))
+    return (0 until list.length()).map { i ->
+        val font = list.getJSONObject(i)
+        val url = URL(base, font.getString("url"))
+        val withToken = if (token == null) url else URL("$url${if (url.query == null) '?' else '&'}$token")
+        font.getString("name") to get(withToken)
+    }
+}
+
+private fun get(url: URL): ByteArray {
+    val connection = url.openConnection() as HttpURLConnection
+    connection.connectTimeout = 10_000
+    connection.readTimeout = 30_000
+    try {
+        if (connection.responseCode !in 200..299) error("HTTP ${connection.responseCode} for ${url.path}")
+        return connection.inputStream.use { it.readBytes() }
+    } finally {
+        connection.disconnect()
+    }
 }

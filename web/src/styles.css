@@ -505,6 +505,16 @@ select {
     0 2px 2px #000;
   font-size: clamp(1rem, 2.6vw, 2rem);
 }
+.ass-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ass-canvas {
+  position: absolute;
+  pointer-events: none;
+}
 .subtitle-overlay p {
   margin: 0.2rem 0;
   display: inline-block;

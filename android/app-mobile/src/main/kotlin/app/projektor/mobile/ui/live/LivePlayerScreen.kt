@@ -144,7 +144,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
             detectTapGestures(onTap = { if (controlsVisible) controlsVisible = false else touched() })
         },
     ) {
-        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player.exo) } }, modifier = Modifier.fillMaxSize())
+        AndroidView(factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } }, modifier = Modifier.fillMaxSize())
         Text(state.positionMs.toString(), Modifier.size(1.dp).testTag("position-ms"), color = Color.Transparent)
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }

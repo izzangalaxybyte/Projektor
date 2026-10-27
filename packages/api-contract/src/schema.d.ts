@@ -1362,6 +1362,145 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/subtitles/{id}.ass': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An ASS or SSA subtitle track as written, for clients that render it with libass */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}/fonts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Fonts attached to the media file of an ASS or SSA subtitle */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SubtitleFont'][];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}/fonts/{index}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One attached font, by its position in the font list */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+          index: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/progress': {
     parameters: {
       query?: never;
@@ -2914,6 +3053,15 @@ export interface components {
       format: string;
       /** @description WebVTT URL under /api/subtitles */
       url: string;
+      /** @description ASS and SSA tracks: the original script, styling intact, for libass */
+      assUrl: string | null;
+      /** @description ASS and SSA tracks: lists the fonts attached to the media file */
+      fontsUrl: string | null;
+    };
+    SubtitleFontInput: {
+      /** @description The attachment file name in the media file */
+      name: string;
+      url: string;
     };
     MediaFileInput: {
       /** @description Opaque identifier */
@@ -3401,6 +3549,15 @@ export interface components {
       /** @description Source format: subrip, ass, mov_text, webvtt, ... */
       format: string;
       /** @description WebVTT URL under /api/subtitles */
+      url: string;
+      /** @description ASS and SSA tracks: the original script, styling intact, for libass */
+      assUrl: string | null;
+      /** @description ASS and SSA tracks: lists the fonts attached to the media file */
+      fontsUrl: string | null;
+    };
+    SubtitleFont: {
+      /** @description The attachment file name in the media file */
+      name: string;
       url: string;
     };
     MediaFile: {

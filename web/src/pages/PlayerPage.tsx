@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, unwrap, withAccessToken, type PlaybackDecision } from '../api/client.js';
+import { AssSubtitles } from '../components/AssSubtitles.js';
 import { SubtitleOverlay } from '../components/SubtitleOverlay.js';
 import { useItem, useNextEpisode } from '../hooks/useItems.js';
 import { HtmlVideoPlayer } from '../player/HtmlVideoPlayer.js';
@@ -36,7 +37,7 @@ export function PlayerPage() {
   const audioTracks = useMemo(() => file?.streams.filter((s) => s.type === 'audio') ?? [], [file]);
   const knownDurationMs = file?.durationMs ?? 0;
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
-  const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
+  const [subtitleId, setSubtitleId] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HtmlVideoPlayer | null>(null);
@@ -228,6 +229,7 @@ export function PlayerPage() {
     return () => clearTimeout(t);
   }, [paused, showControls, currentMs]);
 
+  const subtitle = decision.data?.subtitles.find((s) => s.id === subtitleId) ?? null;
   const effectiveDurationMs = Math.max(knownDurationMs, durationMs + offsetRef.current);
   const title = item.data
     ? item.data.kind === 'episode'
@@ -249,7 +251,17 @@ export function PlayerPage() {
         data-testid="video"
         onDoubleClick={() => void document.documentElement.requestFullscreen?.()}
       />
-      <SubtitleOverlay url={subtitleUrl} currentMs={currentMs} />
+      {subtitle?.assUrl ? (
+        <AssSubtitles
+          key={subtitle.id}
+          track={subtitle}
+          videoRef={videoRef}
+          offsetMs={offsetRef.current}
+          currentMs={currentMs}
+        />
+      ) : (
+        <SubtitleOverlay url={subtitle?.url ?? null} currentMs={currentMs} />
+      )}
       {(error || decision.isError) && (
         <div className="player-message" role="alert">
           {error ?? (decision.error as Error).message}
@@ -340,13 +352,13 @@ export function PlayerPage() {
         {(decision.data?.subtitles.length ?? 0) > 0 && (
           <select
             aria-label="Subtitles"
-            value={subtitleUrl ?? ''}
-            onChange={(e) => setSubtitleUrl(e.target.value || null)}
+            value={subtitleId ?? ''}
+            onChange={(e) => setSubtitleId(e.target.value || null)}
             data-testid="subtitle-select"
           >
             <option value="">Subtitles off</option>
             {decision.data!.subtitles.map((s) => (
-              <option key={s.id} value={s.url}>
+              <option key={s.id} value={s.id}>
                 {s.title ?? s.language ?? s.format} {s.source === 'external' ? '(file)' : ''}
               </option>
             ))}
