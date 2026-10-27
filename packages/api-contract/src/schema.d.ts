@@ -1664,7 +1664,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** In-progress movies and episodes, most recent first */
+        /** In-progress movies and episodes plus next episodes, most recent first */
         get: {
             parameters: {
                 query?: {

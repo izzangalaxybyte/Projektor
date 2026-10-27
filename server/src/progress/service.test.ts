@@ -111,6 +111,29 @@ describe('ProgressService', () => {
     expect(service.continueWatching(other)).toEqual([]);
   });
 
+  it('puts the next episode in continue watching after finishing one', () => {
+    const { db, userId, libraryId, service } = setup();
+    const [e1, e2, e3, e4] = addShow(db, libraryId, [
+      [1, 1, null],
+      [1, 2, null],
+      [1, 3, null],
+      [1, 4, null],
+    ]);
+    service.update(userId, e1!, 95, 100);
+    expect(service.continueWatching(userId)).toEqual([e2]);
+    // Episodes already watched out of order are skipped.
+    service.setWatched(userId, e3!, true);
+    db.update(schema.playbackState).set({ updatedAt: '2020-01-01T00:00:00.000Z' }).run();
+    service.update(userId, e2!, 95, 100);
+    expect(service.continueWatching(userId)).toEqual([e4]);
+    // Starting the next one shows just that episode, once.
+    service.update(userId, e4!, 10, 100);
+    expect(service.continueWatching(userId)).toEqual([e4]);
+    // Finishing the last episode leaves nothing for the show.
+    service.update(userId, e4!, 95, 100);
+    expect(service.continueWatching(userId)).toEqual([]);
+  });
+
   it('finds the next episode across seasons and by absolute number', () => {
     const { db, libraryId, service } = setup();
     const [s1e1, s1e2, s2e1, special] = addShow(db, libraryId, [

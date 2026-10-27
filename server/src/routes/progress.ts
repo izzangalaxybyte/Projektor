@@ -71,7 +71,7 @@ export const progressRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['progress'],
-        summary: 'In-progress movies and episodes, most recent first',
+        summary: 'In-progress movies and episodes plus next episodes, most recent first',
         security: [{ bearerAuth: [] }],
         querystring: z.object({
           libraryKind: LibraryKind.optional(),

@@ -6617,7 +6617,7 @@
     },
     "/api/progress/continue": {
       "get": {
-        "summary": "In-progress movies and episodes, most recent first",
+        "summary": "In-progress movies and episodes plus next episodes, most recent first",
         "tags": [
           "progress"
         ],

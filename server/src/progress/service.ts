@@ -122,16 +122,37 @@ export class ProgressService {
     return out;
   }
 
-  /** Ids of in-progress (not watched) items, most recently played first. */
+  /**
+   * Ids for the continue watching row, most recently played first: in-progress items, plus the
+   * next unwatched episode of a show whose latest activity was finishing an episode.
+   */
   continueWatching(userId: string, limit = 50): string[] {
-    return this.db
-      .select({ itemId: schema.playbackState.itemId })
+    const rows = this.db
+      .select()
       .from(schema.playbackState)
-      .where(and(eq(schema.playbackState.userId, userId), eq(schema.playbackState.watched, false)))
+      .where(eq(schema.playbackState.userId, userId))
       .orderBy(desc(schema.playbackState.updatedAt))
-      .limit(limit)
-      .all()
-      .map((r) => r.itemId);
+      .limit(1000)
+      .all();
+    const watched = new Set(rows.filter((r) => r.watched).map((r) => r.itemId));
+    const showOf = this.showsOf(rows.filter((r) => r.itemKind === 'episode').map((r) => r.itemId));
+    const shows = new Set<string>();
+    const out = new Set<string>();
+    for (const row of rows) {
+      if (out.size >= limit) break;
+      const show = showOf.get(row.itemId);
+      if (!row.watched) {
+        out.add(row.itemId);
+        if (show) shows.add(show);
+        continue;
+      }
+      if (!show || shows.has(show)) continue;
+      shows.add(show);
+      let next = this.nextEpisode(row.itemId);
+      while (next && watched.has(next)) next = this.nextEpisode(next);
+      if (next) out.add(next);
+    }
+    return [...out];
   }
 
   /**
@@ -158,6 +179,18 @@ export class ProgressService {
     const index = ordered.findIndex((e) => e.id === current.id);
     if (index === -1) return null;
     return ordered[index + 1]?.id ?? null;
+  }
+
+  private showsOf(episodeIds: string[]): Map<string, string> {
+    if (episodeIds.length === 0) return new Map();
+    return new Map(
+      this.db
+        .select({ id: schema.episodes.id, showId: schema.episodes.showId })
+        .from(schema.episodes)
+        .where(inArray(schema.episodes.id, episodeIds))
+        .all()
+        .map((e) => [e.id, e.showId]),
+    );
   }
 
   private kindOf(itemId: string): 'movie' | 'episode' {
