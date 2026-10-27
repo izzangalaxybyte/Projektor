@@ -138,7 +138,7 @@ fun CatchupPlayerScreen(container: AppContainer, source: ProviderSource, back: (
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
         if (boosting) SpeedBoostBadge(settings.holdRate, Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
 
-        if (controlsVisible || !state.isPlaying) PlayerChrome {
+        if (controlsVisible || state.isPaused) PlayerChrome {
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {

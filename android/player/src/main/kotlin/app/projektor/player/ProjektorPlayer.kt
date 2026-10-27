@@ -38,6 +38,8 @@ import java.net.URL
 /** Snapshot of playback for the UI. */
 data class PlayerState(
     val isPlaying: Boolean = false,
+    /** Paused by the user (or finished), unlike [isPlaying], which also drops while rebuffering after a seek. */
+    val isPaused: Boolean = true,
     val isBuffering: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
@@ -93,6 +95,7 @@ class ProjektorPlayer(
                 publish()
                 if (!isPlaying) scope.launch { report() }
             }
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = publish()
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publish()
                 if (playbackState == Player.STATE_ENDED) scope.launch { report() }
@@ -259,6 +262,7 @@ class ProjektorPlayer(
         val groups = textGroups()
         _state.value = _state.value.copy(
             isPlaying = exo.isPlaying,
+            isPaused = !exo.playWhenReady || exo.playbackState == Player.STATE_ENDED,
             isBuffering = exo.playbackState == Player.STATE_BUFFERING,
             positionMs = exo.currentPosition.coerceAtLeast(0),
             durationMs = durationOrKnown(),

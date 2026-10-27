@@ -172,7 +172,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             Button(onClick = { nextEpisode?.let { (f, i) -> playNext(f, i) } }, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
         }
 
-        if (controlsVisible || !state.isPlaying) PlayerChrome {
+        if (controlsVisible || state.isPaused) PlayerChrome {
             // Top bar
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }

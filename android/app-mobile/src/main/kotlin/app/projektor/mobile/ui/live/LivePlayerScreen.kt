@@ -150,7 +150,7 @@ fun LivePlayerScreen(container: AppContainer, channelId: String, openCatchup: (c
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
         notice?.let { Text(it, Modifier.align(Alignment.TopCenter).padding(top = 72.dp).background(Color.Black.copy(alpha = 0.8f)).padding(horizontal = 16.dp, vertical = 8.dp).testTag("notice")) }
 
-        if (controlsVisible || !state.isPlaying || showGuide) PlayerChrome {
+        if (controlsVisible || state.isPaused || showGuide) PlayerChrome {
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {
