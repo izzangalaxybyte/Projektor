@@ -15,6 +15,7 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.AssHandlerConfig
 import io.github.peerless2012.ass.media.kt.withAssSupport
@@ -70,7 +71,7 @@ class ProjektorPlayer(
     val exo: ExoPlayer = ExoPlayer.Builder(context)
         .setMediaSourceFactory(
             // Sideloaded subtitles are parsed by this factory: ASS goes to libass, the rest as usual.
-            DefaultMediaSourceFactory(DefaultDataSource.Factory(context))
+            DefaultMediaSourceFactory(DefaultDataSource.Factory(context), LacedOpusExtractorsFactory(DefaultExtractorsFactory()))
                 .setSubtitleParserFactory(AssSubtitleParserFactory(assHandler)),
         )
         .setRenderersFactory(DefaultRenderersFactory(context).withAssSupport(assHandler))
