@@ -17,6 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import app.projektor.core.ProjektorClient
+import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -106,6 +114,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     var resumeAt by remember { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var nextDetail by remember { mutableStateOf<ItemDetail?>(null) }
 
     val player = remember {
         ProjektorPlayer(context, onProgress = { pos, dur -> runCatching { items.reportProgress(itemId, pos, dur) } })
@@ -123,7 +132,9 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             if (d.kind.value == "episode") {
                 runCatching { items.nextEpisode(d.id) }.getOrNull()?.let { n ->
                     // Keep to the release being watched when the next episode has several files.
-                runCatching { items.detail(n.id) }.getOrNull()?.files?.let { closestVersion(file?.fileName, it) }?.let { f -> nextEpisode = f.id to n.id }
+                    runCatching { items.detail(n.id) }.getOrNull()?.let { nd ->
+                        closestVersion(file?.fileName, nd.files)?.let { f -> nextEpisode = f.id to n.id; nextDetail = nd }
+                    }
                 }
             }
         } catch (e: Exception) { error = e.userMessage() }
@@ -212,8 +223,8 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         if (boosting) SpeedBoostBadge(settings.holdRate, Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
         // At the end only the way on to the next episode is offered, not the transport.
         val showNextOnly = state.ended && nextEpisode != null
-        if (showNextOnly) {
-            Button(onClick = ::playNextEpisode, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
+        if (showNextOnly) PlayerChrome {
+            UpNext(client, nextDetail, ::playNextEpisode, Modifier.align(Alignment.Center))
         }
 
         if (chromeShown) PlayerChrome {
@@ -221,7 +232,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {
-                    Text(detail?.let { d -> if (d.kind.value == "episode") "${d.showTitle ?: ""} · ${d.title}" else d.title } ?: "", style = MaterialTheme.typography.titleMedium)
+                    Text(detail?.let { d -> if (d.kind.value == "episode") listOfNotNull(d.showTitle, episodeCode(d), d.title).joinToString(" · ") else d.title } ?: "", style = MaterialTheme.typography.titleMedium)
                     decision?.let { Text(badge(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision")) }
                 }
             }
@@ -256,14 +267,8 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     )
                     Text(formatMs(state.durationMs), style = MaterialTheme.typography.labelMedium)
                 }
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (nextEpisode != null) {
-                        OutlinedButton(onClick = ::playNextEpisode, modifier = Modifier.testTag("next-episode-bar")) {
-                            Icon(Icons.Filled.SkipNext, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Next episode", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Picker(
                         label = "Double tap ${settings.skipSeconds}s",
                         options = SKIP_OPTIONS.map { it to "+${it}s" },
@@ -307,6 +312,43 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     }
                     Spacer(Modifier.width(4.dp))
                 }
+                if (nextEpisode != null) {
+                    OutlinedButton(onClick = ::playNextEpisode, modifier = Modifier.testTag("next-episode-bar")) {
+                        Text("Next episode", style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.Filled.SkipNext, null, Modifier.size(18.dp))
+                    }
+                }
+                }
+            }
+        }
+    }
+}
+
+private fun episodeCode(d: ItemDetail): String? =
+    listOfNotNull(d.seasonNumber?.let { "S$it" }, d.episodeNumber?.let { "E$it" }).joinToString(" ").ifEmpty { null }
+
+/** Shown when an episode ends: what's next, with the button to play it. */
+@Composable
+private fun UpNext(client: ProjektorClient, next: ItemDetail?, play: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.padding(24.dp).widthIn(max = 560.dp).background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(12.dp)).padding(16.dp).testTag("up-next"),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        client.imageUrl(next?.posterKey, 780)?.let { url ->
+            AsyncImage(url, null, Modifier.width(180.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+        }
+        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Up next", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+            if (next != null) {
+                Text(listOfNotNull(episodeCode(next), next.title).joinToString(" · "), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                next.overview?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f), maxLines = 3, overflow = TextOverflow.Ellipsis) }
+            }
+            Button(onClick = play, modifier = Modifier.padding(top = 8.dp).testTag("next-episode")) {
+                Icon(Icons.Filled.PlayArrow, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Play next episode")
             }
         }
     }
