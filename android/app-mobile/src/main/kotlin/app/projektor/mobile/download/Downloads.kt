@@ -175,7 +175,9 @@ class DownloadStore(context: Context) {
         val request = DownloadManager.Request(Uri.parse(client.withAccessToken("/api/files/${entry.file.id}/stream")))
             .setTitle(downloadTitle(entry.detail))
             .setDescription(entry.file.fileName)
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // Progress only: a finished system notification opens the file in another app.
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            .apply { @Suppress("DEPRECATION") setVisibleInDownloadsUi(false) }
             .setDestinationInExternalFilesDir(app, null, "$ROOT/${safeName(entry.itemId)}/${videoName(entry.file)}")
         val id = runCatching { manager.enqueue(request) }.onFailure { Log.w(TAG, "enqueue", it) }.getOrNull()
         if (get(entry.itemId)?.addedAt != entry.addedAt) { id?.let { manager.remove(it) }; return }
@@ -237,6 +239,9 @@ class DownloadStore(context: Context) {
                 d.copy(state = state, bytes = bytes.coerceAtLeast(0))
             }
         }
+        // Finished since the last look: say so. A download that finished with the app closed is
+        // announced the next time it opens.
+        _downloads.value.filter { it.itemId in activeIds && !it.isActive }.forEach { DownloadNotifications.finished(app, it) }
     }
 
     private fun set(itemId: String, change: (Download) -> Download) = update { list -> list.map { if (it.itemId == itemId) change(it) else it } }

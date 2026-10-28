@@ -1,6 +1,7 @@
 package app.projektor.mobile.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
@@ -42,6 +43,9 @@ fun AppNav(container: AppContainer) {
         return
     }
     val nav = rememberNavController()
+    // A tapped download notification: back to the tabs, where MainScaffold opens Downloads.
+    val openDownloads by container.openDownloads.collectAsState()
+    LaunchedEffect(openDownloads) { if (openDownloads) nav.popBackStack(Routes.MAIN, inclusive = false) }
     NavHost(navController = nav, startDestination = Routes.MAIN) {
         composable(Routes.MAIN) {
             MainScaffold(

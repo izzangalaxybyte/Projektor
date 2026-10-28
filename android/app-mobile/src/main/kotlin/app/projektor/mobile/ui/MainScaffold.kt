@@ -15,6 +15,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,6 +53,10 @@ fun MainScaffold(
     play: (fileId: String, itemId: String, startMs: Long) -> Unit = { _, _, _ -> },
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    val openDownloads by container.openDownloads.collectAsState()
+    LaunchedEffect(openDownloads) {
+        if (openDownloads) { tab = Tab.Downloads; container.openDownloads.value = false }
+    }
     Scaffold(
         bottomBar = {
             NavigationBar {

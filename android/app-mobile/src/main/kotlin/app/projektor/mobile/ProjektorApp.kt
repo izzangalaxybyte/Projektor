@@ -11,6 +11,7 @@ import app.projektor.core.playback.PlayerPrefs
 import app.projektor.core.playback.SharedPrefsPlayerPrefs
 import app.projektor.mobile.download.DownloadStore
 import app.projektor.mobile.ui.item.BrowsePrefs
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Hand-rolled dependency container; small enough not to need a framework. */
 class AppContainer(app: Application) {
@@ -18,6 +19,8 @@ class AppContainer(app: Application) {
     val playerPrefs: PlayerPrefs = SharedPrefsPlayerPrefs(app)
     val browsePrefs = BrowsePrefs(app)
     val downloads = DownloadStore(app)
+    /** Set when a download notification is tapped; the UI goes to the Downloads tab and clears it. */
+    val openDownloads = MutableStateFlow(false)
     val auth = AuthRepository(sessions, deviceName = "Android phone")
 
     /** Client for the signed-in server; null while signed out. */
