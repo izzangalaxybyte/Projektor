@@ -73,7 +73,7 @@ Tracks surface in three places: `MediaFile.subtitles` on item details, `GET /api
 
 ## Progress
 
-`progress/service.ts` keeps one `playback_state` row per user and item (movies and episodes only). `update` stores the position and marks the item watched once it passes 90% of the duration; the flag is sticky so a rewatch from the start does not un-watch it. `setWatched` sets the position to the end or deletes the row. `continueWatching` lists unwatched rows by recency. `nextEpisode` orders a show's episodes season-major with specials first and season-less anime by absolute number at the end, and returns the following one. `ItemsService` takes the caller's user id and stamps `progress` onto every summary and detail it returns, so clients never fetch progress separately.
+`progress/service.ts` keeps one `playback_state` row per user and item (movies and episodes only). `update` stores the position and marks the item watched once it passes 90% of the duration; the flag is sticky so a rewatch from the start does not un-watch it. `setWatched` sets the position to the end or deletes the row. `continueWatching` lists unwatched rows by recency, and for a show whose latest row is a finished episode it lists the next unwatched episode instead. `nextEpisode` orders a show's episodes season-major with specials first and season-less anime by absolute number at the end, and returns the following one. `ItemsService` takes the caller's user id and stamps `progress` onto every summary and detail it returns, so clients never fetch progress separately.
 
 ## Live TV
 
