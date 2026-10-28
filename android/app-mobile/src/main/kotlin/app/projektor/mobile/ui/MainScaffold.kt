@@ -2,6 +2,7 @@ package app.projektor.mobile.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LiveTv
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.ui.comics.ComicsScreen
 import app.projektor.mobile.ui.downloads.DownloadsScreen
 import app.projektor.mobile.ui.home.HomeScreen
 import app.projektor.mobile.ui.library.LibraryScreen
@@ -38,6 +40,7 @@ enum class Tab(val label: String, val icon: ImageVector) {
     Movies("Movies", Icons.Filled.Movie),
     Tv("TV", Icons.Filled.LiveTv),
     Anime("Anime", Icons.Filled.Star),
+    Comics("Comics", Icons.AutoMirrored.Filled.MenuBook),
     Live("Live", Icons.Filled.Sensors),
     Search("Search", Icons.Filled.Search),
     Downloads("Downloads", Icons.Filled.DownloadForOffline),
@@ -51,6 +54,9 @@ fun MainScaffold(
     openChannel: (String) -> Unit = {},
     openRecordings: () -> Unit = {},
     play: (fileId: String, itemId: String, startMs: Long) -> Unit = { _, _, _ -> },
+    openComicSeries: (String) -> Unit = {},
+    openComic: (String) -> Unit = {},
+    openComicHistory: () -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     val openDownloads by container.openDownloads.collectAsState()
@@ -65,8 +71,9 @@ fun MainScaffold(
                         selected = tab == t,
                         onClick = { tab = t },
                         icon = { Icon(t.icon, contentDescription = null) },
-                        // Seven tabs: labels stay on one line, clipped rather than wrapped.
+                        // Eight tabs: only the selected one is labelled, on one line.
                         label = { Text(t.label, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) },
+                        alwaysShowLabel = false,
                         modifier = Modifier.testTag("tab-${t.name.lowercase()}"),
                     )
                 }
@@ -79,9 +86,10 @@ fun MainScaffold(
             Tab.Movies -> LibraryScreen(container, LibraryKindInput.MOVIE, "Movies", openItem, modifier)
             Tab.Tv -> LibraryScreen(container, LibraryKindInput.TV, "TV Shows", openItem, modifier)
             Tab.Anime -> LibraryScreen(container, LibraryKindInput.ANIME, "Anime", openItem, modifier)
+            Tab.Comics -> ComicsScreen(container, openComicSeries, openComic, openComicHistory, modifier)
             Tab.Live -> LiveScreen(container, openChannel, modifier, openRecordings)
             Tab.Search -> SearchScreen(container, openItem, modifier)
-            Tab.Downloads -> DownloadsScreen(container, play, modifier)
+            Tab.Downloads -> DownloadsScreen(container, play, modifier, openComic = openComic)
         }
     }
 }

@@ -85,6 +85,21 @@ A POST without a request body may be sent with `Content-Type: application/json` 
 
 There are no PINs: picking a profile signs in. A `pin` sent by an older client is ignored.
 
+## Comics
+
+Comic libraries (`kind: "comic"`) hold CBZ/ZIP, CBR/RAR, CB7/7Z, CBT/TAR and PDF books. Every route needs a token; the two that return files also take `?access_token=`.
+
+- `GET /api/comics/series?libraryId=&search=&sort=` → `ComicSeries[]`. `sort` is `title` (default), `added` (newest first) or `recent` (read most recently, read series only). Each carries `bookCount`, `readCount`, `coverKey`, `direction` (`rtl` when its books are tagged as manga) and `lastReadAt`.
+- `GET /api/comics/series/{id}` → `ComicSeriesDetail`: the series and its `ComicBook`s in reading order (volumes, then the loose chapters after them, then unnumbered books; a special follows the book it sits beside).
+- `PUT /api/comics/series/{id}/read` `{ read }` marks every book read or unread. 204.
+- `GET /api/comics/books/{id}` → `ComicBookDetail`: the book plus `summary`, `writer`, `year` (from ComicInfo.xml) and `previousId`/`nextId` in reading order.
+- `GET /api/comics/books/{id}/pages/{page}?w=` → one page image; pages count from 0. Without `w` an archive page is the original image, byte for byte, with its own content type; with `w` (64–4096, rounded up to 64) a JPEG at that width. PDF pages are always rendered JPEGs, 2048 wide by default. `ETag` and `If-None-Match` are honoured. 404 for a page past the end or a book that could not be read.
+- `GET /api/comics/books/{id}/file` → the book for reading offline: a PDF as it is (with byte ranges), any archive as an uncompressed CBZ of the original page images named `0001.jpg`, `0002.png` ... in reading order, with `Content-Length` and `Content-Disposition`. HEAD supported.
+- `PUT /api/comics/books/{id}/progress` `{ page, at? }` → `ComicProgress`. The page is clamped to the book; reaching the last page sets `finished`, which stays set. `at` stamps progress read offline and sent later: an update older than the stored one is ignored and the stored one returned.
+- `PUT /api/comics/books/{id}/read` `{ read }` → `ComicProgress` at the last page, or `null` after clearing the book from history.
+- `GET /api/comics/continue?limit=` → `ComicBook[]`: per series, the book last opened if unfinished, else the first unfinished book after it; most recent first.
+- `GET /api/comics/history?offset=&limit=` → `ComicBook[]`: every book opened, most recently read first.
+
 ## Stream and profile fields added after 1.0
 
 `StreamInfo` carries `bitDepth` (video bits per sample, null when unknown) and `hdr`. `DeviceProfile` accepts an optional `hdr` flag (the device shows HDR itself) and understands `hevc10` in `videoCodecs` for 10-bit HEVC; without them, 10-bit or HDR sources are transcoded and tone-mapped.

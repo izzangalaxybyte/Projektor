@@ -11,6 +11,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.auth.SignInFlow
+import app.projektor.mobile.ui.comics.ComicHistoryScreen
+import app.projektor.mobile.ui.comics.ComicReaderScreen
+import app.projektor.mobile.ui.comics.SeriesScreen
 import app.projektor.mobile.ui.item.ItemScreen
 import app.projektor.mobile.ui.live.CatchupPlayerScreen
 import app.projektor.mobile.ui.live.LivePlayerScreen
@@ -32,6 +35,12 @@ object Routes {
     const val RECORDINGS = "recordings"
     const val RECORDING_PLAYER = "recordings/{id}/watch"
     fun recordingPlayer(id: String) = "recordings/$id/watch"
+    const val COMIC_SERIES = "comics/series/{id}"
+    fun comicSeries(id: String) = "comics/series/$id"
+    /** page -1: where the book was left off. */
+    const val COMIC_READER = "comics/read/{id}?page={page}"
+    fun comicReader(id: String, page: Int = -1) = "comics/read/$id?page=$page"
+    const val COMIC_HISTORY = "comics/history"
 }
 
 /** Signed out shows the sign-in flow; signed in shows the tabs and detail/player destinations. */
@@ -54,6 +63,33 @@ fun AppNav(container: AppContainer) {
                 openChannel = { nav.navigate(Routes.live(it)) },
                 openRecordings = { nav.navigate(Routes.RECORDINGS) },
                 play = { fileId, itemId, startMs -> nav.navigate(Routes.player(fileId, itemId, startMs)) },
+                openComicSeries = { nav.navigate(Routes.comicSeries(it)) },
+                openComic = { nav.navigate(Routes.comicReader(it)) },
+                openComicHistory = { nav.navigate(Routes.COMIC_HISTORY) },
+            )
+        }
+        composable(Routes.COMIC_SERIES, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+            SeriesScreen(
+                container = container,
+                seriesId = entry.arguments?.getString("id") ?: return@composable,
+                openBook = { nav.navigate(Routes.comicReader(it)) },
+                back = { nav.popBackStack() },
+            )
+        }
+        composable(Routes.COMIC_HISTORY) {
+            ComicHistoryScreen(container, openBook = { nav.navigate(Routes.comicReader(it)) }, back = { nav.popBackStack() })
+        }
+        composable(
+            Routes.COMIC_READER,
+            arguments = listOf(navArgument("id") { type = NavType.StringType }, navArgument("page") { type = NavType.IntType; defaultValue = -1 }),
+        ) { entry ->
+            ComicReaderScreen(
+                container = container,
+                bookId = entry.arguments?.getString("id") ?: return@composable,
+                startPage = entry.arguments?.getInt("page")?.takeIf { it >= 0 },
+                // The next or previous book replaces this one, so Back leaves the reader.
+                openBook = { next -> nav.navigate(Routes.comicReader(next)) { popUpTo(Routes.COMIC_READER) { inclusive = true } } },
+                back = { nav.popBackStack() },
             )
         }
         composable(Routes.RECORDINGS) { RecordingsScreen(container, play = { nav.navigate(Routes.recordingPlayer(it)) }, back = { nav.popBackStack() }) }

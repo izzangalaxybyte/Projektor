@@ -25,9 +25,11 @@ const val EXTRA_OPEN_DOWNLOADS = "openDownloads"
 internal object DownloadNotifications {
     private const val CHANNEL = "downloads"
 
-    fun finished(context: Context, d: Download) {
-        val ok = d.state == DownloadState.DONE
-        notify(context, d.itemId.hashCode(), if (ok) "Downloaded" else "Download failed", downloadTitle(d.detail))
+    fun finished(context: Context, d: Download) = finished(context, d.itemId, d.state == DownloadState.DONE, downloadTitle(d.detail))
+
+    /** Any download, by id: comics use this too. */
+    fun finished(context: Context, id: String, ok: Boolean, title: String) {
+        notify(context, id.hashCode(), if (ok) "Downloaded" else "Download failed", title)
     }
 
     @SuppressLint("MissingPermission") // Checked in canPost.

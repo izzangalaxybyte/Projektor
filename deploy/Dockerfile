@@ -21,13 +21,13 @@ RUN pnpm --filter @projektor/server build \
  && pnpm --filter @projektor/web build \
  && pnpm --filter @projektor/server --prod deploy --legacy /out/server
 
-# ---- runtime: Node + ffmpeg with Intel VAAPI drivers ---------------------------------------
+# ---- runtime: Node + ffmpeg with Intel VAAPI drivers, poppler for comic PDFs ---------------
 FROM node:22-bookworm-slim AS runtime
 # Intel's newer media driver is in non-free; the older i965 driver covers pre-Broadwell iGPUs.
 # The Intel drivers only exist for amd64; an arm64 build (a Mac, for tests) gets ffmpeg alone.
 RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
  && apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg libva-drm2 libva2 vainfo tini \
+ && apt-get install -y --no-install-recommends ffmpeg libva-drm2 libva2 vainfo tini poppler-utils \
  && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
       apt-get install -y --no-install-recommends intel-media-va-driver-non-free i965-va-driver; \
     fi \

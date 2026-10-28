@@ -53,9 +53,21 @@ import coil3.compose.AsyncImage
  * each that opens onto their episodes. Space used and free sits at the top.
  */
 @Composable
-fun DownloadsScreen(container: AppContainer, play: (fileId: String, itemId: String, startMs: Long) -> Unit, modifier: Modifier = Modifier) {
+fun DownloadsScreen(
+    container: AppContainer,
+    play: (fileId: String, itemId: String, startMs: Long) -> Unit,
+    modifier: Modifier = Modifier,
+    openComic: (String) -> Unit = {},
+) {
     val store = container.downloads
     val all by store.downloads.collectAsState()
+    val comics by container.comicDownloads.downloads.collectAsState()
+    // Comics by series (most recently added first), each in reading order.
+    val comicSeries = remember(comics) {
+        comics.groupBy { it.book.seriesId }.values
+            .sortedByDescending { list -> list.maxOf { it.addedAt } }
+            .map { list -> list.sortedWith(compareBy(app.projektor.core.comics.bookOrder) { it.orderKey }) }
+    }
     val movies = remember(all) { all.filter { it.showKey == null }.sortedByDescending { it.addedAt } }
     val shows = remember(all) {
         all.filter { it.showKey != null }.groupBy { it.showKey!! }.entries
@@ -74,8 +86,9 @@ fun DownloadsScreen(container: AppContainer, play: (fileId: String, itemId: Stri
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp)) {
                 Text("Downloads", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold, color = Color.White)
-                if (all.isNotEmpty()) {
-                    val (used, free) = remember(all) { store.storage() }
+                if (all.isNotEmpty() || comics.isNotEmpty()) {
+                    val (videoBytes, free) = remember(all) { store.storage() }
+                    val used = videoBytes + comics.sumOf { if (it.state == DownloadState.DONE) it.total else it.bytes }
                     Text("${formatBytes(used)} used · ${formatBytes(free)} free on this phone", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     LinearProgressIndicator(
                         progress = { (used.toFloat() / (used + free).coerceAtLeast(1)).coerceIn(0f, 1f) },
@@ -85,7 +98,7 @@ fun DownloadsScreen(container: AppContainer, play: (fileId: String, itemId: Stri
                 }
             }
         }
-        if (all.isEmpty()) item { EmptyDownloads() }
+        if (all.isEmpty() && comics.isEmpty()) item { EmptyDownloads() }
         items(movies, key = { it.itemId }) { d -> DownloadRow(d, store, ::open, ::retry) }
         shows.forEach { (title, episodes) ->
             item(key = "show-$title") {
@@ -95,6 +108,46 @@ fun DownloadsScreen(container: AppContainer, play: (fileId: String, itemId: Stri
             }
             if (title in expanded) items(episodes, key = { it.itemId }) { d -> DownloadRow(d, store, ::open, ::retry, indent = true) }
         }
+        if (comicSeries.isNotEmpty()) item(key = "comics-header") {
+            Text("Comics & manga", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Color.White, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp))
+        }
+        comicSeries.forEach { books ->
+            items(books, key = { "comic-${it.bookId}" }) { d -> ComicDownloadRow(d, container, openComic) }
+        }
+    }
+}
+
+/** A downloaded comic: tap to read it, offline or not. */
+@Composable
+private fun ComicDownloadRow(d: app.projektor.mobile.comics.ComicDownload, container: AppContainer, openComic: (String) -> Unit) {
+    val comicStore = container.comicDownloads
+    val local = container.comicProgress.get(d.bookId)
+    val read = local?.let { (it.page + 1).toFloat() / it.pageCount.coerceAtLeast(1) }?.takeIf { it < 1f }
+    Row(
+        Modifier.fillMaxWidth().clickable(enabled = d.state == DownloadState.DONE) { openComic(d.bookId) }.padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp).testTag("comic-download-row"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        app.projektor.mobile.ui.comics.ComicCover(comicStore.coverOf(d), Modifier.width(56.dp), read, d.book.progress?.finished == true)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(d.book.seriesTitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(d.book.label ?: d.book.title, style = MaterialTheme.typography.bodyMedium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            val status = when (d.state) {
+                DownloadState.QUEUED -> "Queued"
+                DownloadState.WAITING -> "Waiting for network"
+                DownloadState.DOWNLOADING -> "${(d.progress * 100).toInt()}% · ${formatBytes(d.bytes)} of ${formatBytes(d.total)}"
+                DownloadState.DONE -> listOfNotNull(d.book.pageCount?.let { "$it pages" }, formatBytes(d.total)).joinToString(" · ")
+                DownloadState.FAILED -> "Download failed"
+            }
+            Text(status, style = MaterialTheme.typography.bodySmall, color = if (d.state == DownloadState.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            if (d.isActive) LinearProgressIndicator(progress = { d.progress }, modifier = Modifier.padding(top = 4.dp).fillMaxWidth())
+        }
+        app.projektor.mobile.ui.comics.ComicDownloadButton(
+            d,
+            start = {},
+            remove = comicStore::remove,
+            retry = { failed -> container.comics()?.let { comicStore.retry(it, failed) } },
+        )
     }
 }
 
