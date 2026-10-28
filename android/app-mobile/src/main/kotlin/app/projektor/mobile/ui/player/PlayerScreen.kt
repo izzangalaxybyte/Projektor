@@ -84,8 +84,8 @@ import kotlinx.coroutines.delay
 
 /**
  * Fullscreen playback. The on-screen buttons jump a fixed 10 or 30 seconds (and 90 for anime, to
- * get past an opening); double taps on the outer 40% of either side jump by the amount chosen in the
- * bottom bar, and a double tap in the middle fifth plays/pauses. The amount and speed persist.
+ * get past an opening); double taps on the outer 40% of either side jump forward by the amount chosen
+ * in the bottom bar, and a double tap in the middle fifth plays/pauses. The amount and speed persist.
  */
 @Composable
 fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startMs: Long, playNext: (fileId: String, itemId: String) -> Unit, back: () -> Unit) {
@@ -188,11 +188,9 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             detectTapGestures(
                 onTap = { if (controlsVisible) controlsVisible = false else touched() },
                 onDoubleTap = { offset ->
-                    when {
-                        offset.x < size.width * 0.4f -> skip(-settings.skipMs)
-                        offset.x > size.width * 0.6f -> skip(settings.skipMs)
-                        else -> { player.togglePlayPause(); if (controlsVisible) touched() }
-                    }
+                    // Either side skips forward (reachable with whichever thumb); the middle plays/pauses.
+                    if (offset.x < size.width * 0.4f || offset.x > size.width * 0.6f) skip(settings.skipMs)
+                    else { player.togglePlayPause(); if (controlsVisible) touched() }
                 },
                 onLongPress = { if (state.isPlaying) boosting = true },
                 onPress = { tryAwaitRelease(); boosting = false },
