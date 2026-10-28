@@ -104,7 +104,7 @@ fun sortEpisodes(items: List<ItemSummary>, sort: EpisodeSort): List<ItemSummary>
 
 /** The Episodes heading with sort and view controls, then the episodes in the chosen layout. */
 @Composable
-fun EpisodeSection(items: List<ItemSummary>, client: ProjektorClient, prefs: BrowsePrefs, openItem: (String) -> Unit) {
+fun EpisodeSection(items: List<ItemSummary>, client: ProjektorClient, prefs: BrowsePrefs, openItem: (String) -> Unit, trailing: @Composable (ItemSummary) -> Unit = {}) {
     val view by prefs.view.collectAsState()
     val sort by prefs.sort.collectAsState()
     val sorted = remember(items, sort) { sortEpisodes(items, sort) }
@@ -137,23 +137,23 @@ fun EpisodeSection(items: List<ItemSummary>, client: ProjektorClient, prefs: Bro
         }
         when (view) {
             EpisodeView.CARDS -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                sorted.forEach { e -> EpisodeCard(e, client, Modifier.fillMaxWidth()) { openItem(e.id) } }
+                sorted.forEach { e -> EpisodeCard(e, client, Modifier.fillMaxWidth(), trailing = trailing) { openItem(e.id) } }
             }
             EpisodeView.GRID -> Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 sorted.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        row.forEach { e -> EpisodeCard(e, client, Modifier.weight(1f), compact = true) { openItem(e.id) } }
+                        row.forEach { e -> EpisodeCard(e, client, Modifier.weight(1f), compact = true, trailing = trailing) { openItem(e.id) } }
                         if (row.size == 1) Box(Modifier.weight(1f))
                     }
                 }
             }
             EpisodeView.LIST -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                sorted.forEach { e -> EpisodeRow(e, client) { openItem(e.id) } }
+                sorted.forEach { e -> EpisodeRow(e, client, trailing) { openItem(e.id) } }
             }
             EpisodeView.COMPACT -> Column {
                 sorted.forEachIndexed { i, e ->
                     if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                    EpisodeLine(e) { openItem(e.id) }
+                    EpisodeLine(e, trailing) { openItem(e.id) }
                 }
             }
         }
@@ -180,16 +180,21 @@ private fun Thumb(e: ItemSummary, client: ProjektorClient, modifier: Modifier) {
 }
 
 @Composable
-private fun EpisodeCard(e: ItemSummary, client: ProjektorClient, modifier: Modifier, compact: Boolean = false, onClick: () -> Unit) {
+private fun EpisodeCard(e: ItemSummary, client: ProjektorClient, modifier: Modifier, compact: Boolean = false, trailing: @Composable (ItemSummary) -> Unit = {}, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick).testTag("tile-episode")) {
         Thumb(e, client, Modifier.fillMaxWidth())
-        Text(e.title, style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleSmall, color = Color.White, maxLines = if (compact) 2 else 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
-        Text(listOfNotNull(number(e).ifBlank { null }, formatDuration(e.runtimeMs)).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(e.title, style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleSmall, color = Color.White, maxLines = if (compact) 2 else 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+                Text(listOfNotNull(number(e).ifBlank { null }, formatDuration(e.runtimeMs)).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            trailing(e)
+        }
     }
 }
 
 @Composable
-private fun EpisodeRow(e: ItemSummary, client: ProjektorClient, onClick: () -> Unit) {
+private fun EpisodeRow(e: ItemSummary, client: ProjektorClient, trailing: @Composable (ItemSummary) -> Unit, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("tile-episode"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Thumb(e, client, Modifier.width(150.dp))
         Column(Modifier.weight(1f)) {
@@ -197,11 +202,12 @@ private fun EpisodeRow(e: ItemSummary, client: ProjektorClient, onClick: () -> U
             Text(e.title, style = MaterialTheme.typography.bodyMedium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
             formatDuration(e.runtimeMs)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
+        trailing(e)
     }
 }
 
 @Composable
-private fun EpisodeLine(e: ItemSummary, onClick: () -> Unit) {
+private fun EpisodeLine(e: ItemSummary, trailing: @Composable (ItemSummary) -> Unit, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp).testTag("tile-episode"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(e.episodeNumber?.toString() ?: "–", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(32.dp))
         Column(Modifier.weight(1f)) {
@@ -214,5 +220,6 @@ private fun EpisodeLine(e: ItemSummary, onClick: () -> Unit) {
         }
         formatDuration(e.runtimeMs)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (e.progress?.watched == true) Icon(Icons.Filled.CheckCircle, "Watched", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        trailing(e)
     }
 }

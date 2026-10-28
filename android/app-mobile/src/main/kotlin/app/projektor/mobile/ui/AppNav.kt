@@ -43,7 +43,15 @@ fun AppNav(container: AppContainer) {
     }
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = Routes.MAIN) {
-        composable(Routes.MAIN) { MainScaffold(container, openItem = { nav.navigate(Routes.item(it)) }, openChannel = { nav.navigate(Routes.live(it)) }, openRecordings = { nav.navigate(Routes.RECORDINGS) }) }
+        composable(Routes.MAIN) {
+            MainScaffold(
+                container,
+                openItem = { nav.navigate(Routes.item(it)) },
+                openChannel = { nav.navigate(Routes.live(it)) },
+                openRecordings = { nav.navigate(Routes.RECORDINGS) },
+                play = { fileId, itemId, startMs -> nav.navigate(Routes.player(fileId, itemId, startMs)) },
+            )
+        }
         composable(Routes.RECORDINGS) { RecordingsScreen(container, play = { nav.navigate(Routes.recordingPlayer(it)) }, back = { nav.popBackStack() }) }
         composable(Routes.RECORDING_PLAYER, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
             CatchupPlayerScreen(container = container, source = ProviderSource.Recording(entry.arguments?.getString("id") ?: return@composable), back = { nav.popBackStack() })

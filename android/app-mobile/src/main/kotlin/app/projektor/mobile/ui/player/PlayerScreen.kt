@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
-import app.projektor.core.ProjektorClient
 import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
@@ -115,32 +114,58 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var resumeAt by remember { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
     var nextDetail by remember { mutableStateOf<ItemDetail?>(null) }
+    var nextImage by remember { mutableStateOf<String?>(null) }
+    // A downloaded file plays from the phone, with no server needed.
+    val downloads = container.downloads
+    val local = remember(fileId) { downloads.playable(fileId) }
 
     val player = remember {
-        ProjektorPlayer(context, onProgress = { pos, dur -> runCatching { items.reportProgress(itemId, pos, dur) } })
+        ProjektorPlayer(context, onProgress = { pos, dur ->
+            downloads.savePosition(itemId, pos)
+            runCatching { items.reportProgress(itemId, pos, dur) }
+        })
     }
     val state by player.state.collectAsState()
 
     PlayerWindow(player)
 
+    suspend fun findNextOnServer(d: ItemDetail) {
+        runCatching { items.nextEpisode(d.id) }.getOrNull()?.let { n ->
+            // Keep to the release being watched when the next episode has several files.
+            runCatching { items.detail(n.id) }.getOrNull()?.let { nd ->
+                closestVersion(file?.fileName, nd.files)?.let { f ->
+                    nextEpisode = f.id to n.id; nextDetail = nd; nextImage = client.imageUrl(nd.posterKey, 780)
+                }
+            }
+        }
+    }
     // Load detail once, then decide (again whenever the audio track changes).
     LaunchedEffect(itemId) {
+        if (local != null) {
+            detail = local.detail
+            file = local.file
+            // Up next is the next downloaded episode; failing that, the server's, when it can be reached.
+            val n = downloads.nextAfter(local)
+            if (n != null) { nextEpisode = n.file.id to n.itemId; nextDetail = n.detail; nextImage = downloads.imageOf(n) }
+            else if (local.isEpisode) findNextOnServer(local.detail)
+            return@LaunchedEffect
+        }
         try {
             val d = items.detail(itemId)
             detail = d
             file = d.files.firstOrNull { it.id == fileId } ?: d.files.firstOrNull()
-            if (d.kind.value == "episode") {
-                runCatching { items.nextEpisode(d.id) }.getOrNull()?.let { n ->
-                    // Keep to the release being watched when the next episode has several files.
-                    runCatching { items.detail(n.id) }.getOrNull()?.let { nd ->
-                        closestVersion(file?.fileName, nd.files)?.let { f -> nextEpisode = f.id to n.id; nextDetail = nd }
-                    }
-                }
-            }
+            if (d.kind.value == "episode") findNextOnServer(d)
         } catch (e: Exception) { error = e.userMessage() }
     }
     LaunchedEffect(file, audioIndex) {
         val f = file ?: return@LaunchedEffect
+        if (local != null) {
+            val audio = f.streams.filter { it.type.value == "audio" }
+            val wanted = audio.indexOfFirst { it.index == audioIndex }.takeIf { it >= 0 }
+                ?: audio.indexOfFirst { it.isDefault }.takeIf { it >= 0 } ?: 0
+            player.load(downloads.mediaSpec(local), startMs = resumeAt, rate = settings.rate, knownDurationMs = f.durationMs.toLong(), audioOrdinal = wanted.takeIf { audio.size > 1 })
+            return@LaunchedEffect
+        }
         try {
             val profile = DeviceProfiles.current()
             val d = items.decide(PlaybackDecideRequestInput(fileId = f.id, profile = profile, audioStreamIndex = audioIndex, startPositionMs = resumeAt))
@@ -224,7 +249,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         // At the end only the way on to the next episode is offered, not the transport.
         val showNextOnly = state.ended && nextEpisode != null
         if (showNextOnly) PlayerChrome {
-            UpNext(client, nextDetail, ::playNextEpisode, Modifier.align(Alignment.Center))
+            UpNext(nextImage, nextDetail, ::playNextEpisode, Modifier.align(Alignment.Center))
         }
 
         if (chromeShown) PlayerChrome {
@@ -233,7 +258,9 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                 IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 Column(Modifier.weight(1f)) {
                     Text(detail?.let { d -> if (d.kind.value == "episode") listOfNotNull(d.showTitle, episodeCode(d), d.title).joinToString(" · ") else d.title } ?: "", style = MaterialTheme.typography.titleMedium)
-                    decision?.let { Text(badge(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision")) }
+                    (decision?.let(::badge) ?: "Downloaded".takeIf { local != null })?.let {
+                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
+                    }
                 }
             }
             // Center transport: -30 · -10 · play/pause · +10 · +30
@@ -330,13 +357,13 @@ private fun episodeCode(d: ItemDetail): String? =
 
 /** Shown when an episode ends: what's next, with the button to play it. */
 @Composable
-private fun UpNext(client: ProjektorClient, next: ItemDetail?, play: () -> Unit, modifier: Modifier = Modifier) {
+private fun UpNext(image: String?, next: ItemDetail?, play: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier.padding(24.dp).widthIn(max = 560.dp).background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(12.dp)).padding(16.dp).testTag("up-next"),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        client.imageUrl(next?.posterKey, 780)?.let { url ->
+        image?.let { url ->
             AsyncImage(url, null, Modifier.width(180.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
         }
         Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {

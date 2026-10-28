@@ -2,6 +2,7 @@ package app.projektor.mobile.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
@@ -20,9 +21,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.ui.downloads.DownloadsScreen
 import app.projektor.mobile.ui.home.HomeScreen
 import app.projektor.mobile.ui.library.LibraryScreen
 import app.projektor.mobile.ui.live.LiveScreen
@@ -35,11 +38,18 @@ enum class Tab(val label: String, val icon: ImageVector) {
     Anime("Anime", Icons.Filled.Star),
     Live("Live", Icons.Filled.Sensors),
     Search("Search", Icons.Filled.Search),
+    Downloads("Downloads", Icons.Filled.DownloadForOffline),
 }
 
 /** Bottom tabs. Each tab keeps its own state while the app is alive. */
 @Composable
-fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChannel: (String) -> Unit = {}, openRecordings: () -> Unit = {}) {
+fun MainScaffold(
+    container: AppContainer,
+    openItem: (String) -> Unit,
+    openChannel: (String) -> Unit = {},
+    openRecordings: () -> Unit = {},
+    play: (fileId: String, itemId: String, startMs: Long) -> Unit = { _, _, _ -> },
+) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     Scaffold(
         bottomBar = {
@@ -49,7 +59,8 @@ fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChanne
                         selected = tab == t,
                         onClick = { tab = t },
                         icon = { Icon(t.icon, contentDescription = null) },
-                        label = { Text(t.label) },
+                        // Seven tabs: labels stay on one line, clipped rather than wrapped.
+                        label = { Text(t.label, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) },
                         modifier = Modifier.testTag("tab-${t.name.lowercase()}"),
                     )
                 }
@@ -58,12 +69,13 @@ fun MainScaffold(container: AppContainer, openItem: (String) -> Unit, openChanne
     ) { padding ->
         val modifier = Modifier.padding(padding)
         when (tab) {
-            Tab.Home -> HomeScreen(container, openItem, modifier)
+            Tab.Home -> HomeScreen(container, openItem, modifier, openDownloads = { tab = Tab.Downloads })
             Tab.Movies -> LibraryScreen(container, LibraryKindInput.MOVIE, "Movies", openItem, modifier)
             Tab.Tv -> LibraryScreen(container, LibraryKindInput.TV, "TV Shows", openItem, modifier)
             Tab.Anime -> LibraryScreen(container, LibraryKindInput.ANIME, "Anime", openItem, modifier)
             Tab.Live -> LiveScreen(container, openChannel, modifier, openRecordings)
             Tab.Search -> SearchScreen(container, openItem, modifier)
+            Tab.Downloads -> DownloadsScreen(container, play, modifier)
         }
     }
 }

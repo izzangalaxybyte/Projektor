@@ -45,7 +45,14 @@ The server address defaults to `http://10.0.2.2:8096` (the host as seen from an 
 
 ## Downloads on the phone
 
-Movies and episodes have a Download button under Play, and seasons a "Download season" button that queues every episode. Downloads are the original file from `GET /api/files/{id}/stream`, byte for byte (no transcode), handed to the system `DownloadManager` (`download/Downloads.kt`), so they continue with the app closed, resume after a dropped connection, and show progress in the notification shade. Files land in `Downloads/Projektor/`, with a folder per show for episodes. An item with several versions asks which one to download; "Download season" takes the first version of each episode. Android 9 and older ask for the storage permission first (`WRITE_EXTERNAL_STORAGE`, capped at `maxSdkVersion 28`). The app itself still plays from the server; open the downloaded files in any video player.
+Downloads work the way Netflix and Plex do them: the original file, byte for byte (no transcode), kept in the app's own storage (`Android/data/app.projektor.mobile/files/downloads/<item>/`, no permission needed, removed with the app) and played by the app's own player without the server.
+
+- **Starting one.** Movies and episodes have a download panel under Play (it asks which version when there are several); every episode in a season list has a download icon; seasons have "Download season", which queues the episodes not already on the phone (first version of each).
+- **The icon** is an arrow before, a ring that fills while downloading (tap: cancel), a pin once it is on the phone (tap: play or delete), a warning on failure (tap: retry or remove).
+- **Downloads tab.** Movies as rows, shows folded into one row each that opens onto their episodes, each with status, size and how far it has been watched; space used and free sits at the top. When Home cannot reach the server and there are downloads, it offers a way there.
+- **Offline playback.** `PlayerScreen` checks `DownloadStore.playable(fileId)` first, so any Play of a downloaded file plays the local copy. Subtitles are saved alongside (the server's WebVTT copies, or the original ASS script plus the file's fonts for libass), because Media3 cannot read the compressed subtitle tracks some MKVs carry. Up next is the next downloaded episode of the show, else the server's when it can be reached. The position is saved on the phone and reported to the server when it is reachable.
+
+`download/Downloads.kt` holds `DownloadStore` (in `AppContainer`): the item and file models as the server described them, serialized to `downloads.json`; the system `DownloadManager` moves the video bytes, so a download survives the app being closed and resumes after a dropped connection; the store polls its progress once a second while anything is in flight. `ui/downloads/` has the icon, the item-page panel and the tab.
 
 ## Phone player
 

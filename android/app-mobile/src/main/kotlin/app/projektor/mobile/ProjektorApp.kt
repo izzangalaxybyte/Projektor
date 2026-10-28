@@ -9,6 +9,7 @@ import app.projektor.core.items.ItemsRepository
 import app.projektor.core.live.LiveRepository
 import app.projektor.core.playback.PlayerPrefs
 import app.projektor.core.playback.SharedPrefsPlayerPrefs
+import app.projektor.mobile.download.DownloadStore
 import app.projektor.mobile.ui.item.BrowsePrefs
 
 /** Hand-rolled dependency container; small enough not to need a framework. */
@@ -16,6 +17,7 @@ class AppContainer(app: Application) {
     val sessions: SessionStore = PrefsSessionStore(app)
     val playerPrefs: PlayerPrefs = SharedPrefsPlayerPrefs(app)
     val browsePrefs = BrowsePrefs(app)
+    val downloads = DownloadStore(app)
     val auth = AuthRepository(sessions, deviceName = "Android phone")
 
     /** Client for the signed-in server; null while signed out. */
