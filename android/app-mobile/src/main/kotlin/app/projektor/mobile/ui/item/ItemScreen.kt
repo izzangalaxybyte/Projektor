@@ -1,5 +1,10 @@
 package app.projektor.mobile.ui.item
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
@@ -54,11 +60,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.MediaFile
 import app.projektor.core.items.describeVersion
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.download.downloadFile
 import app.projektor.mobile.ui.Bg
 import app.projektor.mobile.ui.Surface2
 import app.projektor.mobile.ui.UiState
@@ -93,6 +101,29 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
         try { items.setFavorite(itemId, want) } catch (e: Exception) {
             favorite = !want
             android.widget.Toast.makeText(context, e.userMessage(), android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    val withStorage = rememberStorageGate()
+    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+    fun download(d: ItemDetail, file: MediaFile) = withStorage {
+        try {
+            downloadFile(context, client, file, downloadTitle(d), folder = d.showTitle)
+            toast("Downloading ${d.title}")
+        } catch (e: Exception) { toast(e.userMessage()) }
+    }
+    // Every episode of a season, the first version of each, one after another in the system queue.
+    var downloadingSeason by remember(itemId) { mutableStateOf(false) }
+    fun downloadSeason(season: ItemDetail, episodes: List<ItemSummary>) = withStorage {
+        downloadingSeason = true
+        scope.launch {
+            try {
+                var queued = 0
+                episodes.sortedWith(compareBy({ it.seasonNumber ?: Long.MAX_VALUE }, { it.episodeNumber ?: Long.MAX_VALUE })).forEach { e ->
+                    val ep = items.detail(e.id)
+                    ep.files.firstOrNull()?.let { downloadFile(context, client, it, downloadTitle(ep), folder = ep.showTitle ?: season.showTitle); queued++ }
+                }
+                toast("Downloading $queued episodes")
+            } catch (e: Exception) { toast(e.userMessage()) } finally { downloadingSeason = false }
         }
     }
     LaunchedEffect(itemId) {
@@ -154,6 +185,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                     val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
                     // Several files for one item (a sub and a dub release, say): ask which to play.
                     var choosingFrom by remember(d.id) { mutableStateOf<Long?>(null) }
+                    var choosingDownload by remember(d.id) { mutableStateOf(false) }
                     fun start(at: Long) { if (d.files.size > 1) choosingFrom = at else play(file.id, d.id, at) }
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { start(resume) }, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("play")) {
@@ -161,10 +193,20 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                             Text(if (resume > 0) " Resume from ${formatMs(resume)}" else " Play", style = MaterialTheme.typography.titleMedium)
                         }
                         if (resume > 0) OutlinedButton(onClick = { start(0) }, modifier = Modifier.fillMaxWidth()) { Text("Start over", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { if (d.files.size > 1) choosingDownload = true else download(d, file) },
+                            modifier = Modifier.fillMaxWidth().testTag("download"),
+                        ) {
+                            Icon(Icons.Filled.Download, null, tint = Color.White)
+                            Text(if (d.files.size > 1) " Download" else " Download · ${formatSize(file.sizeBytes)}", color = Color.White)
+                        }
                         if (d.files.size > 1) Text("${d.files.size} versions available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     choosingFrom?.let { at ->
                         VersionDialog(d.files, onDismiss = { choosingFrom = null }) { chosen -> choosingFrom = null; play(chosen.id, d.id, at) }
+                    }
+                    if (choosingDownload) {
+                        VersionDialog(d.files, title = "Choose a version to download", onDismiss = { choosingDownload = false }) { chosen -> choosingDownload = false; download(d, chosen) }
                     }
                 }
                 d.tagline?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), style = MaterialTheme.typography.titleMedium, fontStyle = FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)) }
@@ -175,6 +217,16 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                 val seasons = children.filter { it.kind.value == "season" }
                 val episodes = children.filter { it.kind.value == "episode" }
                 if (seasons.isNotEmpty()) TileSection("Seasons", seasons, client, openItem)
+                if (episodes.isNotEmpty() && d.kind.value == "season") {
+                    OutlinedButton(
+                        onClick = { downloadSeason(d, episodes) },
+                        enabled = !downloadingSeason,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp).fillMaxWidth().testTag("download-season"),
+                    ) {
+                        Icon(Icons.Filled.Download, null, tint = Color.White)
+                        Text(if (downloadingSeason) " Queueing downloads…" else " Download season · ${episodes.size} episodes", color = Color.White)
+                    }
+                }
                 if (episodes.isNotEmpty()) EpisodeSection(episodes, client, container.browsePrefs, openItem)
                 d.files.forEach { f -> FileInfo(f) }
                 Spacer(Modifier.height(24.dp))
@@ -243,10 +295,10 @@ private fun TileSection(title: String, list: List<ItemSummary>, client: app.proj
 
 /** Lists every file of an item with what tells them apart; tapping one plays it. */
 @Composable
-private fun VersionDialog(files: List<MediaFile>, onDismiss: () -> Unit, onPick: (MediaFile) -> Unit) {
+private fun VersionDialog(files: List<MediaFile>, title: String = "Choose a version", onDismiss: () -> Unit, onPick: (MediaFile) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose a version") },
+        title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 files.forEach { f ->
@@ -262,4 +314,30 @@ private fun VersionDialog(files: List<MediaFile>, onDismiss: () -> Unit, onPick:
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** "Show · S1 E2 · Title" for an episode, the title alone for a movie: the download's notification line. */
+private fun downloadTitle(d: ItemDetail): String {
+    val number = listOfNotNull(d.seasonNumber?.let { "S$it" }, d.episodeNumber?.let { "E$it" }).joinToString(" ").ifBlank { null }
+    return listOfNotNull(d.showTitle, number, d.title).joinToString(" · ")
+}
+
+/**
+ * Runs an action that writes to the public Downloads folder. Android 9 and older need the storage
+ * permission for that, so it is asked for first there; newer versions run the action straight away.
+ */
+@Composable
+private fun rememberStorageGate(): (() -> Unit) -> Unit {
+    val context = LocalContext.current
+    var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) pending?.invoke()
+        else android.widget.Toast.makeText(context, "Storage permission is needed to download", android.widget.Toast.LENGTH_SHORT).show()
+        pending = null
+    }
+    return { action ->
+        val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+        if (needsPermission) { pending = action; launcher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) } else action()
+    }
 }
