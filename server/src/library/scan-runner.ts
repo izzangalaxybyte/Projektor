@@ -1,7 +1,11 @@
 // Background scan jobs: one library at a time, status readable while running, coalesced
 // re-requests. Walk → probe → identify → match, same order the synchronous endpoint used.
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
+import { eq } from 'drizzle-orm';
+import { indexComicBooks, scanComicLibrary } from '../comics/scanner.js';
+import { schema } from '../db/index.js';
 import { identifyFiles } from '../identify/identifier.js';
+import { ImageStore } from '../images/store.js';
 import { probeFiles } from '../media/probe-service.js';
 import { metadataDeps } from '../metadata/deps.js';
 import type { ScanStatus } from '../schemas/index.js';
@@ -106,6 +110,15 @@ export class ScanRunner {
       error: null,
     });
     try {
+      const kind = this.app.db
+        .select({ kind: schema.libraries.kind })
+        .from(schema.libraries)
+        .where(eq(schema.libraries.id, libraryId))
+        .get()?.kind;
+      if (kind === 'comic') {
+        await this.runComics(libraryId, set);
+        return;
+      }
       const walked = await scanLibrary(this.app.db, libraryId, this.log);
       set({
         phase: 'probing',
@@ -151,5 +164,35 @@ export class ScanRunner {
         error: String(error),
       });
     }
+  }
+
+  /** Comic libraries: walk, then index new and changed books (pages, ComicInfo, cover). */
+  private async runComics(
+    libraryId: string,
+    set: (patch: Partial<ScanStatus>) => void,
+  ): Promise<void> {
+    const walked = await scanComicLibrary(this.app.db, libraryId, this.log);
+    set({
+      phase: 'probing',
+      filesSeen: walked.filesSeen,
+      filesChanged: walked.filesChanged,
+      filesMissing: walked.filesMissing,
+    });
+    const indexed = await indexComicBooks(
+      this.app.db,
+      this.app.comicArchives,
+      new ImageStore(this.app.config.imagesDir),
+      walked.changedBookIds,
+      this.log,
+    );
+    set({
+      state: 'idle',
+      phase: null,
+      filesProbed: indexed.indexed,
+      filesFailed: indexed.failed,
+      itemsLinked: indexed.indexed,
+      finishedAt: new Date().toISOString(),
+    });
+    this.log.info(this.statusOf(libraryId), 'comic scan finished');
   }
 }

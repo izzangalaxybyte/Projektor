@@ -18,7 +18,8 @@
         "enum": [
           "movie",
           "tv",
-          "anime"
+          "anime",
+          "comic"
         ]
       },
       "ItemKindInput": {
@@ -2374,6 +2375,490 @@
           "channelId"
         ]
       },
+      "ComicFormatInput": {
+        "type": "string",
+        "enum": [
+          "cbz",
+          "cbr",
+          "cb7",
+          "cbt",
+          "pdf"
+        ]
+      },
+      "ReadingDirectionInput": {
+        "type": "string",
+        "enum": [
+          "ltr",
+          "rtl"
+        ],
+        "description": "rtl: manga, read right to left"
+      },
+      "ComicProgressInput": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "0-based index of the page last shown"
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "Reached the last page, or marked read"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "ISO 8601 UTC timestamp"
+          }
+        },
+        "required": [
+          "page",
+          "pageCount",
+          "finished",
+          "updatedAt"
+        ]
+      },
+      "ComicBookInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesTitle": {
+            "type": "string"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "ComicInfo title, else the file name without tags"
+          },
+          "label": {
+            "description": "\"Vol. 3\", \"Ch. 120.5\", \"Vol. 3 · Ch. 20\", \"#12\"; null when unnumbered",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicFormatInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the book is indexed"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "chapter": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "special": {
+            "type": "boolean"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirectionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From ComicInfo.xml; null when the book does not say"
+          },
+          "coverKey": {
+            "description": "Image key for GET /api/images/{key}",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "indexError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicProgressInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seriesTitle",
+          "libraryId",
+          "title",
+          "label",
+          "fileName",
+          "format",
+          "sizeBytes",
+          "pageCount",
+          "volume",
+          "chapter",
+          "special",
+          "direction",
+          "coverKey",
+          "indexError",
+          "progress"
+        ]
+      },
+      "ComicBookDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesTitle": {
+            "type": "string"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "ComicInfo title, else the file name without tags"
+          },
+          "label": {
+            "description": "\"Vol. 3\", \"Ch. 120.5\", \"Vol. 3 · Ch. 20\", \"#12\"; null when unnumbered",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicFormatInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the book is indexed"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "chapter": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "special": {
+            "type": "boolean"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirectionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From ComicInfo.xml; null when the book does not say"
+          },
+          "coverKey": {
+            "description": "Image key for GET /api/images/{key}",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "indexError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicProgressInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "writer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previousId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque identifier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The book before this one in reading order"
+          },
+          "nextId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque identifier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The book after this one in reading order"
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seriesTitle",
+          "libraryId",
+          "title",
+          "label",
+          "fileName",
+          "format",
+          "sizeBytes",
+          "pageCount",
+          "volume",
+          "chapter",
+          "special",
+          "direction",
+          "coverKey",
+          "indexError",
+          "progress",
+          "summary",
+          "writer",
+          "year",
+          "previousId",
+          "nextId"
+        ]
+      },
+      "ComicSeriesInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string"
+          },
+          "bookCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "readCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "coverKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirectionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rtl when its books are tagged as manga"
+          },
+          "lastReadAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "ISO 8601 UTC timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "libraryId",
+          "title",
+          "bookCount",
+          "readCount",
+          "coverKey",
+          "direction",
+          "lastReadAt",
+          "createdAt"
+        ]
+      },
+      "ComicSeriesDetailInput": {
+        "type": "object",
+        "properties": {
+          "series": {
+            "$ref": "#/components/schemas/ComicSeriesInput"
+          },
+          "books": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicBookInput"
+            },
+            "description": "Reading order: volumes, then loose chapters, then unnumbered books"
+          }
+        },
+        "required": [
+          "series",
+          "books"
+        ]
+      },
+      "ComicProgressUpdateInput": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "at": {
+            "description": "When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "page"
+        ]
+      },
       "HealthResponseInput": {
         "type": "object",
         "properties": {
@@ -2429,7 +2914,8 @@
         "enum": [
           "movie",
           "tv",
-          "anime"
+          "anime",
+          "comic"
         ]
       },
       "ItemKind": {
@@ -4825,6 +5311,496 @@
         },
         "required": [
           "channelId"
+        ],
+        "additionalProperties": false
+      },
+      "ComicFormat": {
+        "type": "string",
+        "enum": [
+          "cbz",
+          "cbr",
+          "cb7",
+          "cbt",
+          "pdf"
+        ]
+      },
+      "ReadingDirection": {
+        "type": "string",
+        "enum": [
+          "ltr",
+          "rtl"
+        ],
+        "description": "rtl: manga, read right to left"
+      },
+      "ComicProgress": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "0-based index of the page last shown"
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "Reached the last page, or marked read"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "ISO 8601 UTC timestamp"
+          }
+        },
+        "required": [
+          "page",
+          "pageCount",
+          "finished",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ComicBook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesTitle": {
+            "type": "string"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "ComicInfo title, else the file name without tags"
+          },
+          "label": {
+            "description": "\"Vol. 3\", \"Ch. 120.5\", \"Vol. 3 · Ch. 20\", \"#12\"; null when unnumbered",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the book is indexed"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "chapter": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "special": {
+            "type": "boolean"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From ComicInfo.xml; null when the book does not say"
+          },
+          "coverKey": {
+            "description": "Image key for GET /api/images/{key}",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "indexError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seriesTitle",
+          "libraryId",
+          "title",
+          "label",
+          "fileName",
+          "format",
+          "sizeBytes",
+          "pageCount",
+          "volume",
+          "chapter",
+          "special",
+          "direction",
+          "coverKey",
+          "indexError",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
+      "ComicBookDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "seriesTitle": {
+            "type": "string"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "ComicInfo title, else the file name without tags"
+          },
+          "label": {
+            "description": "\"Vol. 3\", \"Ch. 120.5\", \"Vol. 3 · Ch. 20\", \"#12\"; null when unnumbered",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the book is indexed"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "chapter": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "special": {
+            "type": "boolean"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "From ComicInfo.xml; null when the book does not say"
+          },
+          "coverKey": {
+            "description": "Image key for GET /api/images/{key}",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "indexError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComicProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "writer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previousId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque identifier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The book before this one in reading order"
+          },
+          "nextId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Opaque identifier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The book after this one in reading order"
+          }
+        },
+        "required": [
+          "id",
+          "seriesId",
+          "seriesTitle",
+          "libraryId",
+          "title",
+          "label",
+          "fileName",
+          "format",
+          "sizeBytes",
+          "pageCount",
+          "volume",
+          "chapter",
+          "special",
+          "direction",
+          "coverKey",
+          "indexError",
+          "progress",
+          "summary",
+          "writer",
+          "year",
+          "previousId",
+          "nextId"
+        ],
+        "additionalProperties": false
+      },
+      "ComicSeries": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "libraryId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque identifier"
+          },
+          "title": {
+            "type": "string"
+          },
+          "bookCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "readCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "coverKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReadingDirection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "rtl when its books are tagged as manga"
+          },
+          "lastReadAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "ISO 8601 UTC timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "ISO 8601 UTC timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "libraryId",
+          "title",
+          "bookCount",
+          "readCount",
+          "coverKey",
+          "direction",
+          "lastReadAt",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "ComicSeriesDetail": {
+        "type": "object",
+        "properties": {
+          "series": {
+            "$ref": "#/components/schemas/ComicSeries"
+          },
+          "books": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicBook"
+            },
+            "description": "Reading order: volumes, then loose chapters, then unnumbered books"
+          }
+        },
+        "required": [
+          "series",
+          "books"
+        ],
+        "additionalProperties": false
+      },
+      "ComicProgressUpdate": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "at": {
+            "description": "When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "page"
         ],
         "additionalProperties": false
       },
@@ -8097,6 +9073,559 @@
           },
           "416": {
             "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/comics/series": {
+      "get": {
+        "summary": "Comic and manga series",
+        "tags": [
+          "comics"
+        ],
+        "description": "sort=title (default), added (newest first), or recent (series read most recently, read ones only).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "libraryId",
+            "required": false,
+            "description": "Opaque identifier"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "search",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": "title",
+              "type": "string",
+              "enum": [
+                "title",
+                "added",
+                "recent"
+              ]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComicSeries"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/series/{id}": {
+      "get": {
+        "summary": "A series and its books in reading order",
+        "tags": [
+          "comics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComicSeriesDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/series/{id}/read": {
+      "put": {
+        "summary": "Mark every book of a series read or unread",
+        "tags": [
+          "comics"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "read": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "read"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/books/{id}": {
+      "get": {
+        "summary": "A book, with the books before and after it",
+        "tags": [
+          "comics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComicBookDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/books/{id}/pages/{page}": {
+      "get": {
+        "summary": "One page image",
+        "tags": [
+          "comics"
+        ],
+        "description": "Pages count from 0. Without `w` an archive page is the original image, byte for byte; with `w` (or always for PDF, 2048 wide by default) a JPEG at that width. Readers that cannot set headers may pass `?access_token=`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 4096
+            },
+            "in": "query",
+            "name": "w",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "path",
+            "name": "page",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/books/{id}/file": {
+      "get": {
+        "summary": "The book for reading offline",
+        "tags": [
+          "comics"
+        ],
+        "description": "PDFs as they are (with byte ranges). Archives as an uncompressed CBZ of the original page images named 0001.jpg, 0002.png ... in reading order.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "access_token",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/comics/books/{id}/progress": {
+      "put": {
+        "summary": "Save the page being read",
+        "tags": [
+          "comics"
+        ],
+        "description": "Reaching the last page marks the book read. Send on every page turn (debounced) and when the reader closes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComicProgressUpdateInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComicProgress"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/books/{id}/read": {
+      "put": {
+        "summary": "Mark a book read, or unread (removes it from history)",
+        "tags": [
+          "comics"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "read": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "read"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Opaque identifier"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ComicProgress"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/continue": {
+      "get": {
+        "summary": "Continue reading: per series, the unfinished book or the next one, most recent first",
+        "tags": [
+          "comics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComicBook"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/history": {
+      "get": {
+        "summary": "Reading history: every book opened, most recently read first",
+        "tags": [
+          "comics"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComicBook"
+                  }
+                }
+              }
+            }
           }
         }
       }

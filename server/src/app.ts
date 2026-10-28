@@ -20,6 +20,8 @@ import { authRoutes } from './routes/auth.js';
 import { ScanRunner } from './library/scan-runner.js';
 import { LibraryWatcher } from './library/watcher.js';
 import { ImageStore } from './images/store.js';
+import { ComicArchives } from './comics/archive.js';
+import { comicsRoutes } from './routes/comics.js';
 import { LiveHlsManager } from './live/live-hls.js';
 import { LiveRefresher } from './live/refresher.js';
 import { ProviderMatcher } from './live/provider-matcher.js';
@@ -71,6 +73,8 @@ declare module 'fastify' {
     liveHls: LiveHlsManager;
     iptvMatcher: ProviderMatcher;
     recorder: RecordingManager;
+    /** Comic pages and downloads, with the extraction cache shared by every request and scan. */
+    comicArchives: ComicArchives;
   }
 }
 
@@ -112,6 +116,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const database = openDatabase(options.config.dbPath);
   app.decorate('config', options.config);
   app.decorate('db', database.db);
+  app.decorate(
+    'comicArchives',
+    new ComicArchives({
+      cacheDir: options.config.comicsCacheDir,
+      cacheBytes: options.config.comicsCacheBytes,
+    }),
+  );
   app.decorate('httpFetch', options.fetch ?? ((url, init) => fetch(url, init)));
   const scans = new ScanRunner(app, app.log);
   const watcher = new LibraryWatcher(database.db, scans, app.log, {
@@ -272,6 +283,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       await api.register(liveVodRoutes, { prefix: '/live' });
 
       await api.register(recordingsRoutes, { prefix: '/recordings' });
+      await api.register(comicsRoutes, { prefix: '/comics' });
     },
     { prefix: '/api' },
   );

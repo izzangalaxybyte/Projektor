@@ -6,7 +6,7 @@ import type { SubtitleService } from '../subtitles/service.js';
 import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
 
 export interface ItemsQueryInput {
-  libraryKind?: 'movie' | 'tv' | 'anime' | undefined;
+  libraryKind?: Kind | undefined;
   kind?: 'movie' | 'show' | 'season' | 'episode' | undefined;
   parentId?: string | undefined;
   search?: string | undefined;
@@ -193,7 +193,7 @@ export class ItemsService {
     throw new ItemNotFound(`No item ${id}`);
   }
 
-  private libraryKind(libraryId: string): 'movie' | 'tv' | 'anime' {
+  private libraryKind(libraryId: string): Kind {
     return this.db
       .select({ kind: schema.libraries.kind })
       .from(schema.libraries)
@@ -343,7 +343,7 @@ type Movie = typeof schema.movies.$inferSelect;
 type Show = typeof schema.shows.$inferSelect;
 type Season = typeof schema.seasons.$inferSelect;
 type Episode = typeof schema.episodes.$inferSelect;
-type Kind = 'movie' | 'tv' | 'anime';
+type Kind = 'movie' | 'tv' | 'anime' | 'comic';
 
 /** A summary plus the fields we sort on but do not expose. */
 interface Ranked {
