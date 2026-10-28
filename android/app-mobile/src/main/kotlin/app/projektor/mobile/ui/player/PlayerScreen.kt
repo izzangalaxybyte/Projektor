@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,9 +16,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Forward30
+import androidx.compose.material.icons.filled.Replay30
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
@@ -53,6 +59,7 @@ import androidx.media3.ui.PlayerView
 import app.projektor.player.liftSubtitles
 import app.projektor.player.showWithStackedSubtitles
 import app.projektor.core.api.models.ItemDetail
+import app.projektor.core.api.models.LibraryKind
 import app.projektor.core.api.models.MediaFile
 import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
@@ -76,8 +83,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 
 /**
- * Fullscreen playback. Skip back/forward and double taps jump by exactly the chosen amount; the
- * amount and the speed are chosen in the bottom bar and persist.
+ * Fullscreen playback. The on-screen buttons jump a fixed 10 or 30 seconds (and 90 for anime, to
+ * get past an opening); double taps on the outer 40% of either side jump by the amount chosen in the
+ * bottom bar, and a double tap in the middle fifth plays/pauses. The amount and speed persist.
  */
 @Composable
 fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startMs: Long, playNext: (fileId: String, itemId: String) -> Unit, back: () -> Unit) {
@@ -169,7 +177,8 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     }
     fun touched() { lastInteraction = System.currentTimeMillis(); controlsVisible = true }
     // Double taps seek without bringing the controls up; while they're up, any skip keeps them there.
-    fun skip(direction: Int) { player.skip(direction * settings.skipMs); if (controlsVisible) touched() }
+    fun skip(deltaMs: Long) { player.skip(deltaMs); if (controlsVisible) touched() }
+    fun playNextEpisode() { nextEpisode?.let { (f, i) -> playNext(f, i) } }
     fun exit() { player.pause(); back() }
 
     BackHandler { exit() }
@@ -178,7 +187,13 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         Modifier.fillMaxSize().background(Color.Black).pointerInput(settings.skipSeconds) {
             detectTapGestures(
                 onTap = { if (controlsVisible) controlsVisible = false else touched() },
-                onDoubleTap = { offset -> skip(if (offset.x < size.width / 2) -1 else 1) },
+                onDoubleTap = { offset ->
+                    when {
+                        offset.x < size.width * 0.4f -> skip(-settings.skipMs)
+                        offset.x > size.width * 0.6f -> skip(settings.skipMs)
+                        else -> { player.togglePlayPause(); if (controlsVisible) touched() }
+                    }
+                },
                 onLongPress = { if (state.isPlaying) boosting = true },
                 onPress = { tryAwaitRelease(); boosting = false },
             )
@@ -197,8 +212,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         if (state.isBuffering && error == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
         error?.let { Text(it, Modifier.align(Alignment.Center).padding(24.dp), color = MaterialTheme.colorScheme.error) }
         if (boosting) SpeedBoostBadge(settings.holdRate, Modifier.align(Alignment.TopCenter).padding(top = 24.dp))
-        if (state.ended && nextEpisode != null) {
-            Button(onClick = { nextEpisode?.let { (f, i) -> playNext(f, i) } }, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
+        // At the end only the way on to the next episode is offered, not the transport.
+        val showNextOnly = state.ended && nextEpisode != null
+        if (showNextOnly) {
+            Button(onClick = ::playNextEpisode, modifier = Modifier.align(Alignment.Center).testTag("next-episode")) { Text("Play next episode") }
         }
 
         if (chromeShown) PlayerChrome {
@@ -210,17 +227,24 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     decision?.let { Text(badge(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision")) }
                 }
             }
-            // Center transport: back N · play/pause · forward N
-            Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { skip(-1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("skip-back").semantics { contentDescription = "Skip back ${settings.skipSeconds} seconds" }) {
-                    Icon(Icons.Filled.Replay10, null, Modifier.size(40.dp))
-                }
+            // Center transport: -30 · -10 · play/pause · +10 · +30
+            if (!showNextOnly) Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                SkipButton(Icons.Filled.Replay30, "Skip back 30 seconds", "skip-back-30") { skip(-30_000) }
+                SkipButton(Icons.Filled.Replay10, "Skip back 10 seconds", "skip-back-10") { skip(-10_000) }
                 IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).then(ButtonScrim).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
                     Icon(if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, null, Modifier.size(56.dp))
                 }
-                IconButton(onClick = { skip(1) }, modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("skip-forward").semantics { contentDescription = "Skip forward ${settings.skipSeconds} seconds" }) {
-                    Icon(Icons.Filled.Forward10, null, Modifier.size(40.dp))
-                }
+                SkipButton(Icons.Filled.Forward10, "Skip forward 10 seconds", "skip-forward-10") { skip(10_000) }
+                SkipButton(Icons.Filled.Forward30, "Skip forward 30 seconds", "skip-forward-30") { skip(30_000) }
+            }
+            // Anime: one tap past the opening.
+            if (!showNextOnly && detail?.libraryKind == LibraryKind.ANIME) {
+                OutlinedButton(
+                    onClick = { skip(90_000) },
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 24.dp).size(64.dp).then(ButtonScrim).testTag("skip-forward-90").semantics { contentDescription = "Skip forward 90 seconds" },
+                ) { Text("+90", style = MaterialTheme.typography.titleMedium, color = Color.White) }
             }
             // Bottom bar
             Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { bottomBarPx = it.height }.then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
@@ -235,8 +259,15 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                     Text(formatMs(state.durationMs), style = MaterialTheme.typography.labelMedium)
                 }
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (nextEpisode != null) {
+                        OutlinedButton(onClick = ::playNextEpisode, modifier = Modifier.testTag("next-episode-bar")) {
+                            Icon(Icons.Filled.SkipNext, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Next episode", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
                     Picker(
-                        label = "Skip +${settings.skipSeconds}s",
+                        label = "Double tap ${settings.skipSeconds}s",
                         options = SKIP_OPTIONS.map { it to "+${it}s" },
                         onPick = { container.playerPrefs.update(skipSeconds = it); touched() },
                         tag = "skip-select", onOpenChange = { menuOpen = it; if (!it) touched() },
@@ -280,6 +311,13 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SkipButton(icon: ImageVector, description: String, tag: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(56.dp).then(ButtonScrim).testTag(tag).semantics { contentDescription = description }) {
+        Icon(icon, null, Modifier.size(36.dp))
     }
 }
 

@@ -41,6 +41,13 @@ import kotlinx.coroutines.launch
 // Outlives the screen: the composition's own scope is already cancelled by the time onDispose runs.
 private val releaseScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+// Player windows open at once while one episode hands over to the next: the new window starts
+// before the old one is disposed. Only the first opens fullscreen and only the last restores the
+// app's own orientation and bars, so the handover neither flips to portrait nor leaves the app
+// stuck in landscape afterwards.
+private var openWindows = 0
+private var appOrientation: Int? = null
+
 /**
  * Fullscreen player window: landscape, immersive, screen kept on. Playback pauses when the app is
  * backgrounded and stops as soon as the screen leaves; [onClose] runs after the player is released.
@@ -53,18 +60,21 @@ fun PlayerWindow(player: ProjektorPlayer, onClose: suspend () -> Unit = {}) {
     DisposableEffect(Unit) {
         val activity = context as? Activity
         val window = activity?.window
-        val previousOrientation = activity?.requestedOrientation
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         val controller = window?.let { WindowInsetsControllerCompat(it, view) }
+        if (openWindows++ == 0) appOrientation = activity?.requestedOrientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         controller?.hide(WindowInsetsCompat.Type.systemBars())
         controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
         view.keepScreenOn = true
         onDispose {
             player.pause()
-            view.keepScreenOn = false
-            controller?.show(WindowInsetsCompat.Type.systemBars())
-            if (previousOrientation != null) activity.requestedOrientation = previousOrientation
+            if (--openWindows == 0) {
+                view.keepScreenOn = false
+                controller?.show(WindowInsetsCompat.Type.systemBars())
+                appOrientation?.let { activity?.requestedOrientation = it }
+                appOrientation = null
+            }
             releaseScope.launch { player.release(); onClose() }
         }
     }

@@ -57,20 +57,22 @@ class PlayerTest {
         rule.onNodeWithTag("decision").assert(hasText("Direct play"))
         rule.waitUntil(30_000) { rule.positionMs() > 1_000 }
 
-        // Pause so jumps are exact, then choose +4s and skip forward and back.
+        // Pause so jumps are exact, then skip forward and back by the fixed 10s buttons.
         rule.onNodeWithTag("toggle").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithTag("toggle").fetchSemanticsNodes().isNotEmpty() }
         Thread.sleep(700)
+        val before = rule.positionMs()
+        rule.onNodeWithTag("skip-forward-10").performClick()
+        rule.waitUntil(5_000) { abs(rule.positionMs() - (before + 10_000)) < 400 }
+        val afterForward = rule.positionMs()
+        assertTrue("forward should move by 10s, moved ${afterForward - before}", abs(afterForward - before - 10_000) < 400)
+        rule.onNodeWithTag("skip-back-10").performClick()
+        rule.waitUntil(5_000) { abs(rule.positionMs() - before) < 400 }
+
+        // The double-tap amount: choose 4s.
         rule.onNodeWithTag("skip-select").performClick()
         rule.onNodeWithTag("skip-select-+4s").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(hasText("Skip +4s")).fetchSemanticsNodes().isNotEmpty() }
-        val before = rule.positionMs()
-        rule.onNodeWithTag("skip-forward").performClick()
-        rule.waitUntil(5_000) { abs(rule.positionMs() - (before + 4_000)) < 400 }
-        val afterForward = rule.positionMs()
-        assertTrue("forward should move by 4s, moved ${afterForward - before}", abs(afterForward - before - 4_000) < 400)
-        rule.onNodeWithTag("skip-back").performClick()
-        rule.waitUntil(5_000) { abs(rule.positionMs() - before) < 400 }
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("Double tap 4s")).fetchSemanticsNodes().isNotEmpty() }
 
         // Speed: pick 1.5× and check the player's rate.
         rule.onNodeWithTag("speed-select").performClick()
