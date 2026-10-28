@@ -50,6 +50,14 @@ The Video engine should show load while the transcode runs. Inside the container
 
 ## Updating
 
+From a dev machine on the LAN, after pushing to `main`:
+
+```bash
+scripts/update-server.sh
+```
+
+It SSHes to `izzan@192.168.100.20` (override with `PROJEKTOR_HOST`), pulls `~/projektor/src` (`PROJEKTOR_SRC`), rebuilds the container, and waits for it to report healthy. On the box itself:
+
 ```bash
 git pull
 docker compose -f deploy/docker-compose.yml up -d --build
