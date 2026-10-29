@@ -236,4 +236,53 @@ describe('cache', () => {
     const left = await readdir(path.join(dir, 'small-cache'));
     expect(left).toEqual(['b_cb7']);
   });
+
+  it('makes covers without extracting the whole book', async () => {
+    const cacheDir = path.join(dir, 'cover-cache');
+    const covers = new ComicArchives({ cacheDir, cacheBytes: 50 * 1024 * 1024 });
+    const file = path.join(dir, 'cover.cb7');
+    await makeWith7z(file, '7z', [
+      { name: '01.png', width: 30 },
+      { name: '02.png' },
+      { name: '03.png' },
+    ]);
+    const cover = await covers.coverBuffer(await ref(file, covers));
+    expect((await sharp(cover).metadata()).width).toBe(30);
+    // A solid RAR too: its first page comes out on its own.
+    const rarCovers = new ComicArchives({
+      cacheDir,
+      cacheBytes: 50 * 1024 * 1024,
+      isPage: (name) => name.endsWith('.txt'),
+    });
+    const rar = path.join(dir, 'cover.cbr');
+    await copyFile(path.join(testdata, 'rar5-solid.rar'), rar);
+    const rarBook = await ref(rar, rarCovers);
+    const first = (await rarCovers.coverBuffer(rarBook)).toString('utf8');
+    const page = (await bytes((await rarCovers.page(rarBook, 0, null)).body)).toString('utf8');
+    expect(first).toBe(page);
+    await rarCovers.forget(rarBook.id);
+    const left = await readdir(cacheDir).catch(() => []);
+    expect(left.filter((n) => !n.startsWith('.'))).toEqual([]);
+  });
+
+  it('survives books being forgotten while it evicts', async () => {
+    const racing = new ComicArchives({ cacheDir: path.join(dir, 'race-cache'), cacheBytes: 1 });
+    const books = await Promise.all(
+      Array.from({ length: 12 }, async (_, i) => {
+        const file = path.join(dir, `race-${i}.cb7`);
+        await makeWith7z(file, '7z', [{ name: '1.png' }, { name: '2.png' }]);
+        return ref(file, racing);
+      }),
+    );
+    // Each extraction starts an eviction that lists the cache while other books are forgotten.
+    for (let round = 0; round < 4; round++) {
+      await Promise.all(
+        books.map(async (book, i) => {
+          await bytes((await racing.page(book, i % 2, null)).body).catch(() => null);
+          await racing.forget(book.id);
+        }),
+      );
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }, 60_000);
 });

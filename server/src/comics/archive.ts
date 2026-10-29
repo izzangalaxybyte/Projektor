@@ -182,6 +182,10 @@ export const PDF_DEFAULT_WIDTH = 2048;
 
 export class ComicArchives {
   private readonly extracting = new Map<string, Promise<string>>();
+  /** One eviction at a time; another request while it runs makes it go round once more. */
+  private evicting: Promise<void> | null = null;
+  private evictAgain = false;
+  private evictKeep = '';
 
   private readonly isPage: (name: string) => boolean;
 
@@ -245,7 +249,13 @@ export class ComicArchives {
       const data = await this.pdfPage(book, 0, 600);
       return streamToBuffer(data.body);
     }
-    return this.pageBuffer(book, book.pages[0]!);
+    const first = book.pages[0]!;
+    if (book.format === 'cbz' || existsSync(this.extractedRoot(book))) {
+      return this.pageBuffer(book, first);
+    }
+    // Indexing a library makes a cover per book; extracting whole archives for it would churn
+    // the cache through every book in the library, so only the first page comes out.
+    return this.readSmallEntry(book.format, book.path, first, true);
   }
 
   /**
@@ -334,12 +344,14 @@ export class ComicArchives {
     format: ComicFormat,
     filePath: string,
     name: string,
+    allowSolid = false,
   ): Promise<Buffer> {
     switch (format) {
       case 'cbz':
         return streamToBuffer((await this.zipEntry(filePath, name)).body);
       case 'cbr': {
-        // Solid archives decompress everything before the entry; not worth it for the metadata.
+        // Solid archives decompress everything before the entry: fine for a cover, which is
+        // near the start, but not worth it for the metadata.
         const tmp = path.join(this.options.cacheDir, `.info-${randomUUID()}`);
         await mkdir(tmp, { recursive: true });
         try {
@@ -348,7 +360,9 @@ export class ComicArchives {
             targetPath: tmp,
             filenameTransform: flatName,
           });
-          if (ex.getFileList().arcHeader.flags.solid) throw new Error('solid archive');
+          if (!allowSolid && ex.getFileList().arcHeader.flags.solid) {
+            throw new Error('solid archive');
+          }
           for (const f of ex.extract({ files: [name] }).files) void f;
           return await readFile(path.join(tmp, flatName(name)));
         } finally {
@@ -439,8 +453,12 @@ export class ComicArchives {
     return file;
   }
 
+  private extractedRoot(book: BookRef): string {
+    return path.join(this.dirFor(book), `files-${Math.floor(book.mtimeMs)}`);
+  }
+
   private ensureExtracted(book: BookRef): Promise<string> {
-    const root = path.join(this.dirFor(book), `files-${Math.floor(book.mtimeMs)}`);
+    const root = this.extractedRoot(book);
     const running = this.extracting.get(root);
     if (running) return running;
     const job = (async () => {
@@ -470,7 +488,7 @@ export class ComicArchives {
         await rm(tmp, { recursive: true, force: true });
         throw new ComicError(`could not extract ${path.basename(book.path)}: ${String(error)}`);
       }
-      void this.evict(book.id);
+      this.scheduleEvict(book.id);
       return root;
     })().finally(() => this.extracting.delete(root));
     this.extracting.set(root, job);
@@ -482,17 +500,38 @@ export class ComicArchives {
     await utimes(this.dirFor(book), t, t).catch(() => undefined);
   }
 
+  /** Evicts in the background; never throws, since nobody waits on it. */
+  private scheduleEvict(keep: string): void {
+    this.evictKeep = keep;
+    if (this.evicting) {
+      this.evictAgain = true;
+      return;
+    }
+    this.evicting = (async () => {
+      do {
+        this.evictAgain = false;
+        await this.evict(this.evictKeep).catch(() => undefined);
+      } while (this.evictAgain);
+    })().finally(() => {
+      this.evicting = null;
+    });
+  }
+
   /** Removes the least recently read books until the cache fits; never the one just opened. */
   private async evict(keep: string): Promise<void> {
     const dirs = await readdir(this.options.cacheDir, { withFileTypes: true }).catch(() => []);
-    const books = await Promise.all(
+    const found = await Promise.all(
       dirs
         .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
         .map(async (d) => {
           const full = path.join(this.options.cacheDir, d.name);
-          return { id: d.name, full, used: (await stat(full)).mtimeMs, bytes: await dirSize(full) };
+          // Gone already: forgotten (book changed or deleted) while this ran.
+          const info = await stat(full).catch(() => null);
+          if (!info) return null;
+          return { id: d.name, full, used: info.mtimeMs, bytes: await dirSize(full) };
         }),
     );
+    const books = found.filter((b) => b !== null);
     let total = books.reduce((s, b) => s + b.bytes, 0);
     for (const b of books.sort((x, y) => x.used - y.used)) {
       if (total <= this.options.cacheBytes) break;
@@ -533,7 +572,7 @@ export class ComicArchives {
         prefix,
       ]);
       await rename(`${prefix}.jpg`, target);
-      void this.evict(book.id);
+      this.scheduleEvict(book.id);
     }
     await this.touch(book);
     const info = await stat(target);

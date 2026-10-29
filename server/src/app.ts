@@ -203,7 +203,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
-    if (options.config.watchLibraries) await watcher.startAll();
+    // Watching a big library walks every folder first; Fastify gives onReady only 10 seconds.
+    if (options.config.watchLibraries) {
+      void watcher
+        .startAll()
+        .catch((error: unknown) =>
+          app.log.warn({ error: String(error) }, 'watchers failed to start'),
+        );
+    }
     if (options.config.liveRefresh) app.live.start();
     app.recorder.start();
     backfillStreamDepth(database.db, app.log);
