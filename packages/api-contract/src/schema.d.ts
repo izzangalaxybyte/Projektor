@@ -4067,7 +4067,7 @@ export interface components {
             volume: number | null;
             chapter: number | null;
             special: boolean;
-            /** @description From ComicInfo.xml; null when the book does not say */
+            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
             direction: components["schemas"]["ReadingDirectionInput"] | null;
             /** @description Image key for GET /api/images/{key} */
             coverKey: string | null;
@@ -4094,7 +4094,7 @@ export interface components {
             volume: number | null;
             chapter: number | null;
             special: boolean;
-            /** @description From ComicInfo.xml; null when the book does not say */
+            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
             direction: components["schemas"]["ReadingDirectionInput"] | null;
             /** @description Image key for GET /api/images/{key} */
             coverKey: string | null;
@@ -4117,7 +4117,7 @@ export interface components {
             bookCount: number;
             readCount: number;
             coverKey: string | null;
-            /** @description rtl when its books are tagged as manga */
+            /** @description rtl when most of its books read right to left */
             direction: components["schemas"]["ReadingDirectionInput"] | null;
             lastReadAt: string | null;
             /**
@@ -4695,7 +4695,7 @@ export interface components {
             volume: number | null;
             chapter: number | null;
             special: boolean;
-            /** @description From ComicInfo.xml; null when the book does not say */
+            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
             direction: components["schemas"]["ReadingDirection"] | null;
             /** @description Image key for GET /api/images/{key} */
             coverKey: string | null;
@@ -4722,7 +4722,7 @@ export interface components {
             volume: number | null;
             chapter: number | null;
             special: boolean;
-            /** @description From ComicInfo.xml; null when the book does not say */
+            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
             direction: components["schemas"]["ReadingDirection"] | null;
             /** @description Image key for GET /api/images/{key} */
             coverKey: string | null;
@@ -4745,7 +4745,7 @@ export interface components {
             bookCount: number;
             readCount: number;
             coverKey: string | null;
-            /** @description rtl when its books are tagged as manga */
+            /** @description rtl when most of its books read right to left */
             direction: components["schemas"]["ReadingDirection"] | null;
             lastReadAt: string | null;
             /**

@@ -2512,7 +2512,7 @@
                 "type": "null"
               }
             ],
-            "description": "From ComicInfo.xml; null when the book does not say"
+            "description": "From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says"
           },
           "coverKey": {
             "description": "Image key for GET /api/images/{key}",
@@ -2645,7 +2645,7 @@
                 "type": "null"
               }
             ],
-            "description": "From ComicInfo.xml; null when the book does not say"
+            "description": "From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says"
           },
           "coverKey": {
             "description": "Image key for GET /api/images/{key}",
@@ -2787,7 +2787,7 @@
                 "type": "null"
               }
             ],
-            "description": "rtl when its books are tagged as manga"
+            "description": "rtl when most of its books read right to left"
           },
           "lastReadAt": {
             "anyOf": [
@@ -5452,7 +5452,7 @@
                 "type": "null"
               }
             ],
-            "description": "From ComicInfo.xml; null when the book does not say"
+            "description": "From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says"
           },
           "coverKey": {
             "description": "Image key for GET /api/images/{key}",
@@ -5586,7 +5586,7 @@
                 "type": "null"
               }
             ],
-            "description": "From ComicInfo.xml; null when the book does not say"
+            "description": "From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says"
           },
           "coverKey": {
             "description": "Image key for GET /api/images/{key}",
@@ -5729,7 +5729,7 @@
                 "type": "null"
               }
             ],
-            "description": "rtl when its books are tagged as manga"
+            "description": "rtl when most of its books read right to left"
           },
           "lastReadAt": {
             "anyOf": [

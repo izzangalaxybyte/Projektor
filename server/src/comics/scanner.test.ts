@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findShelves, seriesFor } from './scanner.js';
+import { directionOf } from './service.js';
 
 const root = '/media/comics';
 const at = (...parts: string[]) => [root, ...parts].join('/');
@@ -51,5 +52,18 @@ describe('findShelves', () => {
       at('DC', 'Flash', 'Flash 001.cbr'),
     ].map((p) => ({ root, path: p }));
     expect([...findShelves(files)]).toEqual([at('Marvel')]);
+  });
+});
+
+describe('directionOf', () => {
+  it('reads books under a Manga folder right to left unless ComicInfo says otherwise', () => {
+    expect(directionOf({ direction: null, path: at('Manga', 'Bleach', 'Bleach v01.cbz') })).toBe(
+      'rtl',
+    );
+    expect(directionOf({ direction: 'ltr', path: at('Manga', 'Novel', 'Novel 1.pdf') })).toBe(
+      'ltr',
+    );
+    expect(directionOf({ direction: null, path: at('Marvel', 'Manga Hero 001.cbz') })).toBeNull();
+    expect(directionOf({ direction: 'rtl', path: at('Other', 'x.cbz') })).toBe('rtl');
   });
 });

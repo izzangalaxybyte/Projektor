@@ -1,4 +1,5 @@
 // The read side of comic libraries: series, books in reading order, and each user's progress.
+import path from 'node:path';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { now, schema, type Db } from '../db/index.js';
 import type {
@@ -293,7 +294,7 @@ export class ComicsService {
       .filter((t): t is string => !!t)
       .sort()
       .at(-1);
-    const rtl = books.filter((b) => b.direction === 'rtl').length;
+    const rtl = books.filter((b) => directionOf(b) === 'rtl').length;
     return {
       id: s.id,
       libraryId: s.libraryId,
@@ -314,6 +315,13 @@ function progressOut(
   return { page: r.page, pageCount: r.pageCount, finished: r.finished, updatedAt: r.updatedAt };
 }
 
+const MANGA_FOLDER = /(?:^|[\\/])manga(?:[\\/]|$)/i;
+
+/** ComicInfo's direction, else right to left for books filed under a "Manga" folder. */
+export function directionOf(b: Pick<BookRow, 'direction' | 'path'>): BookRow['direction'] {
+  return b.direction ?? (MANGA_FOLDER.test(path.dirname(b.path)) ? 'rtl' : null);
+}
+
 export function toBook(b: BookRow, seriesTitle: string, progress?: ProgressRow): ComicBook {
   return {
     id: b.id,
@@ -329,7 +337,7 @@ export function toBook(b: BookRow, seriesTitle: string, progress?: ProgressRow):
     volume: b.volume,
     chapter: b.chapter,
     special: b.special,
-    direction: b.direction,
+    direction: directionOf(b),
     coverKey: b.coverKey,
     indexError: b.indexError,
     progress: progress ? progressOut(progress) : null,

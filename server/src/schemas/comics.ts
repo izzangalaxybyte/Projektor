@@ -39,7 +39,8 @@ export const ComicBook = z
     chapter: z.number().nullable(),
     special: z.boolean(),
     direction: ReadingDirection.nullable().meta({
-      description: 'From ComicInfo.xml; null when the book does not say',
+      description:
+        'From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says',
     }),
     coverKey: z.string().nullable().meta({ description: 'Image key for GET /api/images/{key}' }),
     indexError: z.string().nullable(),
@@ -66,7 +67,7 @@ export const ComicSeries = z
     readCount: z.number().int().nonnegative(),
     coverKey: z.string().nullable(),
     direction: ReadingDirection.nullable().meta({
-      description: 'rtl when its books are tagged as manga',
+      description: 'rtl when most of its books read right to left',
     }),
     lastReadAt: Timestamp.nullable(),
     createdAt: Timestamp,
