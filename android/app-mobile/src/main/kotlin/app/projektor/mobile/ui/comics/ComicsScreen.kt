@@ -49,12 +49,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.projektor.core.api.models.ComicBook
 import app.projektor.core.api.models.ComicSeries
+import app.projektor.core.api.models.ReadingDirection
 import app.projektor.core.comics.SeriesSort
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.ui.UiState
@@ -64,14 +66,28 @@ import kotlinx.coroutines.delay
 
 private data class ComicsHome(val reading: List<ComicBook>, val history: List<ComicBook>, val series: List<ComicSeries>)
 
+/** Which shelf the tab shows; manga is whatever reads right to left (tagged, or under a Manga folder). */
+private enum class Shelf(val label: String) {
+    ALL("All"), COMICS("Comics"), MANGA("Manga");
+
+    fun shows(direction: ReadingDirection?): Boolean = when (this) {
+        ALL -> true
+        COMICS -> direction != ReadingDirection.RTL
+        MANGA -> direction == ReadingDirection.RTL
+    }
+}
+
 /**
- * The Comics tab: continue reading, recently read, and every series, searchable and sortable.
- * Without the server it lists what is downloaded instead.
+ * The Comics tab: continue reading, recently read, and every series, searchable, sortable, and
+ * narrowed to comics or manga. Without the server it lists what is downloaded instead.
  */
 @Composable
 fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook: (String) -> Unit, openHistory: () -> Unit, modifier: Modifier = Modifier) {
     val repo = container.comics() ?: return
     var sort by rememberSaveable { mutableStateOf(SeriesSort.TITLE) }
+    // Remembered across launches: someone reading mostly manga keeps seeing manga.
+    val prefs = LocalContext.current.getSharedPreferences("projektor.comics", android.content.Context.MODE_PRIVATE)
+    var shelf by remember { mutableStateOf(runCatching { Shelf.valueOf(prefs.getString(KEY_SHELF, null)!!) }.getOrDefault(Shelf.ALL)) }
     var search by rememberSaveable { mutableStateOf("") }
     var state by remember { mutableStateOf<UiState<ComicsHome>>(UiState.Loading) }
     LaunchedEffect(sort, search) {
@@ -113,7 +129,21 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
             UiState.Loading -> item(span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
             is UiState.Failed -> item(span = { GridItemSpan(maxLineSpan) }) { OfflineComics(container, s.message, openBook) }
             is UiState.Ready -> {
-                val home = s.value
+                val home = s.value.let { h ->
+                    ComicsHome(h.reading.filter { shelf.shows(it.direction) }, h.history.filter { shelf.shows(it.direction) }, h.series.filter { shelf.shows(it.direction) })
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Shelf.entries.forEach { option ->
+                            FilterChip(
+                                selected = shelf == option,
+                                onClick = { shelf = option; prefs.edit().putString(KEY_SHELF, option.name).apply() },
+                                label = { Text(option.label) },
+                                modifier = Modifier.testTag("comics-shelf-${option.name.lowercase()}"),
+                            )
+                        }
+                    }
+                }
                 if (home.reading.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     BookRow("Continue reading", home.reading, container, openBook, "comics-continue")
                 }
@@ -134,7 +164,11 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
                 }
                 if (home.series.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
-                        if (search.isNotEmpty()) "No series match \"$search\"." else "No comics yet. Add a Comics library on the server (Settings → Libraries) and scan it.",
+                        when {
+                            search.isNotEmpty() -> "No ${if (shelf == Shelf.ALL) "series" else shelf.label.lowercase()} match \"$search\"."
+                            s.value.series.isNotEmpty() -> "No ${shelf.label.lowercase()} yet."
+                            else -> "No comics yet. Add a Comics library on the server (Settings → Libraries) and scan it."
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -228,3 +262,5 @@ internal fun readFraction(book: ComicBook): Float? {
     if (p.finished || p.pageCount <= 0) return null
     return ((p.page + 1).toFloat() / p.pageCount).coerceIn(0.02f, 1f)
 }
+
+private const val KEY_SHELF = "shelf"

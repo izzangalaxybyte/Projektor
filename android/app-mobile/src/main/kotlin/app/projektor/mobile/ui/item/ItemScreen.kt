@@ -104,14 +104,14 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
     fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
     // Episodes in a list are summaries; their files come with the details.
     fun downloadEpisode(e: ItemSummary) = scope.launch {
-        try { downloads.startAll(items, client, listOf(e.id)) } catch (ex: Exception) { toast(ex.userMessage()) }
+        try { downloads.startAll(items, listOf(e.id)) } catch (ex: Exception) { toast(ex.userMessage()) }
     }
     var queueingSeason by remember(itemId) { mutableStateOf(false) }
     fun downloadSeason(episodes: List<ItemSummary>) = scope.launch {
         queueingSeason = true
         try {
             val ids = episodes.sortedWith(compareBy({ it.seasonNumber ?: Long.MAX_VALUE }, { it.episodeNumber ?: Long.MAX_VALUE })).map { it.id }
-            toast("Downloading ${downloads.startAll(items, client, ids)} episodes")
+            toast("Downloading ${downloads.startAll(items, ids)} episodes")
         } catch (e: Exception) { toast(e.userMessage()) } finally { queueingSeason = false }
     }
     LaunchedEffect(itemId) {
@@ -184,9 +184,9 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                         DownloadPanel(
                             download = downloaded.firstOrNull { it.itemId == d.id },
                             sizeBytes = file.sizeBytes.takeIf { d.files.size == 1 },
-                            onStart = { if (d.files.size > 1) choosingDownload = true else downloads.start(client, d, file) },
+                            onStart = { if (d.files.size > 1) choosingDownload = true else downloads.start(d, file) },
                             onRemove = downloads::remove,
-                            onRetry = { downloads.retry(client, it) },
+                            onRetry = { downloads.retry(it) },
                         )
                         if (d.files.size > 1) Text("${d.files.size} versions available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -194,7 +194,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                         VersionDialog(d.files, onDismiss = { choosingFrom = null }) { chosen -> choosingFrom = null; play(chosen.id, d.id, at) }
                     }
                     if (choosingDownload) {
-                        VersionDialog(d.files, title = "Choose a version to download", onDismiss = { choosingDownload = false }) { chosen -> choosingDownload = false; downloads.start(client, d, chosen) }
+                        VersionDialog(d.files, title = "Choose a version to download", onDismiss = { choosingDownload = false }) { chosen -> choosingDownload = false; downloads.start(d, chosen) }
                     }
                 }
                 d.tagline?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), style = MaterialTheme.typography.titleMedium, fontStyle = FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)) }
@@ -229,7 +229,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                         downloaded.firstOrNull { it.itemId == e.id },
                         onStart = { downloadEpisode(e) },
                         onRemove = downloads::remove,
-                        onRetry = { downloads.retry(client, it) },
+                        onRetry = { downloads.retry(it) },
                     )
                 }
                 d.files.forEach { f -> FileInfo(f) }

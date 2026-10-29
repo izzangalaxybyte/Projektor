@@ -81,7 +81,7 @@ fun DownloadsScreen(
         play(d.file.id, d.itemId, resumeAt(d))
     }
     // Retrying needs the server; without it the row stays failed until there is a connection.
-    fun retry(d: Download) { container.client()?.let { store.retry(it, d) } }
+    fun retry(d: Download) = store.retry(d)
 
     LazyColumn(modifier.fillMaxSize().testTag("downloads"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         item {
@@ -147,7 +147,7 @@ private fun ComicDownloadRow(d: app.projektor.mobile.comics.ComicDownload, conta
             d,
             start = {},
             remove = comicStore::remove,
-            retry = { failed -> container.comics()?.let { comicStore.retry(it, failed) } },
+            retry = { failed -> comicStore.retry(failed) },
         )
     }
 }

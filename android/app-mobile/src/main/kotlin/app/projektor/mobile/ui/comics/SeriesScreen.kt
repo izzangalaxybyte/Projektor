@@ -130,7 +130,7 @@ fun SeriesScreen(container: AppContainer, seriesId: String, openBook: (String) -
                         }
                         val missing = books.filter { b -> downloads.none { it.bookId == b.id } && (b.pageCount ?: 0) > 0 }
                         if (missing.isNotEmpty()) OutlinedButton(
-                            onClick = { missing.forEach { container.comicDownloads.start(repo, it) }; toast("Downloading ${missing.size} books") },
+                            onClick = { missing.forEach { container.comicDownloads.start(it) }; toast("Downloading ${missing.size} books") },
                             modifier = Modifier.fillMaxWidth().testTag("comic-download-all"),
                         ) {
                             Icon(Icons.Filled.Download, null, tint = Color.White)
@@ -145,9 +145,9 @@ fun SeriesScreen(container: AppContainer, seriesId: String, openBook: (String) -
                         downloads.firstOrNull { it.bookId == book.id },
                         open = { openBook(book.id) },
                         setRead = { read -> act { repo.setRead(book.id, read) } },
-                        startDownload = { container.comicDownloads.start(repo, book) },
+                        startDownload = { container.comicDownloads.start(book) },
                         removeDownload = { container.comicDownloads.remove(it) },
-                        retryDownload = { container.comicDownloads.retry(repo, it) },
+                        retryDownload = { container.comicDownloads.retry(it) },
                     )
                 }
             }

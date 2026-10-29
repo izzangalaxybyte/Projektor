@@ -23,8 +23,8 @@ class AppContainer(app: Application) {
     val sessions: SessionStore = PrefsSessionStore(app)
     val playerPrefs: PlayerPrefs = SharedPrefsPlayerPrefs(app)
     val browsePrefs = BrowsePrefs(app)
-    val downloads = DownloadStore(app)
-    val comicDownloads = ComicDownloadStore(app)
+    val downloads = DownloadStore(app) { client() }
+    val comicDownloads = ComicDownloadStore(app) { comics() }
     val comicProgress = ComicProgressStore(app)
     val readerPrefs = ReaderPrefs(app)
     /** The comic reader's image loader: pages from the server, a downloaded CBZ, or a PDF. */
@@ -38,6 +38,12 @@ class AppContainer(app: Application) {
     fun items(): ItemsRepository? = client()?.let { ItemsRepository(it) }
     fun live(): LiveRepository? = client()?.let { LiveRepository(it) }
     fun comics(): ComicsRepository? = client()?.let { ComicsRepository(it) }
+
+    // Last, once everything the downloads need is set up.
+    init {
+        downloads.resume()
+        comicDownloads.resume()
+    }
 }
 
 class ProjektorApp : Application() {

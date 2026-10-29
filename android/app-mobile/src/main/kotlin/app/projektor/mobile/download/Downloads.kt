@@ -20,12 +20,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -47,6 +46,7 @@ data class Download(
     val itemId: String,
     val detail: ItemDetail,
     val file: MediaFile,
+    /** The DownloadManager job of a download an older version queued; cancelled when the app starts. */
     val managerId: Long = -1,
     val state: DownloadState = DownloadState.QUEUED,
     val bytes: Long = 0,
@@ -67,24 +67,25 @@ data class Download(
 /**
  * Downloads for offline viewing, Netflix style: kept in the app's own storage (no permission, gone
  * with the app), listed in the Downloads tab, played by the app's player without the server.
- * The system DownloadManager moves the bytes, so a download survives the app being closed and
- * resumes after a dropped connection; this store remembers what each one is and polls its progress.
+ * One at a time, in the order asked for, while [DownloadService] keeps the app running; a dropped
+ * connection is waited out and resumed, and what was left when the app closed resumes on [resume].
  */
-class DownloadStore(context: Context) {
+class DownloadStore(context: Context, private val client: () -> ProjektorClient?) {
     private val app = context.applicationContext
-    private val manager = app.getSystemService(DownloadManager::class.java)
+    private val manager by lazy { app.getSystemService(DownloadManager::class.java) }
     private val json = Json { ignoreUnknownKeys = true }
     private val index = File(app.filesDir, "downloads.json")
     private val lock = Any()
     // One worker: a delete and a fresh download of the same item never touch its folder at once.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
-    // Progress has its own, so a season's worth of subtitles coming down never freezes the rings.
-    private val pollScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var poller: Job? = null
+    // Saving the playback position never waits behind a download.
+    private val positionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var pump: Job? = null
     private val _downloads = MutableStateFlow(load())
     val downloads: StateFlow<List<Download>> = _downloads
 
-    init { ensurePolling() }
+    /** Picks up downloads left unfinished when the app last closed. */
+    fun resume() = ensurePumping()
 
     fun get(itemId: String): Download? = _downloads.value.firstOrNull { it.itemId == itemId }
 
@@ -97,27 +98,25 @@ class DownloadStore(context: Context) {
         .minWithOrNull(episodeOrder)
 
     /** Starts downloading [file] of [detail]. Replaces an earlier download of the same item. */
-    fun start(client: ProjektorClient, detail: ItemDetail, file: MediaFile) {
+    fun start(detail: ItemDetail, file: MediaFile) {
         val old = get(detail.id)
         val entry = Download(itemId = detail.id, detail = detail.copy(children = emptyList()), file = file)
         update { list -> list.filterNot { it.itemId == detail.id } + entry }
-        scope.launch {
-            old?.let(::discard)
-            fetch(client, entry)
-        }
+        old?.let { scope.launch { discard(it) } }
+        ensurePumping()
     }
 
     /** Fetches each episode's details and downloads the first version of each, skipping ones already here. */
-    suspend fun startAll(items: ItemsRepository, client: ProjektorClient, episodeIds: List<String>): Int {
+    suspend fun startAll(items: ItemsRepository, episodeIds: List<String>): Int {
         var queued = 0
         episodeIds.filter { get(it) == null }.forEach { id ->
             val d = items.detail(id)
-            d.files.firstOrNull()?.let { start(client, d, it); queued++ }
+            d.files.firstOrNull()?.let { start(d, it); queued++ }
         }
         return queued
     }
 
-    fun retry(client: ProjektorClient, d: Download) = start(client, d.detail, d.file)
+    fun retry(d: Download) = start(d.detail, d.file)
 
     /** Cancels a download in progress, or deletes a finished one, with everything saved for it. */
     fun remove(d: Download) {
@@ -133,7 +132,7 @@ class DownloadStore(context: Context) {
     /** Called by the player every few seconds; the index is written off the main thread. */
     fun savePosition(itemId: String, positionMs: Long) {
         if (get(itemId) == null) return
-        pollScope.launch { set(itemId) { it.copy(positionMs = positionMs) } }
+        positionScope.launch { set(itemId) { it.copy(positionMs = positionMs) } }
     }
 
     /** What the player plays for a finished download: the local file and its saved subtitles. */
@@ -157,10 +156,29 @@ class DownloadStore(context: Context) {
         return used to free
     }
 
+    // One download at a time, oldest first, until none is left.
+    private fun ensurePumping() {
+        synchronized(lock) {
+            if (_downloads.value.none { it.isActive }) return
+            DownloadService.start(app)
+            if (pump?.isActive == true) return
+            pump = scope.launch {
+                while (true) {
+                    // Lets a delete queued before this one clear the folder first.
+                    yield()
+                    val next = synchronized(lock) { _downloads.value.firstOrNull { it.isActive } ?: run { pump = null; null } } ?: break
+                    runCatching { fetch(next) }.onFailure { Log.w(TAG, "download ${next.itemId}", it) }
+                    if (get(next.itemId)?.let { it.addedAt == next.addedAt && it.isActive } == true) finish(next, ok = false)
+                }
+            }
+        }
+    }
+
     // Subtitles, fonts and artwork first (small, and only reachable while online), then the video.
-    private suspend fun fetch(client: ProjektorClient, entry: Download) {
+    private suspend fun fetch(entry: Download) {
+        val client = client()
         val dir = dirFor(entry.itemId)?.apply { mkdirs() }
-        if (dir == null) { set(entry.itemId) { it.copy(state = DownloadState.FAILED) }; return }
+        if (client == null || dir == null) return finish(entry, ok = false)
         val subtitles = entry.file.subtitles.mapNotNull { s ->
             val ass = s.assUrl != null
             val name = "sub-${safeName(s.id)}.${if (ass) "ass" else "vtt"}"
@@ -171,18 +189,28 @@ class DownloadStore(context: Context) {
         val hasFonts = entry.file.subtitles.mapNotNull { it.fontsUrl }.distinct().map { fetchFonts(client, it, File(dir, FONTS)) }.any { it }
         val width = if (entry.isEpisode) 780 else 300
         val image = client.imageUrl(entry.detail.posterKey, width)?.let { url -> runCatching { save(url, File(dir, IMAGE)); IMAGE }.getOrNull() }
-        if (get(entry.itemId)?.addedAt != entry.addedAt) return // Cancelled while the extras came down.
-        val request = DownloadManager.Request(Uri.parse(client.withAccessToken("/api/files/${entry.file.id}/stream")))
-            .setTitle(downloadTitle(entry.detail))
-            .setDescription(entry.file.fileName)
-            // Progress only: a finished system notification opens the file in another app.
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-            .apply { @Suppress("DEPRECATION") setVisibleInDownloadsUi(false) }
-            .setDestinationInExternalFilesDir(app, null, "$ROOT/${safeName(entry.itemId)}/${videoName(entry.file)}")
-        val id = runCatching { manager.enqueue(request) }.onFailure { Log.w(TAG, "enqueue", it) }.getOrNull()
-        if (get(entry.itemId)?.addedAt != entry.addedAt) { id?.let { manager.remove(it) }; return }
-        set(entry.itemId) { it.copy(managerId = id ?: -1, state = if (id == null) DownloadState.FAILED else DownloadState.QUEUED, subtitles = subtitles, hasFonts = hasFonts, image = image) }
-        ensurePolling()
+        val current = { get(entry.itemId)?.addedAt == entry.addedAt }
+        if (!current()) return // Cancelled while the extras came down.
+        set(entry.itemId) { it.copy(state = DownloadState.DOWNLOADING, subtitles = subtitles, hasFonts = hasFonts, image = image) }
+        val ok = Transfer.fetch(
+            url = client.withAccessToken("/api/files/${entry.file.id}/stream"),
+            to = videoFile(entry),
+            isCurrent = current,
+            onProgress = { bytes, _ -> progress(entry, bytes) },
+            onWaiting = { if (current()) set(entry.itemId) { it.copy(state = DownloadState.WAITING) } },
+        )
+        if (ok) finish(entry, ok = true)
+    }
+
+    private fun progress(entry: Download, bytes: Long) {
+        // In memory only: the index is written when the state changes, not every half second.
+        _downloads.update { list -> list.map { if (it.itemId == entry.itemId && it.addedAt == entry.addedAt) it.copy(state = DownloadState.DOWNLOADING, bytes = bytes) else it } }
+    }
+
+    private fun finish(entry: Download, ok: Boolean) {
+        if (get(entry.itemId)?.addedAt != entry.addedAt) return
+        set(entry.itemId) { it.copy(state = if (ok) DownloadState.DONE else DownloadState.FAILED, bytes = if (ok) it.total else it.bytes) }
+        get(entry.itemId)?.let { DownloadNotifications.finished(app, it) }
     }
 
     /** Saves the fonts the server lists for a subtitle; true when at least one arrived. */
@@ -193,55 +221,6 @@ class DownloadStore(context: Context) {
             val font = list.getJSONObject(i)
             runCatching { save(client.withAccessToken(font.getString("url")), File(dir, safeName(font.getString("name")))) }.isSuccess
         } > 0
-    }
-
-    // While anything is in flight, read DownloadManager's progress every second.
-    private fun ensurePolling() {
-        synchronized(lock) {
-            if (poller?.isActive == true || _downloads.value.none { it.isActive }) return
-            poller = pollScope.launch {
-                while (isActive) {
-                    poll()
-                    if (_downloads.value.none { it.isActive }) break
-                    delay(1_000)
-                }
-            }
-        }
-    }
-
-    private fun poll() {
-        val active = _downloads.value.filter { it.isActive && it.managerId >= 0 }
-        if (active.isEmpty()) return
-        val rows = mutableMapOf<Long, Pair<DownloadState, Long>>()
-        runCatching {
-            manager.query(DownloadManager.Query().setFilterById(*active.map { it.managerId }.toLongArray()))?.use { c ->
-                val idCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
-                val statusCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
-                val bytesCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                while (c.moveToNext()) {
-                    val state = when (c.getInt(statusCol)) {
-                        DownloadManager.STATUS_SUCCESSFUL -> DownloadState.DONE
-                        DownloadManager.STATUS_FAILED -> DownloadState.FAILED
-                        DownloadManager.STATUS_PAUSED -> DownloadState.WAITING
-                        DownloadManager.STATUS_RUNNING -> DownloadState.DOWNLOADING
-                        else -> DownloadState.QUEUED
-                    }
-                    rows[c.getLong(idCol)] = state to c.getLong(bytesCol)
-                }
-            }
-        }.onFailure { Log.w(TAG, "poll", it); return }
-        val activeIds = active.map { it.itemId }.toSet()
-        update { list ->
-            list.map { d ->
-                if (d.itemId !in activeIds || !d.isActive || d.managerId < 0) return@map d
-                // A row the system dropped (cleared from its Downloads app) counts as failed.
-                val (state, bytes) = rows[d.managerId] ?: (DownloadState.FAILED to d.bytes)
-                d.copy(state = state, bytes = bytes.coerceAtLeast(0))
-            }
-        }
-        // Finished since the last look: say so. A download that finished with the app closed is
-        // announced the next time it opens.
-        _downloads.value.filter { it.itemId in activeIds && !it.isActive }.forEach { DownloadNotifications.finished(app, it) }
     }
 
     private fun set(itemId: String, change: (Download) -> Download) = update { list -> list.map { if (it.itemId == itemId) change(it) else it } }
@@ -257,10 +236,14 @@ class DownloadStore(context: Context) {
         }
     }
 
-    // An entry the app was closed on before its video was queued can never finish: offer a retry.
+    // Unfinished ones start over in line; one an older version handed to DownloadManager is taken back.
     private fun load(): List<Download> =
         runCatching { json.decodeFromString<List<Download>>(index.readText()) }.getOrDefault(emptyList())
-            .map { if (it.isActive && it.managerId < 0) it.copy(state = DownloadState.FAILED) else it }
+            .map { d ->
+                if (!d.isActive) return@map d
+                if (d.managerId >= 0) runCatching { manager.remove(d.managerId) }
+                d.copy(state = DownloadState.QUEUED, managerId = -1)
+            }
 
     private fun root(): File? = app.getExternalFilesDir(null)?.let { File(it, ROOT) }
     private fun dirFor(itemId: String): File? = root()?.let { File(it, safeName(itemId)) }

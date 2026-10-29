@@ -10,7 +10,9 @@ import app.projektor.core.comics.BookOrderKey
 import app.projektor.core.comics.ComicsRepository
 import app.projektor.core.comics.sortedInReadingOrder
 import app.projektor.mobile.download.DownloadNotifications
+import app.projektor.mobile.download.DownloadService
 import app.projektor.mobile.download.DownloadState
+import app.projektor.mobile.download.Transfer
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -18,12 +20,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -33,6 +34,7 @@ import kotlinx.serialization.json.Json
 data class ComicDownload(
     val bookId: String,
     val book: ComicBook,
+    /** The DownloadManager job of a download an older version queued; cancelled when the app starts. */
     val managerId: Long = -1,
     val state: DownloadState = DownloadState.QUEUED,
     val bytes: Long = 0,
@@ -44,27 +46,30 @@ data class ComicDownload(
     val isActive: Boolean get() = state == DownloadState.QUEUED || state == DownloadState.DOWNLOADING || state == DownloadState.WAITING
     val progress: Float get() = if (state == DownloadState.DONE) 1f else (bytes.toFloat() / total.coerceAtLeast(1)).coerceIn(0f, 1f)
     val orderKey: BookOrderKey get() = BookOrderKey(book.volume, book.chapter, book.special, book.fileName)
+    /** "Series · Vol. 3", for notifications. */
+    val title: String get() = listOfNotNull(book.seriesTitle, book.label ?: book.title).joinToString(" · ")
 }
 
 /**
  * Comics for reading offline, kept in the app's own storage beside the video downloads. Archives
  * arrive as a CBZ of the original pages in reading order, PDFs as they are; the reader opens both
- * without the server.
+ * without the server. Like the video downloads, one at a time while [DownloadService] keeps the app
+ * running.
  */
-class ComicDownloadStore(context: Context) {
+class ComicDownloadStore(context: Context, private val repo: () -> ComicsRepository?) {
     private val app = context.applicationContext
-    private val manager = app.getSystemService(DownloadManager::class.java)
+    private val manager by lazy { app.getSystemService(DownloadManager::class.java) }
     private val json = Json { ignoreUnknownKeys = true }
     private val serializer = ListSerializer(ComicDownload.serializer())
     private val index = File(app.filesDir, "comic-downloads.json")
     private val lock = Any()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
-    private val pollScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var poller: Job? = null
+    private var pump: Job? = null
     private val _downloads = MutableStateFlow(load())
     val downloads: StateFlow<List<ComicDownload>> = _downloads
 
-    init { ensurePolling() }
+    /** Picks up downloads left unfinished when the app last closed. */
+    fun resume() = ensurePumping()
 
     fun get(bookId: String): ComicDownload? = _downloads.value.firstOrNull { it.bookId == bookId }
 
@@ -80,11 +85,11 @@ class ComicDownloadStore(context: Context) {
     fun ofSeries(seriesId: String): List<ComicDownload> =
         _downloads.value.filter { it.book.seriesId == seriesId && it.state == DownloadState.DONE }.sortedInReadingOrder { it.orderKey }
 
-    fun start(repo: ComicsRepository, book: ComicBook) {
+    fun start(book: ComicBook) {
         if (get(book.id) != null) return
         val entry = ComicDownload(bookId = book.id, book = book, total = book.sizeBytes)
         update { list -> list + entry }
-        scope.launch { fetch(repo, entry) }
+        ensurePumping()
     }
 
     fun remove(d: ComicDownload) {
@@ -95,17 +100,33 @@ class ComicDownloadStore(context: Context) {
         }
     }
 
-    fun retry(repo: ComicsRepository, d: ComicDownload) {
+    fun retry(d: ComicDownload) {
         remove(d)
-        scope.launch { start(repo, d.book) }
+        scope.launch { start(d.book) }
     }
 
-    private fun fetch(repo: ComicsRepository, entry: ComicDownload) {
-        val dir = dirFor(entry.bookId)?.apply { mkdirs() }
-        if (dir == null) {
-            set(entry.bookId) { it.copy(state = DownloadState.FAILED) }
-            return
+    // One book at a time, oldest first, until none is left.
+    private fun ensurePumping() {
+        synchronized(lock) {
+            if (_downloads.value.none { it.isActive }) return
+            DownloadService.start(app)
+            if (pump?.isActive == true) return
+            pump = scope.launch {
+                while (true) {
+                    // Lets a delete queued before this one clear the folder first.
+                    yield()
+                    val next = synchronized(lock) { _downloads.value.firstOrNull { it.isActive } ?: run { pump = null; null } } ?: break
+                    runCatching { fetch(next) }.onFailure { Log.w(TAG, "download ${next.bookId}", it) }
+                    if (get(next.bookId)?.let { it.addedAt == next.addedAt && it.isActive } == true) finish(next, ok = false)
+                }
+            }
         }
+    }
+
+    private suspend fun fetch(entry: ComicDownload) {
+        val repo = repo()
+        val dir = dirFor(entry.bookId)?.apply { mkdirs() }
+        if (repo == null || dir == null) return finish(entry, ok = false)
         val hasCover = repo.coverUrl(entry.book.coverKey, 300)?.let { url ->
             runCatching {
                 val connection = URL(url).openConnection() as HttpURLConnection
@@ -118,70 +139,35 @@ class ComicDownloadStore(context: Context) {
                 }
             }.isSuccess
         } ?: false
+        val current = { get(entry.bookId)?.addedAt == entry.addedAt }
+        if (!current()) return
+        set(entry.bookId) { it.copy(state = DownloadState.DOWNLOADING, hasCover = hasCover) }
+        val ok = Transfer.fetch(
+            url = repo.fileUrl(entry.bookId),
+            to = fileOf(entry),
+            isCurrent = current,
+            // The CBZ is packed on the fly, so its size is the server's word, not the file's.
+            onProgress = { bytes, total -> progress(entry, bytes, total) },
+            onWaiting = { if (current()) set(entry.bookId) { it.copy(state = DownloadState.WAITING) } },
+        )
+        if (ok) finish(entry, ok = true)
+    }
+
+    private fun progress(entry: ComicDownload, bytes: Long, total: Long) {
+        // In memory only: the index is written when the state changes.
+        _downloads.update { list ->
+            list.map {
+                if (it.bookId == entry.bookId && it.addedAt == entry.addedAt) {
+                    it.copy(state = DownloadState.DOWNLOADING, bytes = bytes, total = if (total > 0) total else it.total)
+                } else it
+            }
+        }
+    }
+
+    private fun finish(entry: ComicDownload, ok: Boolean) {
         if (get(entry.bookId)?.addedAt != entry.addedAt) return
-        val name = if (entry.isPdf) BOOK_PDF else BOOK_CBZ
-        val request = DownloadManager.Request(Uri.parse(repo.fileUrl(entry.bookId)))
-            .setTitle(listOfNotNull(entry.book.seriesTitle, entry.book.label).joinToString(" · "))
-            .setDescription(entry.book.title)
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-            .setDestinationInExternalFilesDir(app, null, "$ROOT/${entry.bookId}/$name")
-            .apply { @Suppress("DEPRECATION") setVisibleInDownloadsUi(false) }
-        val id = runCatching { manager.enqueue(request) }.onFailure { Log.w(TAG, "enqueue", it) }.getOrNull()
-        if (get(entry.bookId)?.addedAt != entry.addedAt) {
-            id?.let { manager.remove(it) }
-            return
-        }
-        set(entry.bookId) { it.copy(managerId = id ?: -1, state = if (id == null) DownloadState.FAILED else DownloadState.QUEUED, hasCover = hasCover) }
-        ensurePolling()
-    }
-
-    private fun ensurePolling() {
-        synchronized(lock) {
-            if (poller?.isActive == true || _downloads.value.none { it.isActive }) return
-            poller = pollScope.launch {
-                while (isActive) {
-                    poll()
-                    if (_downloads.value.none { it.isActive }) break
-                    delay(1_000)
-                }
-            }
-        }
-    }
-
-    private fun poll() {
-        val active = _downloads.value.filter { it.isActive && it.managerId >= 0 }
-        if (active.isEmpty()) return
-        val rows = mutableMapOf<Long, Triple<DownloadState, Long, Long>>()
-        runCatching {
-            manager.query(DownloadManager.Query().setFilterById(*active.map { it.managerId }.toLongArray()))?.use { c ->
-                val idCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
-                val statusCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
-                val bytesCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                val totalCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                while (c.moveToNext()) {
-                    val state = when (c.getInt(statusCol)) {
-                        DownloadManager.STATUS_SUCCESSFUL -> DownloadState.DONE
-                        DownloadManager.STATUS_FAILED -> DownloadState.FAILED
-                        DownloadManager.STATUS_PAUSED -> DownloadState.WAITING
-                        DownloadManager.STATUS_RUNNING -> DownloadState.DOWNLOADING
-                        else -> DownloadState.QUEUED
-                    }
-                    rows[c.getLong(idCol)] = Triple(state, c.getLong(bytesCol), c.getLong(totalCol))
-                }
-            }
-        }.onFailure { Log.w(TAG, "poll", it); return }
-        val activeIds = active.map { it.bookId }.toSet()
-        update { list ->
-            list.map { d ->
-                if (d.bookId !in activeIds || !d.isActive || d.managerId < 0) return@map d
-                val (state, bytes, total) = rows[d.managerId] ?: Triple(DownloadState.FAILED, d.bytes, d.total)
-                // The CBZ is packed on the fly, so its size is the server's word, not the file's.
-                d.copy(state = state, bytes = bytes.coerceAtLeast(0), total = if (total > 0) total else d.total)
-            }
-        }
-        _downloads.value.filter { it.bookId in activeIds && !it.isActive }.forEach {
-            DownloadNotifications.finished(app, it.bookId, it.state == DownloadState.DONE, listOfNotNull(it.book.seriesTitle, it.book.label ?: it.book.title).joinToString(" · "))
-        }
+        set(entry.bookId) { it.copy(state = if (ok) DownloadState.DONE else DownloadState.FAILED) }
+        DownloadNotifications.finished(app, entry.bookId, ok, entry.title)
     }
 
     private fun set(bookId: String, change: (ComicDownload) -> ComicDownload) = update { list -> list.map { if (it.bookId == bookId) change(it) else it } }
@@ -197,10 +183,14 @@ class ComicDownloadStore(context: Context) {
         }
     }
 
-    // An entry the app was closed on before its file was queued can never finish: offer a retry.
+    // Unfinished ones start over in line; one an older version handed to DownloadManager is taken back.
     private fun load(): List<ComicDownload> =
         runCatching { json.decodeFromString(serializer, index.readText()) }.getOrDefault(emptyList())
-            .map { if (it.isActive && it.managerId < 0) it.copy(state = DownloadState.FAILED) else it }
+            .map { d ->
+                if (!d.isActive) return@map d
+                if (d.managerId >= 0) runCatching { manager.remove(d.managerId) }
+                d.copy(state = DownloadState.QUEUED, managerId = -1)
+            }
 
     private fun dirFor(bookId: String): File? = app.getExternalFilesDir(null)?.let { File(File(it, ROOT), bookId) }
 
