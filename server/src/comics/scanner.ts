@@ -10,7 +10,13 @@ import sharp from 'sharp';
 import { now, schema, type Db } from '../db/index.js';
 import type { ImageStore } from '../images/store.js';
 import { COMIC_EXTENSIONS, type BookRef, type ComicArchives } from './archive.js';
-import { isGroupingFolder, parseComicName, seriesTitle, sortTitle } from './naming.js';
+import {
+  isGenericFolderTitle,
+  isGroupingFolder,
+  parseComicName,
+  seriesTitle,
+  sortTitle,
+} from './naming.js';
 
 export interface ComicScanResult {
   filesSeen: number;
@@ -67,17 +73,64 @@ async function* walkComics(root: string, log?: FastifyBaseLogger): AsyncGenerato
 /**
  * The series a book belongs to: the folder it sits in, stepping up past folders that only split
  * a series ("Volumes", "Chapters", "Vol 01"). Books loose in the library root group by the name
- * their files share ("One Piece v01.cbz" and "One Piece c120.cbz" are both "One Piece").
+ * their files share ("One Piece v01.cbz" and "One Piece c120.cbz" are both "One Piece"), and so
+ * do books loose in a shelf, a folder of series ("Marvel/Avengers - Standoff.cbz"), unless they
+ * are named after the shelf folder itself.
  */
-export function seriesFor(root: string, filePath: string): { key: string; title: string } {
+export function seriesFor(
+  root: string,
+  filePath: string,
+  shelves: ReadonlySet<string> = new Set(),
+): { key: string; title: string } {
   const dirs = path
     .relative(root, path.dirname(filePath))
     .split(path.sep)
     .filter((d) => d !== '');
+  const folder = path.join(root, ...dirs);
+  if (dirs.length > 0 && shelves.has(folder)) {
+    const name = parseComicName(path.basename(filePath)).series;
+    if (sortTitle(name) !== sortTitle(seriesTitle(dirs.at(-1)!))) {
+      return { key: `${folder}#${sortTitle(name)}`, title: name };
+    }
+  }
   while (dirs.length > 0 && isGroupingFolder(dirs.at(-1)!)) dirs.pop();
-  if (dirs.length > 0) return { key: path.join(root, ...dirs), title: seriesTitle(dirs.at(-1)!) };
+  if (dirs.length > 0) {
+    let title = seriesTitle(dirs.at(-1)!);
+    // "Annual", or a "Volume 4" that only reads as one once its order prefix is gone.
+    if (dirs.length > 1 && (isGenericFolderTitle(title) || isGroupingFolder(title))) {
+      title = `${seriesTitle(dirs.at(-2)!)} - ${title}`;
+    }
+    return { key: path.join(root, ...dirs), title };
+  }
   const name = parseComicName(path.basename(filePath)).series;
   return { key: `${root}#${sortTitle(name)}`, title: name };
+}
+
+/** Folders holding books of their own and two or more series folders under them. */
+export function findShelves(files: readonly { root: string; path: string }[]): Set<string> {
+  const looseIn = new Set<string>();
+  const subfolders = new Map<string, Set<string>>();
+  for (const f of files) {
+    const dir = path.dirname(f.path);
+    looseIn.add(dir);
+    // Every folder between the root and this book has the next one down as a subfolder.
+    const parts = path
+      .relative(f.root, dir)
+      .split(path.sep)
+      .filter((d) => d !== '');
+    for (let i = 0; i < parts.length; i++) {
+      if (isGroupingFolder(parts[i]!)) break;
+      const parent = path.join(f.root, ...parts.slice(0, i));
+      const set = subfolders.get(parent) ?? new Set<string>();
+      set.add(parts[i]!);
+      subfolders.set(parent, set);
+    }
+  }
+  const shelves = new Set<string>();
+  for (const [dir, subs] of subfolders) {
+    if (subs.size >= 2 && looseIn.has(dir)) shelves.add(dir);
+  }
+  return shelves;
 }
 
 /**
@@ -104,11 +157,15 @@ export async function scanComicLibrary(
   const byPath = new Map(books.map((b) => [b.path, b]));
   const series = new Map(
     db
-      .select({ id: schema.comicSeries.id, key: schema.comicSeries.folderKey })
+      .select({
+        id: schema.comicSeries.id,
+        key: schema.comicSeries.folderKey,
+        title: schema.comicSeries.title,
+      })
       .from(schema.comicSeries)
       .where(eq(schema.comicSeries.libraryId, libraryId))
       .all()
-      .map((s) => [s.key, s.id]),
+      .map((s) => [s.key, s]),
   );
   const result: ComicScanResult = {
     filesSeen: 0,
@@ -120,14 +177,25 @@ export async function scanComicLibrary(
   const walked: Walked[] = [];
   for (const root of roots) for await (const file of walkComics(root, log)) walked.push(file);
   const walkedPaths = new Set(walked.map((w) => w.path));
+  const shelves = findShelves(walked);
   // Rows whose file is gone, by name and size, for moves.
   const gone = new Map<string, (typeof books)[number]>();
   for (const b of books) if (!walkedPaths.has(b.path)) gone.set(`${b.fileName}\0${b.sizeBytes}`, b);
 
   const seriesId = (root: string, filePath: string): string => {
-    const s = seriesFor(root, filePath);
+    const s = seriesFor(root, filePath, shelves);
     const known = series.get(s.key);
-    if (known) return known;
+    if (known) {
+      // Titles follow the naming rules of the build that made them; refresh them as those improve.
+      if (known.title !== s.title) {
+        db.update(schema.comicSeries)
+          .set({ title: s.title, sortTitle: sortTitle(s.title), updatedAt: now() })
+          .where(eq(schema.comicSeries.id, known.id))
+          .run();
+        known.title = s.title;
+      }
+      return known.id;
+    }
     const id = randomUUID();
     const ts = now();
     db.insert(schema.comicSeries)
@@ -141,7 +209,7 @@ export async function scanComicLibrary(
         updatedAt: ts,
       })
       .run();
-    series.set(s.key, id);
+    series.set(s.key, { id, key: s.key, title: s.title });
     return id;
   };
 

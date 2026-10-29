@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.projektor.core.comics.sortedInReadingOrder
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.download.Download
 import app.projektor.mobile.download.DownloadState
@@ -66,7 +67,7 @@ fun DownloadsScreen(
     val comicSeries = remember(comics) {
         comics.groupBy { it.book.seriesId }.values
             .sortedByDescending { list -> list.maxOf { it.addedAt } }
-            .map { list -> list.sortedWith(compareBy(app.projektor.core.comics.bookOrder) { it.orderKey }) }
+            .map { list -> list.sortedInReadingOrder { it.orderKey } }
     }
     val movies = remember(all) { all.filter { it.showKey == null }.sortedByDescending { it.addedAt } }
     val shows = remember(all) {

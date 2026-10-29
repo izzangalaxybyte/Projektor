@@ -28,10 +28,15 @@ const CHAPTER = [
 const SPECIAL =
   /\b(?:extras?|specials?|omake|one[\s-]?shot|side[\s-]?stor(?:y|ies)|bonus|short stor(?:y|ies)|art ?book|databook|guide ?book)\b/i;
 
+/** Brackets that hold the numbering rather than a tag: "[Volume 03 - guya]", "(#2)". */
+const NUMBERING_IN_BRACKETS =
+  /[[({]\s*((?:vol(?:ume)?|v|ch(?:apter|ap)?|c|#)\.?\s*\d+(?:\.\d+)?(?![a-z\d])[^\])}]*)[\])}]/gi;
+
 /** Drops the extension, release tags in brackets, and separators that are not decimal points. */
 export function cleanName(fileName: string): string {
   return fileName
     .replace(/\.(cb[zr7t]|zip|rar|7z|tar|pdf|epub)$/i, '')
+    .replace(NUMBERING_IN_BRACKETS, ' $1 ')
     .replace(/\[[^\]]*\]|\{[^}]*\}/g, ' ')
     .replace(/\((?:[^()]*)\)/g, ' ')
     .replace(/_/g, ' ')
@@ -124,25 +129,65 @@ export function compareBooks(a: SortableBook, b: SortableBook): number {
   );
 }
 
+/** A leading reading-order number: "001 Birds of Prey 118", "02 - Marvel Zombies", "00b (prelude) …". */
+const READING_ORDER = /^\d{1,4}[a-z]?(?=[\s._()-])/i;
+
+/**
+ * Story-arc folders number their books in the order to read them, ahead of each book's own issue
+ * number ("010 Infinity Wars - Arachknight 001"); when most books do, that order wins.
+ */
+export function inReadingOrder(books: readonly { fileName: string }[]): boolean {
+  const numbered = books.filter((b) => READING_ORDER.test(b.fileName)).length;
+  return books.length >= 2 && numbered >= books.length * 0.8;
+}
+
+/** One series' books in reading order. */
+export function sortBooks<T extends SortableBook>(books: T[]): T[] {
+  return inReadingOrder(books)
+    ? books.sort((a, b) => naturalCompare(a.fileName, b.fileName))
+    : books.sort(compareBooks);
+}
+
 /**
  * Folders that split one series rather than name one: "Volumes", "Chapters", "Vol 01",
  * "Specials". A book in one belongs to the series folder above it.
  */
 export function isGroupingFolder(name: string): boolean {
   const clean = cleanName(name);
-  return /^(?:volumes?|vols?|chapters?|chaps?|issues?|specials?|extras?|omake|one[\s-]?shots?|tankobons?|ongoing|completed?|(?:vol(?:ume)?|v|ch(?:apter)?|c|season|part)\s*\d+(?:\s*-\s*\d+)?)$/i.test(
+  // A bare range ("001-100", "11-20") splits a long run of issues into folders.
+  return /^(?:volumes?|vols?|chapters?|chaps?|issues?|specials?|extras?|omake|one[\s-]?shots?|tankobons?|ongoing|completed?|(?:vol(?:ume)?|v|ch(?:apter|ap)?|c|season|part)\s*\d+(?:\s*-\s*\d+)?|\d+\s*-\s*\d+)$/i.test(
     clean,
   );
 }
 
-/** A series title from its folder name: tags in brackets and the year dropped. */
+/** Share-site stamps left in folder names. */
+const SITE_TAGS = /-=[^=]*=-|\b(?:GetComics\.INFO|TheComicsHQ)\b/gi;
+
+/** A series title from its folder name: tags in brackets, the year, and a reading-order prefix dropped. */
 export function seriesTitle(folderName: string): string {
-  const clean = folderName
-    .replace(/\[[^\]]*\]|\{[^}]*\}|\([^)]*\)/g, ' ')
+  let clean = folderName.replace(SITE_TAGS, ' ');
+  // Innermost first, so "(001 - 027 (ongoing) + Annuals)" goes as a whole.
+  for (let prev = ''; prev !== clean;) {
+    prev = clean;
+    clean = clean.replace(/\[[^[\]]*\]|\{[^{}]*\}|\([^()]*\)/g, ' ');
+  }
+  clean = clean
+    // An unclosed bracket and everything after it: "Death of the Family [ironFUR".
+    .replace(/[[({].*$/, ' ')
     .replace(/_/g, ' ')
+    // "06.Batman - …", "01 - Peace In Our Time", "2004-12 - Wolverine …".
+    .replace(/^\s*(?:\d{4}-\d{2}|\d{1,3})(?:\.(?!\d)\s*|\s*[-–]\s+)/, '')
+    .replace(/[\s\-–:,+&]+$/, '')
     .replace(/\s+/g, ' ')
     .trim();
   return clean || folderName;
+}
+
+/** Folder names that only make sense with the series above them: "Annual", "Variant Covers". */
+export function isGenericFolderTitle(title: string): boolean {
+  return /^(?:annuals?|variants?(?: covers?)?|covers?|art ?books?|mini[\s-]?series|prequels?|interludes?|tie[\s-]?ins?|side[\s-]?stor(?:y|ies)\b.*)$/i.test(
+    title,
+  );
 }
 
 /** Sort key for titles: case folded, a leading article dropped. */

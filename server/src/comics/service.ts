@@ -8,7 +8,7 @@ import type {
   ComicSeries,
   ComicSeriesDetail,
 } from '../schemas/index.js';
-import { cleanName, compareBooks, numberingLabel, sortTitle } from './naming.js';
+import { cleanName, numberingLabel, sortBooks, sortTitle } from './naming.js';
 
 type BookRow = typeof schema.comicBooks.$inferSelect;
 type SeriesRow = typeof schema.comicSeries.$inferSelect;
@@ -246,14 +246,19 @@ export class ComicsService {
   /** Books of these series that are on disk, each series in reading order. */
   private booksOf(seriesIds: string[]): BookRow[] {
     if (seriesIds.length === 0) return [];
-    return this.db
+    const bySeries = new Map<string, BookRow[]>();
+    for (const b of this.db
       .select()
       .from(schema.comicBooks)
       .where(
         and(inArray(schema.comicBooks.seriesId, seriesIds), eq(schema.comicBooks.missing, false)),
       )
-      .all()
-      .sort((a, b) => a.seriesId.localeCompare(b.seriesId) || compareBooks(a, b));
+      .all()) {
+      const list = bySeries.get(b.seriesId) ?? [];
+      list.push(b);
+      bySeries.set(b.seriesId, list);
+    }
+    return [...bySeries.keys()].sort().flatMap((id) => sortBooks(bySeries.get(id)!));
   }
 
   private progressOf(userId: string, bookIds: string[]): Map<string, ProgressRow> {

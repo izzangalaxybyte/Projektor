@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   compareBooks,
+  inReadingOrder,
+  isGenericFolderTitle,
   isGroupingFolder,
   numberingLabel,
   parseComicName,
   seriesTitle,
+  sortBooks,
 } from './naming.js';
 
 const parsed = (name: string) => {
@@ -114,13 +117,82 @@ describe('labels and folders', () => {
   });
 
   it('tells grouping folders from series folders', () => {
-    for (const name of ['Volumes', 'Chapters', 'Vol 01', 'v01', 'Specials', 'Chapter 120-150'])
+    for (const name of [
+      'Volumes',
+      'Chapters',
+      'Vol 01',
+      'v01',
+      'Specials',
+      'Chapter 120-150',
+      'Chap 242-259',
+      '001-100',
+      '11-20',
+    ])
       expect(isGroupingFolder(name), name).toBe(true);
-    for (const name of ['One Piece', 'Chainsaw Man (2018)', 'Saga', 'Marvel'])
+    for (const name of ['One Piece', 'Chainsaw Man (2018)', 'Saga', 'Marvel', '52', '1602', '300'])
       expect(isGroupingFolder(name), name).toBe(false);
   });
 
   it('cleans a series folder name', () => {
     expect(seriesTitle('One Piece (2003) [Digital]')).toBe('One Piece');
+    expect(seriesTitle('The Flash (001 - 027 (ongoing) + Annuals)')).toBe('The Flash');
+    expect(seriesTitle('Death of the Family {New DC 52 Batman Event} (Complete) [ironFUR')).toBe(
+      'Death of the Family',
+    );
+    expect(seriesTitle('Batman - The Dark Knight (1-23.4) (2011-2013) -=SPIDAROT SHARE=-')).toBe(
+      'Batman - The Dark Knight',
+    );
+    expect(seriesTitle('Spider-Man - Return of the Black Cat GetComics.INFO')).toBe(
+      'Spider-Man - Return of the Black Cat',
+    );
+    expect(seriesTitle('06.Batman - The Man Who Laughs')).toBe('Batman - The Man Who Laughs');
+    expect(seriesTitle('01 - Peace In Our Time')).toBe('Peace In Our Time');
+    expect(seriesTitle('2004-12 - Wolverine 020-025 - Enemy of the State')).toBe(
+      'Wolverine 020-025 - Enemy of the State',
+    );
+    expect(seriesTitle('52')).toBe('52');
+    expect(seriesTitle('100 Bullets')).toBe('100 Bullets');
+  });
+
+  it('knows folder names that need the series above them', () => {
+    for (const name of ['Annual', 'Variant Covers', 'variants', 'Artbook', 'Mini Series'])
+      expect(isGenericFolderTitle(name), name).toBe(true);
+    expect(isGenericFolderTitle('Batman Annual')).toBe(false);
+  });
+});
+
+describe('reading order', () => {
+  const book = (fileName: string) => ({ ...parseComicName(fileName), fileName });
+
+  it('reads numbers in brackets', () => {
+    expect(parsed('Kaguya-Sama Love is War [Volume 03 - guya].cbz').volume).toBe(3);
+    expect(parsed('Secret Files & Origins - Flash (#2).cbr').chapter).toBe(2);
+    expect(parsed('Marvel Holiday Special 1996 (c2c) (ActionComics-DCP).cbz').chapter).toBeNull();
+  });
+
+  it('follows a story arc folder rather than the issue numbers', () => {
+    const arc = [
+      '010 Infinity Wars - Arachknight 001 (2018).cbr',
+      '001 Infinity Wars Prime 001 (2018).cbr',
+      '003 Infinity Wars 001 (2018).cbr',
+      '000b (prelude) Heroic Age Prince of Power 002 (2010).cbr',
+      '002 Thanos Legacy 001 (2018).cbr',
+    ].map(book);
+    expect(inReadingOrder(arc)).toBe(true);
+    expect(sortBooks(arc).map((b) => b.fileName.slice(0, 4))).toEqual([
+      '000b',
+      '001 ',
+      '002 ',
+      '003 ',
+      '010 ',
+    ]);
+  });
+
+  it('keeps issue order for a series named the usual way', () => {
+    const series = ['Batman 010 (2012).cbz', 'Batman 002 (2011).cbz', 'Batman 001 (2011).cbz'].map(
+      book,
+    );
+    expect(inReadingOrder(series)).toBe(false);
+    expect(sortBooks(series).map((b) => b.chapter)).toEqual([1, 2, 10]);
   });
 });

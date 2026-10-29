@@ -16,6 +16,21 @@ val bookOrder: Comparator<BookOrderKey> = Comparator { a, b ->
         ?: naturalCompare(a.fileName, b.fileName)
 }
 
+private val readingOrderPrefix = Regex("^\\d{1,4}[a-zA-Z]?(?=[\\s._()-])")
+
+/**
+ * Story-arc folders number their books in the order to read them, ahead of each book's own issue
+ * number ("010 Infinity Wars - Arachknight 001"); when most books do, that order wins. Mirrors
+ * inReadingOrder in the server's naming.ts.
+ */
+fun inReadingOrder(fileNames: List<String>): Boolean =
+    fileNames.size >= 2 && fileNames.count { readingOrderPrefix.containsMatchIn(it) } >= fileNames.size * 0.8
+
+/** One series' books in reading order, by [bookOrder] or, for a story arc, by file name. */
+fun <T> List<T>.sortedInReadingOrder(key: (T) -> BookOrderKey): List<T> =
+    if (inReadingOrder(map { key(it).fileName })) sortedWith { a, b -> naturalCompare(key(a).fileName, key(b).fileName) }
+    else sortedWith(compareBy(bookOrder, key))
+
 /** "page2" before "page10", case ignored. */
 fun naturalCompare(a: String, b: String): Int {
     val ta = Regex("\\d+|\\D+").findAll(a.lowercase()).map { it.value }.toList()

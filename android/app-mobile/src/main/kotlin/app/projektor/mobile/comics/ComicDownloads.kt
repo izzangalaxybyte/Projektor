@@ -8,7 +8,7 @@ import app.projektor.core.api.models.ComicBook
 import app.projektor.core.api.models.ComicFormat
 import app.projektor.core.comics.BookOrderKey
 import app.projektor.core.comics.ComicsRepository
-import app.projektor.core.comics.bookOrder
+import app.projektor.core.comics.sortedInReadingOrder
 import app.projektor.mobile.download.DownloadNotifications
 import app.projektor.mobile.download.DownloadState
 import java.io.File
@@ -78,7 +78,7 @@ class ComicDownloadStore(context: Context) {
 
     /** The downloaded books of a series in reading order, for next and previous offline. */
     fun ofSeries(seriesId: String): List<ComicDownload> =
-        _downloads.value.filter { it.book.seriesId == seriesId && it.state == DownloadState.DONE }.sortedWith(compareBy(bookOrder) { it.orderKey })
+        _downloads.value.filter { it.book.seriesId == seriesId && it.state == DownloadState.DONE }.sortedInReadingOrder { it.orderKey }
 
     fun start(repo: ComicsRepository, book: ComicBook) {
         if (get(book.id) != null) return

@@ -77,6 +77,23 @@ class ReaderLayoutTest {
     }
 
     @Test
+    fun `a story arc reads in its folder's order, not by issue number`() {
+        fun key(name: String, c: Double?) = BookOrderKey(null, c, false, name)
+        val arc = listOf(
+            key("010 Infinity Wars - Arachknight 001", 1.0),
+            key("001 Infinity Wars Prime 001", 1.0),
+            key("003 Infinity Wars 001", 1.0),
+            key("000b (prelude) Thanos 002", 2.0),
+        )
+        assertEquals(
+            listOf("000b (prelude) Thanos 002", "001 Infinity Wars Prime 001", "003 Infinity Wars 001", "010 Infinity Wars - Arachknight 001"),
+            arc.sortedInReadingOrder { it }.map { it.fileName },
+        )
+        val series = listOf(key("Batman 010", 10.0), key("Batman 002", 2.0))
+        assertEquals(listOf("Batman 002", "Batman 010"), series.sortedInReadingOrder { it }.map { it.fileName })
+    }
+
+    @Test
     fun `natural compare orders numbers by value`() {
         assertEquals(listOf("page1", "page2", "page10"), listOf("page10", "page2", "page1").sortedWith(::naturalCompare))
         assertEquals(listOf("0001.jpg", "0002.png", "0010.jpg"), listOf("0010.jpg", "0001.jpg", "0002.png").sortedWith(::naturalCompare))
