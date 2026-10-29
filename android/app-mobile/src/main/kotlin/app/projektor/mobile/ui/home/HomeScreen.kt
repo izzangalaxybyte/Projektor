@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,8 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<UiState<HomeRows>>(UiState.Loading) }
     var refreshing by remember { mutableStateOf(false) }
+    val videoDownloads by container.downloads.downloads.collectAsState()
+    val comicDownloads by container.comicDownloads.downloads.collectAsState()
     suspend fun load() {
         state = try {
             coroutineScope {
@@ -98,7 +101,7 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
             UiState.Loading -> CircularProgressIndicator(Modifier.padding(24.dp))
             is UiState.Failed -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 // Offline with something downloaded: point at it rather than just at the error.
-                if (container.downloads.downloads.value.isNotEmpty() || container.comicDownloads.downloads.value.isNotEmpty()) {
+                if (videoDownloads.isNotEmpty() || comicDownloads.isNotEmpty()) {
                     Column(Modifier.padding(24.dp).testTag("home-offline"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Can't reach the server", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                         Text("Your downloads still play without a connection.", color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -1,9 +1,11 @@
 package app.projektor.player
 
 import android.text.SpannableStringBuilder
+import androidx.annotation.OptIn
 import androidx.media3.common.Player
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
 import io.github.peerless2012.ass.media.kt.withAssSupport
@@ -14,6 +16,7 @@ import io.github.peerless2012.ass.media.widget.AssSubtitleView
  * by each cue's first line, so a two-line cue is drawn over the one above it. Merging the stacked
  * cues into one bottom cue, top cue first, lets the text lay itself out. Positioned cues are kept.
  */
+@OptIn(UnstableApi::class)
 fun stackCues(cues: List<Cue>): List<Cue> {
     val (stacked, placed) = cues.partition { it.text != null && it.lineType == Cue.LINE_TYPE_NUMBER && it.line < 0 }
     if (stacked.size < 2) return cues
@@ -36,6 +39,7 @@ fun stackCues(cues: List<Cue>): List<Cue> {
  * not delegate Java default methods, so every event but onCues was dropped, including
  * onRenderedFirstFrame, and PlayerView never lifted its black shutter: all video was black.)
  */
+@OptIn(UnstableApi::class)
 fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
     val player: Player = projektor.exo
     this.player = player
@@ -55,6 +59,7 @@ fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
  * places its own lines, slides up as a whole. Only the part of the controls that overlaps the
  * picture counts, so letterboxed video with room below it does not move.
  */
+@OptIn(UnstableApi::class)
 fun PlayerView.liftSubtitles(controlsPx: Int) {
     val subs = subtitleView ?: return
     if (subs.height == 0) return

@@ -219,7 +219,8 @@ describe('PDF', () => {
     expect((await sharp(cover).metadata()).width).toBe(600);
     const download = await archives.download(book);
     expect(download.contentType).toBe('application/pdf');
-  });
+    expect((await bytes(download.body)).subarray(0, 5).toString()).toBe('%PDF-');
+  }, 30_000);
 });
 
 describe('cache', () => {

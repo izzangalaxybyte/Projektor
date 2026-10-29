@@ -83,8 +83,6 @@ test('needs review: lists the unmatched movie, surfaces the TMDB error for a bad
 test('non-admins are kept out of settings', async ({ page }) => {
   await page.goto('/login');
   await page.getByTestId('profile-Kid').click();
-  for (const d of '0000') await page.getByRole('button', { name: d, exact: true }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveCount(0);
   await page.goto('/settings');

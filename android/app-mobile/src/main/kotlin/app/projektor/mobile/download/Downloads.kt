@@ -187,7 +187,7 @@ class DownloadStore(context: Context) {
 
     /** Saves the fonts the server lists for a subtitle; true when at least one arrived. */
     private fun fetchFonts(client: ProjektorClient, listPath: String, dir: File): Boolean {
-        val list = runCatching { JSONArray(String(get(client.withAccessToken(listPath)), Charsets.UTF_8)) }.getOrNull() ?: return false
+        val list = runCatching { JSONArray(String(httpGet(client.withAccessToken(listPath)), Charsets.UTF_8)) }.getOrNull() ?: return false
         dir.mkdirs()
         return (0 until list.length()).count { i ->
             val font = list.getJSONObject(i)
@@ -287,11 +287,11 @@ internal fun safeName(name: String): String = name.replace(Regex("""[\\/:*?"<>|\
 
 private fun save(url: String, to: File) {
     val tmp = File(to.path + ".part")
-    tmp.writeBytes(get(url))
+    tmp.writeBytes(httpGet(url))
     if (!tmp.renameTo(to)) error("could not save ${to.name}")
 }
 
-private fun get(url: String): ByteArray {
+private fun httpGet(url: String): ByteArray {
     val connection = URL(url).openConnection() as HttpURLConnection
     connection.connectTimeout = 10_000
     connection.readTimeout = 60_000

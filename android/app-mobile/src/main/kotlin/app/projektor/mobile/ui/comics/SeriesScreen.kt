@@ -111,7 +111,7 @@ fun SeriesScreen(container: AppContainer, seriesId: String, openBook: (String) -
                         ComicCover(repo.coverUrl(series.coverKey), Modifier.width(120.dp), null, series.readCount == series.bookCount)
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(series.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                            Text("${series.bookCount} books · ${series.readCount} read", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${series.bookCount} book${if (series.bookCount == 1L) "" else "s"} · ${series.readCount} read", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (series.direction?.value == "rtl") Text("Manga · read right to left", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
