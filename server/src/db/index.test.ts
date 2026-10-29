@@ -26,6 +26,9 @@ const EXPECTED_TABLES = [
   'recordings',
   'settings',
   'track_preferences',
+  'comic_series',
+  'comic_books',
+  'comic_progress',
 ];
 
 const cleanups: Array<() => void> = [];

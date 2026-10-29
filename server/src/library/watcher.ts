@@ -5,6 +5,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
 import type { ScanRunner } from './scan-runner.js';
+import { COMIC_EXTENSIONS } from '../comics/archive.js';
 import { VIDEO_EXTENSIONS } from './walker.js';
 
 export interface WatcherOptions {
@@ -47,7 +48,8 @@ export class LibraryWatcher {
       },
       ignored: (p, stats) =>
         stats?.isFile()
-          ? !VIDEO_EXTENSIONS.has(path.extname(p).toLowerCase())
+          ? !VIDEO_EXTENSIONS.has(path.extname(p).toLowerCase()) &&
+            !COMIC_EXTENSIONS.has(path.extname(p).toLowerCase())
           : path.basename(p).startsWith('.'),
     });
     const trigger = (event: string) => (file: string) => {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const Id = z.string().min(1).meta({ description: 'Opaque identifier' });
 
-export const LibraryKind = z.enum(['movie', 'tv', 'anime']).meta({ id: 'LibraryKind' });
+export const LibraryKind = z.enum(['movie', 'tv', 'anime', 'comic']).meta({ id: 'LibraryKind' });
 export type LibraryKind = z.infer<typeof LibraryKind>;
 
 export const ItemKind = z.enum(['movie', 'show', 'season', 'episode']).meta({ id: 'ItemKind' });

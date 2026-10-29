@@ -46,6 +46,13 @@ export class ImageStore {
     return key;
   }
 
+  /** Stores an image made on the server (a comic cover) under [key], as JPEG. */
+  async put(key: string, jpeg: Buffer): Promise<void> {
+    const target = this.originalPath(key);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, jpeg);
+  }
+
   /** Path of the image at the requested width (or the original), resizing and caching on demand. */
   async resolve(key: string, width: ImageWidth | null): Promise<string | null> {
     if (!/^[a-f0-9]{40}$/.test(key)) return null;

@@ -9,7 +9,7 @@ export function LibrariesSettings() {
     queryFn: async () => unwrap(await api.GET('/api/libraries')),
   });
   const [name, setName] = useState('');
-  const [kind, setKind] = useState<'movie' | 'tv' | 'anime'>('movie');
+  const [kind, setKind] = useState<'movie' | 'tv' | 'anime' | 'comic'>('movie');
   const [path, setPath] = useState('');
   const create = useMutation({
     mutationFn: async () =>
@@ -67,6 +67,7 @@ export function LibrariesSettings() {
             <option value="movie">Movies</option>
             <option value="tv">TV Shows</option>
             <option value="anime">Anime</option>
+            <option value="comic">Comics &amp; manga (CBZ, CBR, CB7, CBT, PDF)</option>
           </select>
         </label>
         <label>
@@ -111,7 +112,7 @@ function LibraryCard({ library, onDelete }: { library: Library; onDelete: () => 
       <div className="card-head">
         <strong>{library.name}</strong>
         <span className="pill">
-          {{ movie: 'Movies', tv: 'TV Shows', anime: 'Anime' }[library.kind]}
+          {{ movie: 'Movies', tv: 'TV Shows', anime: 'Anime', comic: 'Comics' }[library.kind]}
         </span>
       </div>
       <ul className="paths">

@@ -1,6 +1,6 @@
 # Projektor
 
-Self-hosted media server for movies, TV shows, and anime, with a browser app and native clients for Android phone, Android TV, iPad, and Samsung TV.
+Self-hosted media server for movies, TV shows, anime, and comics and manga (CBZ, CBR, CB7, CBT, PDF), with a browser app and native clients for Android phone, Android TV, iPad, and Samsung TV.
 
 - [docs/PLAN.md](docs/PLAN.md) — architecture and build phases
 - [docs/PROGRESS.md](docs/PROGRESS.md) — what is done and how it was checked

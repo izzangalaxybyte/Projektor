@@ -3,6 +3,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -45,7 +46,7 @@ export const sessions = sqliteTable(
 export const libraries = sqliteTable('libraries', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  kind: text('kind', { enum: ['movie', 'tv', 'anime'] }).notNull(),
+  kind: text('kind', { enum: ['movie', 'tv', 'anime', 'comic'] }).notNull(),
   lastScannedAt: text('last_scanned_at'),
   ...timestamps,
 });
@@ -452,4 +453,92 @@ export const recordings = sqliteTable(
     ...timestamps,
   },
   (t) => [index('recordings_state_start_idx').on(t.state, t.startAt)],
+);
+
+/**
+ * A comic or manga series: the folder its books sit in (above any "Volumes" or "Chapters"
+ * folders), or, for books loose in a library root, the name their files share.
+ */
+export const comicSeries = sqliteTable(
+  'comic_series',
+  {
+    id: text('id').primaryKey(),
+    libraryId: text('library_id')
+      .notNull()
+      .references(() => libraries.id, { onDelete: 'cascade' }),
+    /** What identifies the series across scans: its folder path, or root + "#" + name. */
+    folderKey: text('folder_key').notNull(),
+    title: text('title').notNull(),
+    sortTitle: text('sort_title').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('comic_series_folder_idx').on(t.libraryId, t.folderKey)],
+);
+
+/** One comic file: a volume, a chapter, an issue, or a special. */
+export const comicBooks = sqliteTable(
+  'comic_books',
+  {
+    id: text('id').primaryKey(),
+    libraryId: text('library_id')
+      .notNull()
+      .references(() => libraries.id, { onDelete: 'cascade' }),
+    seriesId: text('series_id')
+      .notNull()
+      .references(() => comicSeries.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    fileName: text('file_name').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    mtimeMs: integer('mtime_ms').notNull(),
+    /** cbz, cbr, cb7, cbt or pdf, from the file's bytes once indexed. */
+    format: text('format', { enum: ['cbz', 'cbr', 'cb7', 'cbt', 'pdf'] }),
+    /** Set once the pages have been listed; null means indexing pending. */
+    indexedAt: text('indexed_at'),
+    indexError: text('index_error'),
+    pageCount: integer('page_count'),
+    /** Page entry names in reading order (archives only). */
+    pagesJson: text('pages_json'),
+    volume: real('volume'),
+    chapter: real('chapter'),
+    /** The chapter is a bare number ("Batman 001"), shown as an issue. */
+    bare: integer('bare', { mode: 'boolean' }).notNull().default(false),
+    special: integer('special', { mode: 'boolean' }).notNull().default(false),
+    /** From ComicInfo.xml when present. */
+    title: text('title'),
+    summary: text('summary'),
+    writer: text('writer'),
+    year: integer('year'),
+    /** 'rtl' when ComicInfo.xml marks the book as manga read right to left. */
+    direction: text('direction', { enum: ['ltr', 'rtl'] }),
+    coverKey: text('cover_key'),
+    missing: integer('missing', { mode: 'boolean' }).notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('comic_books_path_idx').on(t.path),
+    index('comic_books_series_idx').on(t.seriesId),
+    index('comic_books_library_idx').on(t.libraryId),
+  ],
+);
+
+/** Where a user is in a book. A row is history; finished marks the book read. */
+export const comicProgress = sqliteTable(
+  'comic_progress',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    bookId: text('book_id')
+      .notNull()
+      .references(() => comicBooks.id, { onDelete: 'cascade' }),
+    /** 0-based index of the page last shown. */
+    page: integer('page').notNull(),
+    pageCount: integer('page_count').notNull(),
+    finished: integer('finished', { mode: 'boolean' }).notNull().default(false),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.bookId] }),
+    index('comic_progress_user_updated_idx').on(t.userId, t.updatedAt),
+  ],
 );

@@ -3049,12 +3049,487 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/comics/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comic and manga series
+         * @description sort=title (default), added (newest first), or recent (series read most recently, read ones only).
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Opaque identifier */
+                    libraryId?: string;
+                    search?: string;
+                    sort?: "title" | "added" | "recent";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicSeries"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/series/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A series and its books in reading order */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicSeriesDetail"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/series/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark every book of a series read or unread */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        read: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/books/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A book, with the books before and after it */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicBookDetail"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/books/{id}/pages/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One page image
+         * @description Pages count from 0. Without `w` an archive page is the original image, byte for byte; with `w` (or always for PDF, 2048 wide by default) a JPEG at that width. Readers that cannot set headers may pass `?access_token=`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    w?: number;
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                    page: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/books/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The book for reading offline
+         * @description PDFs as they are (with byte ranges). Archives as an uncompressed CBZ of the original page images named 0001.jpg, 0002.png ... in reading order.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    access_token?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
+                416: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/books/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the page being read
+         * @description Reaching the last page marks the book read. Send on every page turn (debounced) and when the reader closes.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ComicProgressUpdateInput"];
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicProgress"];
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/books/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a book read, or unread (removes it from history) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Opaque identifier */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        read: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicProgress"] | null;
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/continue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Continue reading: per series, the unfinished book or the next one, most recent first */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicBook"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comics/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reading history: every book opened, most recently read first */
+        get: {
+            parameters: {
+                query?: {
+                    offset?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicBook"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** @enum {string} */
-        LibraryKindInput: "movie" | "tv" | "anime";
+        LibraryKindInput: "movie" | "tv" | "anime" | "comic";
         /** @enum {string} */
         ItemKindInput: "movie" | "show" | "season" | "episode";
         ErrorResponseInput: {
@@ -3553,6 +4028,117 @@ export interface components {
             /** @description Overrides RECORDING_PADDING_MS for a programme recording */
             paddingMs?: number;
         };
+        /** @enum {string} */
+        ComicFormatInput: "cbz" | "cbr" | "cb7" | "cbt" | "pdf";
+        /**
+         * @description rtl: manga, read right to left
+         * @enum {string}
+         */
+        ReadingDirectionInput: "ltr" | "rtl";
+        ComicProgressInput: {
+            /** @description 0-based index of the page last shown */
+            page: number;
+            pageCount: number;
+            /** @description Reached the last page, or marked read */
+            finished: boolean;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            updatedAt: string;
+        };
+        ComicBookInput: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            seriesId: string;
+            seriesTitle: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            /** @description ComicInfo title, else the file name without tags */
+            title: string;
+            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+            label: string | null;
+            fileName: string;
+            /** @description Null until the book is indexed */
+            format: components["schemas"]["ComicFormatInput"] | null;
+            sizeBytes: number;
+            pageCount: number | null;
+            volume: number | null;
+            chapter: number | null;
+            special: boolean;
+            /** @description From ComicInfo.xml; null when the book does not say */
+            direction: components["schemas"]["ReadingDirectionInput"] | null;
+            /** @description Image key for GET /api/images/{key} */
+            coverKey: string | null;
+            indexError: string | null;
+            progress: components["schemas"]["ComicProgressInput"] | null;
+        };
+        ComicBookDetailInput: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            seriesId: string;
+            seriesTitle: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            /** @description ComicInfo title, else the file name without tags */
+            title: string;
+            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+            label: string | null;
+            fileName: string;
+            /** @description Null until the book is indexed */
+            format: components["schemas"]["ComicFormatInput"] | null;
+            sizeBytes: number;
+            pageCount: number | null;
+            volume: number | null;
+            chapter: number | null;
+            special: boolean;
+            /** @description From ComicInfo.xml; null when the book does not say */
+            direction: components["schemas"]["ReadingDirectionInput"] | null;
+            /** @description Image key for GET /api/images/{key} */
+            coverKey: string | null;
+            indexError: string | null;
+            progress: components["schemas"]["ComicProgressInput"] | null;
+            summary: string | null;
+            writer: string | null;
+            year: number | null;
+            /** @description The book before this one in reading order */
+            previousId: string | null;
+            /** @description The book after this one in reading order */
+            nextId: string | null;
+        };
+        ComicSeriesInput: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            title: string;
+            bookCount: number;
+            readCount: number;
+            coverKey: string | null;
+            /** @description rtl when its books are tagged as manga */
+            direction: components["schemas"]["ReadingDirectionInput"] | null;
+            lastReadAt: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            createdAt: string;
+        };
+        ComicSeriesDetailInput: {
+            series: components["schemas"]["ComicSeriesInput"];
+            /** @description Reading order: volumes, then loose chapters, then unnumbered books */
+            books: components["schemas"]["ComicBookInput"][];
+        };
+        ComicProgressUpdateInput: {
+            page: number;
+            /**
+             * Format: date-time
+             * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
+             */
+            at?: string;
+        };
         HealthResponseInput: {
             /** @constant */
             status: "ok";
@@ -3571,7 +4157,7 @@ export interface components {
             isAdmin: boolean;
         };
         /** @enum {string} */
-        LibraryKind: "movie" | "tv" | "anime";
+        LibraryKind: "movie" | "tv" | "anime" | "comic";
         /** @enum {string} */
         ItemKind: "movie" | "show" | "season" | "episode";
         ErrorResponse: {
@@ -4069,6 +4655,117 @@ export interface components {
             title?: string;
             /** @description Overrides RECORDING_PADDING_MS for a programme recording */
             paddingMs?: number;
+        };
+        /** @enum {string} */
+        ComicFormat: "cbz" | "cbr" | "cb7" | "cbt" | "pdf";
+        /**
+         * @description rtl: manga, read right to left
+         * @enum {string}
+         */
+        ReadingDirection: "ltr" | "rtl";
+        ComicProgress: {
+            /** @description 0-based index of the page last shown */
+            page: number;
+            pageCount: number;
+            /** @description Reached the last page, or marked read */
+            finished: boolean;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            updatedAt: string;
+        };
+        ComicBook: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            seriesId: string;
+            seriesTitle: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            /** @description ComicInfo title, else the file name without tags */
+            title: string;
+            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+            label: string | null;
+            fileName: string;
+            /** @description Null until the book is indexed */
+            format: components["schemas"]["ComicFormat"] | null;
+            sizeBytes: number;
+            pageCount: number | null;
+            volume: number | null;
+            chapter: number | null;
+            special: boolean;
+            /** @description From ComicInfo.xml; null when the book does not say */
+            direction: components["schemas"]["ReadingDirection"] | null;
+            /** @description Image key for GET /api/images/{key} */
+            coverKey: string | null;
+            indexError: string | null;
+            progress: components["schemas"]["ComicProgress"] | null;
+        };
+        ComicBookDetail: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            seriesId: string;
+            seriesTitle: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            /** @description ComicInfo title, else the file name without tags */
+            title: string;
+            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+            label: string | null;
+            fileName: string;
+            /** @description Null until the book is indexed */
+            format: components["schemas"]["ComicFormat"] | null;
+            sizeBytes: number;
+            pageCount: number | null;
+            volume: number | null;
+            chapter: number | null;
+            special: boolean;
+            /** @description From ComicInfo.xml; null when the book does not say */
+            direction: components["schemas"]["ReadingDirection"] | null;
+            /** @description Image key for GET /api/images/{key} */
+            coverKey: string | null;
+            indexError: string | null;
+            progress: components["schemas"]["ComicProgress"] | null;
+            summary: string | null;
+            writer: string | null;
+            year: number | null;
+            /** @description The book before this one in reading order */
+            previousId: string | null;
+            /** @description The book after this one in reading order */
+            nextId: string | null;
+        };
+        ComicSeries: {
+            /** @description Opaque identifier */
+            id: string;
+            /** @description Opaque identifier */
+            libraryId: string;
+            title: string;
+            bookCount: number;
+            readCount: number;
+            coverKey: string | null;
+            /** @description rtl when its books are tagged as manga */
+            direction: components["schemas"]["ReadingDirection"] | null;
+            lastReadAt: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 UTC timestamp
+             */
+            createdAt: string;
+        };
+        ComicSeriesDetail: {
+            series: components["schemas"]["ComicSeries"];
+            /** @description Reading order: volumes, then loose chapters, then unnumbered books */
+            books: components["schemas"]["ComicBook"][];
+        };
+        ComicProgressUpdate: {
+            page: number;
+            /**
+             * Format: date-time
+             * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
+             */
+            at?: string;
         };
         HealthResponse: {
             /** @constant */

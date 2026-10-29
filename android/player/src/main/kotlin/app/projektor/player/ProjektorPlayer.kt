@@ -299,9 +299,13 @@ private const val TAG = "ProjektorPlayer"
 
 /**
  * The fonts behind [listUri] (the server's font list for a subtitle), as name and bytes. The list
- * gives server paths; they are fetched from the same server with the same access token.
+ * gives server paths; they are fetched from the same server with the same access token. A `file:`
+ * URI is a folder of fonts saved with a download, read as is.
  */
 private fun fetchFonts(listUri: String): List<Pair<String, ByteArray>> {
+    if (listUri.startsWith("file:")) {
+        return java.io.File(java.net.URI(listUri)).listFiles().orEmpty().filter { it.isFile }.sortedBy { it.name }.map { it.name to it.readBytes() }
+    }
     val base = URL(listUri)
     val token = base.query?.split('&')?.firstOrNull { it.startsWith("access_token=") }
     val list = JSONArray(String(get(base), Charsets.UTF_8))

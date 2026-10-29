@@ -8,5 +8,11 @@
     "declaration": false
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/test-utils.ts", "src/metadata/fake-*.ts", "src/openapi.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/test-utils.ts",
+    "src/comics/test-fixtures.ts",
+    "src/metadata/fake-*.ts",
+    "src/openapi.ts"
+  ]
 }

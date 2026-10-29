@@ -23,6 +23,7 @@ const EnvSchema = z.object({
   RECORDINGS_DIR: z.string().optional(),
   RECORDING_PADDING_MS: z.coerce.number().int().nonnegative().default(120_000),
   HDR_TONEMAP_MAX_WIDTH: z.coerce.number().int().positive().default(1280),
+  COMICS_CACHE_GB: z.coerce.number().positive().default(5),
   LIVE_REFRESH: z
     .enum(['true', 'false'])
     .default('true')
@@ -81,6 +82,9 @@ export interface Config {
   recordingPaddingMs: number;
   /** Output width when HDR is tone-mapped on the CPU; 1280 keeps a four-core box real-time. */
   hdrTonemapMaxWidth: number;
+  /** Extracted CBR/CB7/CBT books and rendered PDF pages; least recently read evicted first. */
+  comicsCacheDir: string;
+  comicsCacheBytes: number;
 }
 
 /** Builds a Config from environment variables and creates the data directory layout. */
@@ -106,6 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     authRateLimitPerMinute: parsed.AUTH_RATE_LIMIT,
     recordingPaddingMs: parsed.RECORDING_PADDING_MS,
     hdrTonemapMaxWidth: parsed.HDR_TONEMAP_MAX_WIDTH,
+    comicsCacheBytes: Math.round(parsed.COMICS_CACHE_GB * 1024 ** 3),
     ...(parsed.RECORDINGS_DIR ? { recordingsDir: path.resolve(parsed.RECORDINGS_DIR) } : {}),
     watchLibraries: parsed.WATCH_LIBRARIES,
     scanIntervalMinutes: parsed.SCAN_INTERVAL_MINUTES,
@@ -116,7 +121,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 export function configForDataDir(
   dataDir: string,
   overrides: Partial<
-    Omit<Config, 'dataDir' | 'dbPath' | 'imagesDir' | 'subtitlesDir' | 'transcodeDir'>
+    Omit<
+      Config,
+      'dataDir' | 'dbPath' | 'imagesDir' | 'subtitlesDir' | 'transcodeDir' | 'comicsCacheDir'
+    >
   > = {},
 ): Config {
   const config: Config = {
@@ -139,6 +147,7 @@ export function configForDataDir(
     authRateLimitPerMinute: 20,
     recordingPaddingMs: 120_000,
     hdrTonemapMaxWidth: 1280,
+    comicsCacheBytes: 5 * 1024 ** 3,
     watchLibraries: true,
     scanIntervalMinutes: 0,
     ...overrides,
@@ -147,6 +156,7 @@ export function configForDataDir(
     imagesDir: path.join(dataDir, 'images'),
     subtitlesDir: path.join(dataDir, 'subtitles'),
     transcodeDir: path.join(dataDir, 'transcode'),
+    comicsCacheDir: path.join(dataDir, 'comics'),
     recordingsDir: overrides.recordingsDir ?? path.join(dataDir, 'recordings'),
   };
   for (const dir of [
@@ -154,6 +164,7 @@ export function configForDataDir(
     config.imagesDir,
     config.subtitlesDir,
     config.transcodeDir,
+    config.comicsCacheDir,
     config.recordingsDir,
   ]) {
     mkdirSync(dir, { recursive: true });

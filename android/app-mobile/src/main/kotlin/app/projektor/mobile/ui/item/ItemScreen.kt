@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
@@ -37,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,6 +61,8 @@ import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.MediaFile
 import app.projektor.core.items.describeVersion
 import app.projektor.mobile.AppContainer
+import app.projektor.mobile.ui.downloads.DownloadIcon
+import app.projektor.mobile.ui.downloads.DownloadPanel
 import app.projektor.mobile.ui.Bg
 import app.projektor.mobile.ui.Surface2
 import app.projektor.mobile.ui.UiState
@@ -94,6 +98,21 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
             favorite = !want
             android.widget.Toast.makeText(context, e.userMessage(), android.widget.Toast.LENGTH_SHORT).show()
         }
+    }
+    val downloads = container.downloads
+    val downloaded by downloads.downloads.collectAsState()
+    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+    // Episodes in a list are summaries; their files come with the details.
+    fun downloadEpisode(e: ItemSummary) = scope.launch {
+        try { downloads.startAll(items, client, listOf(e.id)) } catch (ex: Exception) { toast(ex.userMessage()) }
+    }
+    var queueingSeason by remember(itemId) { mutableStateOf(false) }
+    fun downloadSeason(episodes: List<ItemSummary>) = scope.launch {
+        queueingSeason = true
+        try {
+            val ids = episodes.sortedWith(compareBy({ it.seasonNumber ?: Long.MAX_VALUE }, { it.episodeNumber ?: Long.MAX_VALUE })).map { it.id }
+            toast("Downloading ${downloads.startAll(items, client, ids)} episodes")
+        } catch (e: Exception) { toast(e.userMessage()) } finally { queueingSeason = false }
     }
     LaunchedEffect(itemId) {
         state = try {
@@ -154,6 +173,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                     val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
                     // Several files for one item (a sub and a dub release, say): ask which to play.
                     var choosingFrom by remember(d.id) { mutableStateOf<Long?>(null) }
+                    var choosingDownload by remember(d.id) { mutableStateOf(false) }
                     fun start(at: Long) { if (d.files.size > 1) choosingFrom = at else play(file.id, d.id, at) }
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { start(resume) }, modifier = Modifier.fillMaxWidth().height(52.dp).testTag("play")) {
@@ -161,10 +181,20 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                             Text(if (resume > 0) " Resume from ${formatMs(resume)}" else " Play", style = MaterialTheme.typography.titleMedium)
                         }
                         if (resume > 0) OutlinedButton(onClick = { start(0) }, modifier = Modifier.fillMaxWidth()) { Text("Start over", color = Color.White) }
+                        DownloadPanel(
+                            download = downloaded.firstOrNull { it.itemId == d.id },
+                            sizeBytes = file.sizeBytes.takeIf { d.files.size == 1 },
+                            onStart = { if (d.files.size > 1) choosingDownload = true else downloads.start(client, d, file) },
+                            onRemove = downloads::remove,
+                            onRetry = { downloads.retry(client, it) },
+                        )
                         if (d.files.size > 1) Text("${d.files.size} versions available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     choosingFrom?.let { at ->
                         VersionDialog(d.files, onDismiss = { choosingFrom = null }) { chosen -> choosingFrom = null; play(chosen.id, d.id, at) }
+                    }
+                    if (choosingDownload) {
+                        VersionDialog(d.files, title = "Choose a version to download", onDismiss = { choosingDownload = false }) { chosen -> choosingDownload = false; downloads.start(client, d, chosen) }
                     }
                 }
                 d.tagline?.let { Text(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), style = MaterialTheme.typography.titleMedium, fontStyle = FontStyle.Italic, color = Color.White.copy(alpha = 0.9f)) }
@@ -175,7 +205,33 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                 val seasons = children.filter { it.kind.value == "season" }
                 val episodes = children.filter { it.kind.value == "episode" }
                 if (seasons.isNotEmpty()) TileSection("Seasons", seasons, client, openItem)
-                if (episodes.isNotEmpty()) EpisodeSection(episodes, client, container.browsePrefs, openItem)
+                if (episodes.isNotEmpty() && d.kind.value == "season") {
+                    val missing = episodes.count { e -> downloaded.none { it.itemId == e.id } }
+                    OutlinedButton(
+                        onClick = { downloadSeason(episodes) },
+                        enabled = !queueingSeason && missing > 0,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp).fillMaxWidth().testTag("download-season"),
+                    ) {
+                        Icon(Icons.Filled.Download, null, tint = Color.White)
+                        Text(
+                            when {
+                                queueingSeason -> " Queueing downloads…"
+                                missing == 0 -> " Season downloaded"
+                                missing < episodes.size -> " Download $missing more episodes"
+                                else -> " Download season · ${episodes.size} episodes"
+                            },
+                            color = Color.White,
+                        )
+                    }
+                }
+                if (episodes.isNotEmpty()) EpisodeSection(episodes, client, container.browsePrefs, openItem) { e ->
+                    DownloadIcon(
+                        downloaded.firstOrNull { it.itemId == e.id },
+                        onStart = { downloadEpisode(e) },
+                        onRemove = downloads::remove,
+                        onRetry = { downloads.retry(client, it) },
+                    )
+                }
                 d.files.forEach { f -> FileInfo(f) }
                 Spacer(Modifier.height(24.dp))
             }
@@ -243,10 +299,10 @@ private fun TileSection(title: String, list: List<ItemSummary>, client: app.proj
 
 /** Lists every file of an item with what tells them apart; tapping one plays it. */
 @Composable
-private fun VersionDialog(files: List<MediaFile>, onDismiss: () -> Unit, onPick: (MediaFile) -> Unit) {
+private fun VersionDialog(files: List<MediaFile>, title: String = "Choose a version", onDismiss: () -> Unit, onPick: (MediaFile) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose a version") },
+        title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 files.forEach { f ->
@@ -263,3 +319,4 @@ private fun VersionDialog(files: List<MediaFile>, onDismiss: () -> Unit, onPick:
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
+

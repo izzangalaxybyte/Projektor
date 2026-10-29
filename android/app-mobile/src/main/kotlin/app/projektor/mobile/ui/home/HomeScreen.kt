@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +45,7 @@ private val LABEL = mapOf(LibraryKindInput.MOVIE to "Movies", LibraryKindInput.T
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Modifier = Modifier, openDownloads: () -> Unit = {}) {
     val items = container.items() ?: return
     val client = container.client() ?: return
     val context = LocalContext.current
@@ -96,6 +97,14 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
         when (val s = state) {
             UiState.Loading -> CircularProgressIndicator(Modifier.padding(24.dp))
             is UiState.Failed -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                // Offline with something downloaded: point at it rather than just at the error.
+                if (container.downloads.downloads.value.isNotEmpty() || container.comicDownloads.downloads.value.isNotEmpty()) {
+                    Column(Modifier.padding(24.dp).testTag("home-offline"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Can't reach the server", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Your downloads still play without a connection.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Button(onClick = openDownloads) { Text("Go to Downloads") }
+                    }
+                }
                 Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
             }
             is UiState.Ready -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -24,7 +24,8 @@ export function sortKey(title: string): string {
     .trim();
 }
 
-type LibraryKind = 'movie' | 'tv' | 'anime';
+// Comic libraries never reach the identifier; their books are scanned by comics/scanner.ts.
+type LibraryKind = 'movie' | 'tv' | 'anime' | 'comic';
 
 export type NameParser = (
   fileName: string,
