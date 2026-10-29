@@ -16,14 +16,29 @@ import {
   type PlayerPrefs,
   type SkipSeconds,
 } from '../player/prefs.js';
+import {
+  claimPrewarmed,
+  discardPrewarmed,
+  discardPrewarmedSoon,
+  prewarm,
+} from '../player/prewarm.js';
 import { buildDeviceProfile } from '../player/profile.js';
 import { releaseSessionOnPageHide } from '../player/release.js';
 import { planSeek } from '../player/timeline.js';
+import { closestVersion } from '../player/versions.js';
 import { fmt } from './ItemPage.js';
 
 const PROGRESS_INTERVAL_MS = 10_000;
+/** How long before the end the next episode's playback is opened, so "Next" starts at once. */
+const PREWARM_BEFORE_END_MS = 120_000;
 
 export function PlayerPage() {
+  const { fileId } = useParams();
+  // A fresh player per file: refs such as the resume position belong to one episode.
+  return <Player key={fileId} />;
+}
+
+function Player() {
   const { fileId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -34,6 +49,9 @@ export function PlayerPage() {
   const item = useItem(itemId);
   const next = useNextEpisode(item.data?.kind === 'episode' ? item.data.id : undefined);
   const file = item.data?.files.find((f) => f.id === fileId) ?? item.data?.files[0];
+  // Fetching the next episode's detail also fills the cache its player page reads.
+  const nextItem = useItem(next.data?.id);
+  const nextFile = nextItem.data ? closestVersion(file?.fileName, nextItem.data.files) : undefined;
   const audioTracks = useMemo(() => file?.streams.filter((s) => s.type === 'audio') ?? [], [file]);
   const knownDurationMs = file?.durationMs ?? 0;
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
@@ -106,8 +124,13 @@ export function PlayerPage() {
     queryKey: ['decide', fileId, audioIndex, profile.name, seekEpoch],
     enabled: !!fileId,
     staleTime: Infinity,
-    queryFn: async () =>
-      unwrap(
+    queryFn: async () => {
+      // "Next" from the previous episode: its session was opened while that one was ending.
+      if (seekEpoch === 0 && audioIndex === undefined && resumeAt.current === 0) {
+        const prewarmed = await claimPrewarmed(fileId!);
+        if (prewarmed) return prewarmed;
+      }
+      return unwrap(
         await api.POST('/api/playback/decide', {
           body: {
             fileId: fileId!,
@@ -116,7 +139,8 @@ export function PlayerPage() {
             ...(audioIndex !== undefined ? { audioStreamIndex: audioIndex } : {}),
           },
         }),
-      ),
+      );
+    },
   });
 
   const report = useMutation({
@@ -211,13 +235,28 @@ export function PlayerPage() {
     };
   }, [decision.data, knownDurationMs]);
 
+  // Near the end, open the next episode's playback so "Next" starts without waiting on ffmpeg.
+  const [picksEpoch, setPicksEpoch] = useState(0);
+  const nearEnd =
+    ended || (knownDurationMs > 0 && knownDurationMs - currentMs <= PREWARM_BEFORE_END_MS);
+  useEffect(() => {
+    if (nearEnd && nextFile) prewarm(nextFile.id, profile);
+  }, [nearEnd, nextFile, profile, picksEpoch]);
+  // Leaving without taking "Next" frees it; the grace lets the next page claim it first.
+  useEffect(() => () => discardPrewarmedSoon(), []);
+
   // Picks are remembered for the show, so its other episodes start with the same tracks.
   const rememberChoice = (choice: {
     audioStreamIndex?: number;
     subtitleId?: string;
     subtitlesOff?: boolean;
   }) => {
-    if (fileId) void api.POST('/api/playback/track-choice', { body: { fileId, ...choice } });
+    if (!fileId) return;
+    // A prewarmed next episode was decided with the old picks; open it again with the new ones.
+    discardPrewarmed();
+    void api
+      .POST('/api/playback/track-choice', { body: { fileId, ...choice } })
+      .finally(() => setPicksEpoch((n) => n + 1));
   };
   const switchAudio = (index: number) => {
     resumeAt.current = (playerRef.current?.currentMs ?? 0) + offsetRef.current;
@@ -310,7 +349,11 @@ export function PlayerPage() {
       )}
       {ended && next.data && (
         <div className="player-message">
-          <Link to={`/items/${next.data.id}`} className="button primary" data-testid="next-episode">
+          <Link
+            to={nextFile ? `/play/${nextFile.id}?item=${next.data.id}` : `/items/${next.data.id}`}
+            className="button primary"
+            data-testid="next-episode"
+          >
             Next: {next.data.title}
           </Link>
         </div>
