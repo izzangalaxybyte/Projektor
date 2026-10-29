@@ -5,7 +5,7 @@
 #
 # Arguments (all optional):
 #   $1  install root on the big disk (default: the largest mounted filesystem under /mnt, /media, /srv, or /home)
-# Environment (optional): MOVIES_DIR, TV_DIR, ANIME_DIR to point at existing media folders.
+# Environment (optional): MOVIES_DIR, TV_DIR, ANIME_DIR, COMICS_DIR to point at existing media folders.
 set -euo pipefail
 
 REPO=https://github.com/izzangalaxybyte/Projektor.git
@@ -46,7 +46,8 @@ find_media() { # $1 = name pattern
 MOVIES_DIR="${MOVIES_DIR:-$(find_media movies)}"
 TV_DIR="${TV_DIR:-$(find_media 'tv*')}"
 ANIME_DIR="${ANIME_DIR:-$(find_media anime)}"
-for v in MOVIES_DIR TV_DIR ANIME_DIR; do
+COMICS_DIR="${COMICS_DIR:-$(find_media comics)}"
+for v in MOVIES_DIR TV_DIR ANIME_DIR COMICS_DIR; do
   if [ -z "${!v}" ]; then
     printf -v "$v" '%s' "$INSTALL/media/$(echo "${v%_DIR}" | tr '[:upper:]' '[:lower:]')"
     mkdir -p "${!v}"
@@ -61,6 +62,7 @@ DATA_DIR=$INSTALL/data
 MOVIES_DIR=$MOVIES_DIR
 TV_DIR=$TV_DIR
 ANIME_DIR=$ANIME_DIR
+COMICS_DIR=$COMICS_DIR
 ENVEOF
 say "deploy/.env"
 cat "$ENV"

@@ -16,7 +16,7 @@ One command on the box, as your normal user (it uses sudo only to install Docker
 curl -fsSL https://raw.githubusercontent.com/izzangalaxybyte/Projektor/main/deploy/install-linux.sh | bash -s -- /mnt/ssd
 ```
 
-Replace `/mnt/ssd` with the mount point of the big disk (`df -h` shows it); the app and its data go under `<mount>/projektor`. Set `MOVIES_DIR`, `TV_DIR`, and `ANIME_DIR` in the environment first if your media is somewhere the script would not guess. Re-running the same command updates to the latest `main`. The manual steps below do the same thing by hand.
+Replace `/mnt/ssd` with the mount point of the big disk (`df -h` shows it); the app and its data go under `<mount>/projektor`. Set `MOVIES_DIR`, `TV_DIR`, `ANIME_DIR`, and `COMICS_DIR` in the environment first if your media is somewhere the script would not guess. Re-running the same command updates to the latest `main`. The manual steps below do the same thing by hand.
 
 ## First start
 
@@ -36,7 +36,7 @@ curl -s http://localhost:8096/api/health
 
 `encoder` should read `h264_vaapi`. If it says `libx264`, `encoderReason` tells you why (usually the render node is not passed through, or the iGPU is too old for the iHD driver, in which case set `LIBVA_DRIVER_NAME=i965` in `deploy/.env`).
 
-Open `http://<box-ip>:8096` in a browser, create the admin profile, then in **Settings → Libraries** add `/media/movies`, `/media/tv`, and `/media/anime` (the paths inside the container) and scan. Add a TMDB key under **Settings → Metadata** for posters and descriptions, and the IPTV username and password there for Live TV. The provider address defaults to `IPTV_URL` from `deploy/.env` (`http://playshare.co:8080/`); when the provider moves, change it in Settings, or update `.env` and restart.
+Open `http://<box-ip>:8096` in a browser, create the admin profile, then in **Settings → Libraries** add `/media/movies`, `/media/tv`, and `/media/anime` (the paths inside the container), and `/media/comics` as a comic library, and scan. Add a TMDB key under **Settings → Metadata** for posters and descriptions, and the IPTV username and password there for Live TV. The provider address defaults to `IPTV_URL` from `deploy/.env` (`http://playshare.co:8080/`); when the provider moves, change it in Settings, or update `.env` and restart.
 
 ## Verifying hardware transcoding
 

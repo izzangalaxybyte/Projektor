@@ -24,6 +24,7 @@ services:
       - ${MOVIES_DIR:-./media/movies}:/media/movies:ro
       - ${TV_DIR:-./media/tv}:/media/tv:ro
       - ${ANIME_DIR:-./media/anime}:/media/anime:ro
+      - ${COMICS_DIR:-./media/comics}:/media/comics:ro
     devices:
       # Intel iGPU for VAAPI transcoding. Comment out on a box without /dev/dri.
       - /dev/dri:/dev/dri
