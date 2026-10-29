@@ -126,6 +126,13 @@ describe.skipIf(!existsSync(fixtures))('HLS remux sessions', () => {
     expect(await probeSegment(seg.rawPayload, 'ts')).toEqual(['hevc', 'ac3']);
   });
 
+  it('starts ffmpeg when the session is decided, before any playlist request', async () => {
+    const session = await openSession(mkvId, tizen);
+    expect(app.hls.startCount(session.sessionId)).toBe(1);
+    await waitForEndlist(session.sessionId);
+    expect(app.hls.startCount(session.sessionId)).toBe(1);
+  });
+
   it('remuxes into fmp4 with an init segment', async () => {
     const session = await openSession(mkvId, safari);
     const master = await get(session.url);

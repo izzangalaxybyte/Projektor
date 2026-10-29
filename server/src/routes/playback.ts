@@ -115,6 +115,14 @@ export const playbackRoutes: FastifyPluginAsyncZod = async (app) => {
         decision,
         startPositionMs: request.body.startPositionMs,
       });
+      // Start ffmpeg now rather than on the first playlist request, so the first segment is
+      // already on its way while the client loads its player. A full server fails here instead.
+      try {
+        await app.hls.ensureStarted(session);
+      } catch (error) {
+        await app.hls.stop(session.id);
+        throw error;
+      }
       return {
         ...base,
         url: `/api/playback/sessions/${session.id}/master.m3u8`,
