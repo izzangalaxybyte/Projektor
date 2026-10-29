@@ -1,9 +1,10 @@
-import { desc, and, asc, eq, inArray, like, type SQL } from 'drizzle-orm';
+import { desc, and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 import { schema, type Db } from '../db/index.js';
 import type { FavoritesService } from '../favorites/service.js';
 import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
 import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
+import { matchesSearch } from '../search.js';
 
 export interface ItemsQueryInput {
   libraryKind?: Kind | undefined;
@@ -204,7 +205,6 @@ export class ItemsService {
   private movies(q: ItemsQueryInput): Ranked[] {
     const where = [
       q.libraryKind ? eq(schema.libraries.kind, q.libraryKind) : undefined,
-      q.search ? like(schema.movies.title, `%${q.search}%`) : undefined,
       q.needsReview !== undefined ? eq(schema.movies.needsReview, q.needsReview) : undefined,
     ].filter((c): c is SQL => c !== undefined);
     const rows = this.db
@@ -212,7 +212,8 @@ export class ItemsService {
       .from(schema.movies)
       .innerJoin(schema.libraries, eq(schema.libraries.id, schema.movies.libraryId))
       .where(where.length ? and(...where) : undefined)
-      .all();
+      .all()
+      .filter((r) => !q.search || matchesSearch(r.movie.title, q.search));
     const durations = this.fileDurations(
       'movie',
       rows.map((r) => r.movie.id),
@@ -223,7 +224,6 @@ export class ItemsService {
   private shows(q: ItemsQueryInput): Ranked[] {
     const where = [
       q.libraryKind ? eq(schema.libraries.kind, q.libraryKind) : undefined,
-      q.search ? like(schema.shows.title, `%${q.search}%`) : undefined,
       q.needsReview !== undefined ? eq(schema.shows.needsReview, q.needsReview) : undefined,
     ].filter((c): c is SQL => c !== undefined);
     return this.db
@@ -232,6 +232,7 @@ export class ItemsService {
       .innerJoin(schema.libraries, eq(schema.libraries.id, schema.shows.libraryId))
       .where(where.length ? and(...where) : undefined)
       .all()
+      .filter((r) => !q.search || matchesSearch(r.show.title, q.search))
       .map((r) => showSummary(r.show, r.kind));
   }
 

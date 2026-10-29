@@ -9,7 +9,8 @@ import type {
   ComicSeries,
   ComicSeriesDetail,
 } from '../schemas/index.js';
-import { cleanName, numberingLabel, sortBooks, sortTitle } from './naming.js';
+import { cleanName, numberingLabel, sortBooks } from './naming.js';
+import { matchesSearch } from '../search.js';
 
 type BookRow = typeof schema.comicBooks.$inferSelect;
 type SeriesRow = typeof schema.comicSeries.$inferSelect;
@@ -35,10 +36,8 @@ export class ComicsService {
       .from(schema.comicSeries)
       .where(q.libraryId ? eq(schema.comicSeries.libraryId, q.libraryId) : undefined)
       .all();
-    const needle = q.search ? sortTitle(q.search) : null;
-    const filtered = needle
-      ? rows.filter((s) => s.sortTitle.includes(needle) || s.title.toLowerCase().includes(needle))
-      : rows;
+    const search = q.search;
+    const filtered = search ? rows.filter((s) => matchesSearch(s.title, search)) : rows;
     const books = this.booksOf(filtered.map((s) => s.id));
     const progress = this.progressOf(
       userId,

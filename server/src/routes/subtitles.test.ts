@@ -64,6 +64,16 @@ beforeAll(async () => {
     ...['-metadata:s:t', 'mimetype=application/x-truetype-font'],
     path.join(fonted, 'Fonted Anime (2020).mkv'),
   ]);
+  // Several embedded tracks in one file, like a fansub release: the ASS track twice and an srt.
+  const many = path.join(mediaDir, 'Many Tracks (2021)');
+  mkdirSync(many, { recursive: true });
+  await execa('ffmpeg', [
+    ...['-v', 'error', '-y'],
+    ...['-i', `${fixtures}/anime/[SubGroup] Sample Anime - 13 [1080p][HEVC][Dual-Audio].mkv`],
+    ...['-i', `${fixtures}/tv/Sample.Show.S01E02.1080p.WEB.H265-GRP.mkv`],
+    ...['-map', '0:v', '-map', '0:a:0', '-map', '0:s', '-map', '0:s', '-map', '1:s', '-c', 'copy'],
+    path.join(many, 'Many Tracks (2021).mkv'),
+  ]);
   for (const [name, dir] of [
     ['Local', mediaDir],
     ['TV', `${fixtures}/tv`],
@@ -158,6 +168,26 @@ describe.skipIf(!existsSync(fixtures))('subtitles', () => {
     expect(
       (await app.inject({ method: 'GET', url: '/api/subtitles/nope.vtt', headers })).statusCode,
     ).toBe(404);
+  });
+
+  it('converts every embedded track of a file in one pass on the first request', async () => {
+    const file = files['Many Tracks (2021).mkv']!;
+    expect(file.subtitles.map((s) => s.format)).toEqual(['ass', 'ass', 'subrip']);
+    const first = await app.inject({ method: 'GET', url: file.subtitles[0]!.url, headers });
+    expect(first.body).toContain('Styled first line');
+    // The others are already on disk, the ASS ones as scripts too.
+    const dir = path.join(dataDir, 'subtitles', file.id);
+    for (const s of file.subtitles) expect(existsSync(path.join(dir, `${s.id}.vtt`))).toBe(true);
+    for (const s of file.subtitles.slice(0, 2))
+      expect(existsSync(path.join(dir, `${s.id}.ass`))).toBe(true);
+    const srt = await app.inject({ method: 'GET', url: file.subtitles[2]!.url, headers });
+    expect(srt.body).toContain('First subtitle line');
+    const ass = await app.inject({
+      method: 'GET',
+      url: `/api/subtitles/${file.subtitles[1]!.id}.ass`,
+      headers,
+    });
+    expect(ass.body).toContain('{\\an8}Styled first line');
   });
 
   it('serves ASS tracks as written, with the fonts attached to the file', async () => {

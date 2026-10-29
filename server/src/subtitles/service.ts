@@ -1,9 +1,10 @@
 // Text subtitles for a media file: embedded tracks found by ffprobe and sidecar files beside
-// the media. Both are converted to WebVTT with ffmpeg on first request and cached. ASS and SSA
+// the media. Both are converted to WebVTT with ffmpeg on first request and cached; the first
+// request for an embedded track converts all of the file's tracks in one pass. ASS and SSA
 // tracks are also served as they are, with the file's attached fonts, for libass on the clients.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { execa } from 'execa';
@@ -50,6 +51,9 @@ export class SubtitleError extends Error {
 }
 
 export class SubtitleService {
+  /** Files whose embedded tracks are being extracted, so concurrent requests share one pass. */
+  private readonly extracting = new Map<string, Promise<void>>();
+
   constructor(
     private readonly db: Db,
     private readonly config: Pick<Config, 'ffmpegPath' | 'ffprobePath' | 'subtitlesDir'>,
@@ -209,6 +213,16 @@ export class SubtitleService {
       .where(eq(schema.mediaFiles.id, sub.fileId))
       .get();
     if (!file) throw new SubtitleError(404, 'No such file');
+    if (sub.source === 'embedded') {
+      await this.extractEmbedded(sub.fileId, file.path);
+      const done = this.db
+        .select({ vttPath: schema.subtitles.vttPath })
+        .from(schema.subtitles)
+        .where(eq(schema.subtitles.id, sub.id))
+        .get()?.vttPath;
+      if (done && existsSync(done)) return done;
+    }
+    // A sidecar, or a track the shared pass could not convert: this one alone.
     const outDir = path.join(this.config.subtitlesDir, sub.fileId);
     await mkdir(outDir, { recursive: true });
     const out = path.join(outDir, `${sub.id}.vtt`);
@@ -241,6 +255,10 @@ export class SubtitleService {
     const outDir = path.join(this.config.subtitlesDir, sub.fileId);
     const out = path.join(outDir, `${sub.id}.ass`);
     if (existsSync(out)) return out;
+    if (sub.source === 'embedded') {
+      await this.extractEmbedded(sub.fileId, file.path);
+      if (existsSync(out)) return out;
+    }
     await mkdir(outDir, { recursive: true });
     // ffmpeg undoes the zlib compression some MKVs use on subtitle tracks; copying keeps every
     // style, override tag and drawing as the author wrote them.
@@ -260,6 +278,71 @@ export class SubtitleService {
     }
     await rename(tmp, out);
     return out;
+  }
+
+  /**
+   * Converts every embedded text track of a file that is not cached yet, WebVTT for all and the
+   * untouched script for ASS and SSA, in a single ffmpeg pass. Each track on its own costs a read
+   * of the whole file, so a fansub release with dozens of tracks took most of a minute track by
+   * track before a phone download could even start. Tracks the pass misses (ffmpeg gives up on
+   * every output when one fails) fall back to the one-track conversions.
+   */
+  private extractEmbedded(fileId: string, mediaPath: string): Promise<void> {
+    let run = this.extracting.get(fileId);
+    if (!run) {
+      run = this.runExtraction(fileId, mediaPath).finally(() => this.extracting.delete(fileId));
+      this.extracting.set(fileId, run);
+    }
+    return run;
+  }
+
+  private async runExtraction(fileId: string, mediaPath: string): Promise<void> {
+    const subs = this.db
+      .select()
+      .from(schema.subtitles)
+      .where(and(eq(schema.subtitles.fileId, fileId), eq(schema.subtitles.source, 'embedded')))
+      .all();
+    const outDir = path.join(this.config.subtitlesDir, fileId);
+    const jobs: Array<{ subId: string; tmp: string; out: string; vtt: boolean }> = [];
+    const args = ['-hide_banner', '-loglevel', 'error', '-nostdin', '-y', '-i', mediaPath];
+    for (const sub of subs) {
+      const add = (vtt: boolean) => {
+        const out = path.join(outDir, `${sub.id}.${vtt ? 'vtt' : 'ass'}`);
+        const tmp = `${out}.${randomUUID()}.tmp`;
+        args.push('-map', `0:${sub.streamIndex}`);
+        args.push(...(vtt ? ['-f', 'webvtt'] : ['-c:s', 'copy', '-f', 'ass']), tmp);
+        jobs.push({ subId: sub.id, tmp, out, vtt });
+      };
+      if (!(sub.vttPath && existsSync(sub.vttPath))) add(true);
+      if (ASS_FORMATS.has(sub.format) && !existsSync(path.join(outDir, `${sub.id}.ass`)))
+        add(false);
+    }
+    if (jobs.length === 0) return;
+    await mkdir(outDir, { recursive: true });
+    const result = await execa(this.config.ffmpegPath, args, {
+      reject: false,
+      timeout: 300_000,
+      stdin: 'ignore',
+    });
+    if (result.exitCode !== 0)
+      this.log?.warn({ fileId, stderr: result.stderr }, 'subtitle extraction pass failed');
+    for (const job of jobs) {
+      if (result.exitCode !== 0 || !existsSync(job.tmp)) {
+        await rm(job.tmp, { force: true });
+        continue;
+      }
+      if (!job.vtt) {
+        await rename(job.tmp, job.out);
+        continue;
+      }
+      await writeFile(job.out, cleanVtt(await readFile(job.tmp, 'utf8')));
+      await rm(job.tmp, { force: true });
+      this.db
+        .update(schema.subtitles)
+        .set({ vttPath: job.out, updatedAt: now() })
+        .where(eq(schema.subtitles.id, job.subId))
+        .run();
+    }
   }
 
   /**

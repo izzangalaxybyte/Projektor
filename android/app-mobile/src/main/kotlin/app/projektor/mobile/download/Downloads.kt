@@ -20,6 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -174,24 +176,15 @@ class DownloadStore(context: Context, private val client: () -> ProjektorClient?
         }
     }
 
-    // Subtitles, fonts and artwork first (small, and only reachable while online), then the video.
-    private suspend fun fetch(entry: Download) {
+    // The video starts at once; subtitles, fonts and artwork (small, and only reachable while
+    // online) come down beside it, so a release with dozens of subtitle tracks never holds it up.
+    private suspend fun fetch(entry: Download) = coroutineScope {
         val client = client()
         val dir = dirFor(entry.itemId)?.apply { mkdirs() }
-        if (client == null || dir == null) return finish(entry, ok = false)
-        val subtitles = entry.file.subtitles.mapNotNull { s ->
-            val ass = s.assUrl != null
-            val name = "sub-${safeName(s.id)}.${if (ass) "ass" else "vtt"}"
-            runCatching { save(client.withAccessToken(s.assUrl ?: s.url), File(dir, name)) }
-                .onFailure { Log.w(TAG, "subtitle ${s.id}", it) }
-                .getOrNull()?.let { LocalSubtitle(s.id, name, s.language, s.title ?: s.language ?: s.format, ass) }
-        }
-        val hasFonts = entry.file.subtitles.mapNotNull { it.fontsUrl }.distinct().map { fetchFonts(client, it, File(dir, FONTS)) }.any { it }
-        val width = if (entry.isEpisode) 780 else 300
-        val image = client.imageUrl(entry.detail.posterKey, width)?.let { url -> runCatching { save(url, File(dir, IMAGE)); IMAGE }.getOrNull() }
+        if (client == null || dir == null) return@coroutineScope finish(entry, ok = false)
         val current = { get(entry.itemId)?.addedAt == entry.addedAt }
-        if (!current()) return // Cancelled while the extras came down.
-        set(entry.itemId) { it.copy(state = DownloadState.DOWNLOADING, subtitles = subtitles, hasFonts = hasFonts, image = image) }
+        set(entry.itemId) { it.copy(state = DownloadState.DOWNLOADING) }
+        val extras = async(Dispatchers.IO) { fetchExtras(client, entry, dir, current) }
         val ok = Transfer.fetch(
             url = client.withAccessToken("/api/files/${entry.file.id}/stream"),
             to = videoFile(entry),
@@ -199,7 +192,25 @@ class DownloadStore(context: Context, private val client: () -> ProjektorClient?
             onProgress = { bytes, _ -> progress(entry, bytes) },
             onWaiting = { if (current()) set(entry.itemId) { it.copy(state = DownloadState.WAITING) } },
         )
+        extras.await()
         if (ok) finish(entry, ok = true)
+    }
+
+    private fun fetchExtras(client: ProjektorClient, entry: Download, dir: File, current: () -> Boolean) {
+        val width = if (entry.isEpisode) 780 else 300
+        val image = client.imageUrl(entry.detail.posterKey, width)?.let { url -> runCatching { save(url, File(dir, IMAGE)); IMAGE }.getOrNull() }
+        if (image != null && current()) set(entry.itemId) { it.copy(image = image) }
+        val subtitles = entry.file.subtitles.mapNotNull { s ->
+            if (!current()) return
+            val ass = s.assUrl != null
+            val name = "sub-${safeName(s.id)}.${if (ass) "ass" else "vtt"}"
+            runCatching { save(client.withAccessToken(s.assUrl ?: s.url), File(dir, name)) }
+                .onFailure { Log.w(TAG, "subtitle ${s.id}", it) }
+                .getOrNull()?.let { LocalSubtitle(s.id, name, s.language, s.title ?: s.language ?: s.format, ass) }
+        }
+        // Every ASS track lists the same fonts, the ones attached to the file: fetch them once.
+        val hasFonts = entry.file.subtitles.firstNotNullOfOrNull { it.fontsUrl }?.let { fetchFonts(client, it, File(dir, FONTS)) } ?: false
+        if (current()) set(entry.itemId) { it.copy(subtitles = subtitles, hasFonts = hasFonts) }
     }
 
     private fun progress(entry: Download, bytes: Long) {
