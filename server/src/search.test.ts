@@ -14,6 +14,13 @@ describe('matchesSearch', () => {
     expect(matchesSearch('Batman - The Dark Knight Returns', 'dark knight batman')).toBe(true);
     expect(matchesSearch('Batman - Year One', 'batman knight')).toBe(false);
     expect(matchesSearch('Superman', 'spiderman')).toBe(false);
+    expect(matchesSearch('Spider-Woman', 'Spider-Man')).toBe(false);
+    expect(matchesSearch('Spider-Woman', 'spider man')).toBe(false);
+  });
+
+  it('matches what is typed so far', () => {
+    expect(matchesSearch('The Amazing Spider-Man', 'spide')).toBe(true);
+    expect(matchesSearch('The Amazing Spider-Man', 'amaz spid')).toBe(true);
   });
 
   it('drops accents and reads & as and', () => {

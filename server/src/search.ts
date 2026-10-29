@@ -12,14 +12,22 @@ export function searchKey(text: string): string {
 }
 
 /**
- * Whether every word of the query appears somewhere in the title, punctuation and spacing
- * ignored, so a query split differently from the title ("iron man" / "Ironman") still matches.
+ * Whether the title matches: the query run together appears in the title run together
+ * ("iron man" / "Ironman", "spiderman" / "Spider-Man"), or each word of the query starts a word of
+ * the title, in any order ("dark knight batman"). Word starts rather than anywhere keep
+ * "Spider-Man" from finding "Spider-Woman".
  */
 export function matchesSearch(title: string, query: string): boolean {
-  const key = searchKey(title);
-  const words = query
-    .split(/[^\p{L}\p{N}&]+/u)
+  const words = splitWords(query);
+  if (words.length === 0) return true;
+  if (searchKey(title).includes(words.join(''))) return true;
+  const titleWords = splitWords(title);
+  return words.every((w) => titleWords.some((t) => t.startsWith(w)));
+}
+
+function splitWords(text: string): string[] {
+  return text
+    .split(/[^\p{L}\p{N}&\p{M}]+/u)
     .map(searchKey)
     .filter(Boolean);
-  return words.every((w) => key.includes(w));
 }
