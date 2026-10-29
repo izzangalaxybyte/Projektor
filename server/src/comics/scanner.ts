@@ -310,6 +310,8 @@ export async function indexComicBooks(
   images: ImageStore,
   ids: string[],
   log?: FastifyBaseLogger,
+  /** Told after each book, so a long first scan shows how far it has got. */
+  onProgress?: (done: { indexed: number; failed: number }) => void,
 ): Promise<{ indexed: number; failed: number }> {
   const limit = pLimit(2);
   let indexed = 0;
@@ -367,6 +369,7 @@ export async function indexComicBooks(
             .where(eq(schema.comicBooks.id, id))
             .run();
         }
+        onProgress?.({ indexed, failed });
       }),
     ),
   );

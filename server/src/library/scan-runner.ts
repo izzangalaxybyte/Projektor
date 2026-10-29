@@ -184,6 +184,7 @@ export class ScanRunner {
       new ImageStore(this.app.config.imagesDir),
       walked.changedBookIds,
       this.log,
+      (done) => set({ filesProbed: done.indexed, filesFailed: done.failed }),
     );
     set({
       state: 'idle',
