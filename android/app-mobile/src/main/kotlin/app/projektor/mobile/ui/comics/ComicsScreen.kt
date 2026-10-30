@@ -66,6 +66,13 @@ import kotlinx.coroutines.delay
 
 private data class ComicsHome(val reading: List<ComicBook>, val history: List<ComicBook>, val series: List<ComicSeries>)
 
+/**
+ * The tab as last loaded, for its sort and search. Opening a series leaves the tab's composition;
+ * coming back, the grid is drawn from this at once instead of a spinner, so it keeps its scroll
+ * position (a three-item loading grid would clamp it to the top) while a fresh copy loads.
+ */
+private var lastHome: Triple<SeriesSort, String, ComicsHome>? = null
+
 /** Which shelf the tab shows; manga is whatever reads right to left (tagged, or under a Manga folder). */
 private enum class Shelf(val label: String) {
     ALL("All"), COMICS("Comics"), MANGA("Manga");
@@ -89,7 +96,9 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
     val prefs = LocalContext.current.getSharedPreferences("projektor.comics", android.content.Context.MODE_PRIVATE)
     var shelf by remember { mutableStateOf(runCatching { Shelf.valueOf(prefs.getString(KEY_SHELF, null)!!) }.getOrDefault(Shelf.ALL)) }
     var search by rememberSaveable { mutableStateOf("") }
-    var state by remember { mutableStateOf<UiState<ComicsHome>>(UiState.Loading) }
+    var state by remember {
+        mutableStateOf<UiState<ComicsHome>>(lastHome?.takeIf { it.first == sort && it.second == search }?.let { UiState.Ready(it.third) } ?: UiState.Loading)
+    }
     LaunchedEffect(sort, search) {
         if (search.isNotEmpty()) delay(300)
         state = try {
@@ -99,6 +108,7 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
                 series = repo.series(search, sort),
             )
             container.comicProgress.flush(repo)
+            lastHome = Triple(sort, search, home)
             UiState.Ready(home)
         } catch (e: Exception) { UiState.Failed(e.userMessage()) }
     }

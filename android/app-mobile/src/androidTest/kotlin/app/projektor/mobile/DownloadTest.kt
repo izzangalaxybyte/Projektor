@@ -72,6 +72,8 @@ class DownloadTest {
         rule.onNodeWithTag("tab-comics").performClick()
         rule.waitUntil(15_000) { rule.onAllNodesWithTag("comics-shelf-manga").fetchSemanticsNodes().isNotEmpty() }
         fun shown(title: String) = rule.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty()
+        // Narrowed so both series fit on screen however big the test library is.
+        rule.onNodeWithTag("comics-search").performTextInput("man")
 
         rule.onNodeWithTag("comics-shelf-all").performClick()
         rule.waitUntil(5_000) { shown("Batman") && shown("Test Manga") }

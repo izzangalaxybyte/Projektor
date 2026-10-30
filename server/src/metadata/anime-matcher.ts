@@ -6,7 +6,14 @@ import type { FastifyBaseLogger } from 'fastify';
 import pLimit from 'p-limit';
 import { now, schema, type Db } from '../db/index.js';
 import type { ImageStore } from '../images/store.js';
-import { mediaTitles, stripHtml, type AniListClient, type AniListMedia } from './anilist.js';
+import {
+  mediaTags,
+  mediaTitles,
+  stripHtml,
+  type AniListClient,
+  type AniListMedia,
+} from './anilist.js';
+import { parseRatings } from './anime-ratings.js';
 import { Matcher, sortTitle, type MatchSummary } from './matcher.js';
 import { ACCEPT_THRESHOLD, rankCandidates } from './score.js';
 import { mapAbsoluteEpisode } from './season-map.js';
@@ -83,6 +90,10 @@ export class AnimeMatcher {
     const { db, images } = this.deps;
     const title = media.title.english ?? media.title.romaji ?? media.title.native ?? 'Untitled';
     const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
+    const existing = db.select().from(schema.shows).where(eq(schema.shows.id, showId)).get();
+    const anilistScore = media.averageScore != null ? media.averageScore / 10 : null;
+    // A different entry (a fixed match) makes the MAL and TMDB scores stale too.
+    const ratings = existing?.anilistId === media.id ? parseRatings(existing.ratingsJson) : {};
     const [posterKey, backdropKey] = await Promise.all([
       cover ? images.ensure(cover).catch(() => null) : null,
       media.bannerImage ? images.ensure(media.bannerImage).catch(() => null) : null,
@@ -95,7 +106,13 @@ export class AnimeMatcher {
         year: media.seasonYear ?? media.startDate?.year ?? null,
         overview: stripHtml(media.description),
         genresJson: JSON.stringify(media.genres),
-        rating: media.averageScore != null ? media.averageScore / 10 : null,
+        tagsJson: JSON.stringify(mediaTags(media)),
+        rating: anilistScore,
+        malId: media.idMal ?? null,
+        popularity: media.popularity ?? null,
+        ratingsJson: JSON.stringify({ ...ratings, anilist: anilistScore ?? undefined }),
+        // MAL and TMDB scores come from the next ratings refresh.
+        ratingsRefreshedAt: null,
         posterKey,
         backdropKey,
         needsReview: false,

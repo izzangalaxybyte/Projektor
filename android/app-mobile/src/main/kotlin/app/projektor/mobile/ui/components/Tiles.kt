@@ -59,7 +59,7 @@ fun ItemDetail.subtitle(): String = captionFor(kind.value, seasonNumber, episode
 data class TileAction(val label: String, val run: () -> Unit)
 
 @Composable
-fun PosterTile(item: ItemSummary, client: ProjektorClient, onClick: () -> Unit, modifier: Modifier = Modifier, wide: Boolean = item.kind.value == "episode", actions: List<TileAction> = emptyList()) {
+fun PosterTile(item: ItemSummary, client: ProjektorClient, onClick: () -> Unit, modifier: Modifier = Modifier, wide: Boolean = item.kind.value == "episode", actions: List<TileAction> = emptyList(), caption: String = item.subtitle()) {
     val progress = item.progress?.takeIf { !it.watched }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
     Column(modifier.clickable(onClick = onClick).testTag("tile-${item.kind.value}")) {
         Box(
@@ -80,7 +80,7 @@ fun PosterTile(item: ItemSummary, client: ProjektorClient, onClick: () -> Unit, 
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
-                Text(item.subtitle(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(caption, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (actions.isNotEmpty()) {
                 var open by remember { mutableStateOf(false) }

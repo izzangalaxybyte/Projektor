@@ -28,6 +28,10 @@ const EnvSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
+  RATINGS_REFRESH: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
   WATCH_LIBRARIES: z
     .enum(['true', 'false'])
     .default('true')
@@ -57,6 +61,8 @@ export interface Config {
   webDist: string | null;
   /** Whether to refresh the IPTV guide on a schedule. */
   liveRefresh: boolean;
+  /** Whether to fetch anime scores (AniList, MAL, TMDB) shortly after start-up and every few hours. */
+  ratingsRefresh: boolean;
   /** Provider URL used until an admin sets one in Settings. */
   iptvUrl: string;
   /** Concurrent provider connections; keep at or below the account's max_connections. */
@@ -105,6 +111,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     hardwareAccel: parsed.HARDWARE_ACCEL,
     webDist: parsed.WEB_DIST ? path.resolve(parsed.WEB_DIST) : null,
     liveRefresh: parsed.LIVE_REFRESH,
+    ratingsRefresh: parsed.RATINGS_REFRESH,
     iptvUrl: parsed.IPTV_URL,
     liveMaxStreams: parsed.LIVE_MAX_STREAMS,
     authRateLimitPerMinute: parsed.AUTH_RATE_LIMIT,
@@ -142,6 +149,7 @@ export function configForDataDir(
     hardwareAccel: 'none',
     webDist: null,
     liveRefresh: false,
+    ratingsRefresh: false,
     iptvUrl: 'http://playshare.co:8080/',
     liveMaxStreams: 2,
     authRateLimitPerMinute: 20,

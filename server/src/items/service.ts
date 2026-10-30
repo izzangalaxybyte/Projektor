@@ -3,7 +3,15 @@ import { schema, type Db } from '../db/index.js';
 import type { FavoritesService } from '../favorites/service.js';
 import type { ProgressService } from '../progress/service.js';
 import type { SubtitleService } from '../subtitles/service.js';
-import type { ItemDetail, ItemSummary, MediaFile, StreamInfo } from '../schemas/index.js';
+import { parseRatings } from '../metadata/anime-ratings.js';
+import type {
+  ItemDetail,
+  ItemFacets,
+  ItemRatings,
+  ItemSummary,
+  MediaFile,
+  StreamInfo,
+} from '../schemas/index.js';
 import { matchesSearch } from '../search.js';
 
 export interface ItemsQueryInput {
@@ -11,8 +19,18 @@ export interface ItemsQueryInput {
   kind?: 'movie' | 'show' | 'season' | 'episode' | undefined;
   parentId?: string | undefined;
   search?: string | undefined;
+  genre?: string | undefined;
   needsReview?: boolean | undefined;
-  sort: 'title' | 'year' | 'added' | 'lastPlayed';
+  sort:
+    | 'title'
+    | 'year'
+    | 'added'
+    | 'lastPlayed'
+    | 'rating'
+    | 'anilist'
+    | 'mal'
+    | 'tmdb'
+    | 'popularity';
   offset: number;
   limit: number;
 }
@@ -48,12 +66,57 @@ export class ItemsService {
     if (wantShows && q.libraryKind !== 'movie') ranked.push(...this.shows(q));
     if (wantSeasons && q.parentId) ranked.push(...this.seasons(q.parentId));
     if (wantEpisodes && q.parentId) ranked.push(...this.episodes(q.parentId, q.parentId));
-    const items = this.withUserState(sortItems(ranked, q.sort), userId);
+    const wanted = (q.genre ?? '')
+      .split(',')
+      .map((g) => g.trim().toLowerCase())
+      .filter(Boolean);
+    const filtered = wanted.length
+      ? ranked.filter((r) => wanted.every((g) => r.categories.has(g)))
+      : ranked;
+    const items = this.withUserState(sortItems(filtered, q.sort), userId);
     return {
       items: items.slice(q.offset, q.offset + q.limit),
       total: items.length,
       offset: q.offset,
       limit: q.limit,
+    };
+  }
+
+  /** The genres and tags across a kind of library's movies and shows, for filter choices. */
+  facets(libraryKind?: Kind): ItemFacets {
+    const lists: Array<{ genres: string[]; tags: string[] }> = [];
+    if (libraryKind !== 'tv' && libraryKind !== 'anime')
+      for (const r of this.movies({ libraryKind, sort: 'title', offset: 0, limit: 0 }))
+        lists.push({ genres: r.summary.genres, tags: [] });
+    if (libraryKind !== 'movie')
+      for (const r of this.db
+        .select({ genres: schema.shows.genresJson, tags: schema.shows.tagsJson })
+        .from(schema.shows)
+        .innerJoin(schema.libraries, eq(schema.libraries.id, schema.shows.libraryId))
+        .where(libraryKind ? eq(schema.libraries.kind, libraryKind) : undefined)
+        .all())
+        lists.push({
+          genres: JSON.parse(r.genres) as string[],
+          tags: JSON.parse(r.tags) as string[],
+        });
+    const count = (names: string[][], min: number) => {
+      const counts = new Map<string, number>();
+      for (const list of names)
+        for (const n of new Set(list)) counts.set(n, (counts.get(n) ?? 0) + 1);
+      return [...counts]
+        .filter(([, c]) => c >= min)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([name, c]) => ({ name, count: c }));
+    };
+    return {
+      genres: count(
+        lists.map((l) => l.genres),
+        1,
+      ),
+      tags: count(
+        lists.map((l) => l.tags),
+        2,
+      ).slice(0, 60),
     };
   }
 
@@ -74,7 +137,9 @@ export class ItemsService {
           children: _c,
           overview: _o,
           tagline: _t,
-          genres: _g,
+          tags: _g,
+          ageRating: _ar,
+          popularity: _p,
           rating: _r,
           airDate: _a,
           tmdbId: _x,
@@ -114,7 +179,9 @@ export class ItemsService {
         ...movieSummary(movie, lib, this.fileDurations('movie', [movie.id]).get(movie.id)).summary,
         overview: movie.overview,
         tagline: movie.tagline,
-        genres: JSON.parse(movie.genresJson) as string[],
+        tags: [],
+        ageRating: null,
+        popularity: null,
         rating: movie.rating,
         airDate: movie.releaseDate,
         tmdbId: movie.tmdbId,
@@ -130,7 +197,9 @@ export class ItemsService {
         ...showSummary(show, lib).summary,
         overview: show.overview,
         tagline: null,
-        genres: JSON.parse(show.genresJson) as string[],
+        tags: JSON.parse(show.tagsJson) as string[],
+        ageRating: show.ageRating,
+        popularity: show.popularity,
         rating: show.rating,
         airDate: show.firstAirDate,
         tmdbId: show.tmdbId,
@@ -156,7 +225,9 @@ export class ItemsService {
         ...seasonSummary(season, parent, lib).summary,
         overview: season.overview,
         tagline: null,
-        genres: [],
+        tags: [],
+        ageRating: null,
+        popularity: null,
         rating: null,
         airDate: null,
         tmdbId: season.tmdbId,
@@ -182,7 +253,9 @@ export class ItemsService {
         ).summary,
         overview: episode.overview,
         tagline: null,
-        genres: [],
+        tags: [],
+        ageRating: null,
+        popularity: null,
         rating: null,
         airDate: episode.airDate,
         tmdbId: episode.tmdbId,
@@ -350,7 +423,12 @@ type Kind = 'movie' | 'tv' | 'anime' | 'comic';
 interface Ranked {
   summary: ItemSummary;
   added: string;
+  /** Genres and tags, lowercased, for the genre filter. */
+  categories: Set<string>;
+  popularity: number | null;
 }
+
+const NO_RATINGS: ItemRatings = { anilist: null, mal: null, tmdb: null };
 
 const base = {
   progress: null,
@@ -359,11 +437,19 @@ const base = {
   episodeNumber: null,
   showTitle: null,
   runtimeMs: null,
-} as const;
+  genres: [] as string[],
+  ratings: NO_RATINGS,
+};
+const unranked = { categories: new Set<string>(), popularity: null };
+
+const lower = (names: string[]) => new Set(names.map((n) => n.toLowerCase()));
 
 function movieSummary(m: Movie, libraryKind: Kind, fileDurationMs?: number): Ranked {
+  const genres = JSON.parse(m.genresJson) as string[];
   return {
     added: m.createdAt,
+    categories: lower(genres),
+    popularity: null,
     summary: {
       ...base,
       id: m.id,
@@ -375,12 +461,26 @@ function movieSummary(m: Movie, libraryKind: Kind, fileDurationMs?: number): Ran
       backdropKey: m.backdropKey,
       needsReview: m.needsReview,
       runtimeMs: m.runtimeMs ?? fileDurationMs ?? null,
+      genres,
+      // A movie's rating is TMDB's vote average.
+      ratings: { ...NO_RATINGS, tmdb: m.rating },
     },
   };
 }
 function showSummary(s: Show, libraryKind: Kind): Ranked {
+  const genres = JSON.parse(s.genresJson) as string[];
+  const tags = JSON.parse(s.tagsJson) as string[];
+  const stored = parseRatings(s.ratingsJson);
+  // Before its first refresh an anime show's rating is AniList's; a TV show's is TMDB's.
+  const ratings: ItemRatings = {
+    anilist: stored.anilist ?? (s.anilistId ? s.rating : null),
+    mal: stored.mal ?? null,
+    tmdb: stored.tmdb ?? (s.anilistId ? null : s.rating),
+  };
   return {
     added: s.createdAt,
+    categories: lower([...genres, ...tags]),
+    popularity: s.popularity,
     summary: {
       ...base,
       id: s.id,
@@ -391,11 +491,14 @@ function showSummary(s: Show, libraryKind: Kind): Ranked {
       posterKey: s.posterKey,
       backdropKey: s.backdropKey,
       needsReview: s.needsReview,
+      genres,
+      ratings,
     },
   };
 }
 function seasonSummary(s: Season, show: Show, libraryKind: Kind): Ranked {
   return {
+    ...unranked,
     added: s.createdAt,
     summary: {
       ...base,
@@ -420,6 +523,7 @@ function episodeSummary(
 ): Ranked {
   const number = e.episodeNumber ?? e.absoluteNumber;
   return {
+    ...unranked,
     added: e.createdAt,
     summary: {
       ...base,
@@ -439,9 +543,37 @@ function episodeSummary(
   };
 }
 
+/** The score a sort orders by; null sorts last. */
+function scoreFor(r: Ranked, sort: ItemsQueryInput['sort']): number | null {
+  const { anilist, mal, tmdb } = r.summary.ratings;
+  switch (sort) {
+    case 'rating':
+      return anilist ?? mal ?? tmdb;
+    case 'anilist':
+      return anilist;
+    case 'mal':
+      return mal;
+    case 'tmdb':
+      return tmdb;
+    case 'popularity':
+      return r.popularity;
+    default:
+      return null;
+  }
+}
+
+const SCORED = new Set(['rating', 'anilist', 'mal', 'tmdb', 'popularity']);
+
 function sortItems(items: Ranked[], sort: ItemsQueryInput['sort']): ItemSummary[] {
   const sorted = [...items];
-  if (sort === 'year')
+  if (SCORED.has(sort))
+    sorted.sort((a, b) => {
+      const x = scoreFor(a, sort);
+      const y = scoreFor(b, sort);
+      if (x === null || y === null) return x === y ? compareTitles(a, b) : x === null ? 1 : -1;
+      return y - x || compareTitles(a, b);
+    });
+  else if (sort === 'year')
     sorted.sort((a, b) => (b.summary.year ?? 0) - (a.summary.year ?? 0) || compareTitles(a, b));
   else if (sort === 'added' || sort === 'lastPlayed')
     sorted.sort((a, b) => b.added.localeCompare(a.added));

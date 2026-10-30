@@ -102,9 +102,20 @@ export const shows = sqliteTable(
     year: integer('year'),
     tmdbId: integer('tmdb_id'),
     anilistId: integer('anilist_id'),
+    malId: integer('mal_id'),
     overview: text('overview'),
     genresJson: text('genres_json').notNull().default('[]'),
+    /** AniList tags (Isekai, School, Time Travel...), strongest first; spoilers left out. */
+    tagsJson: text('tags_json').notNull().default('[]'),
     rating: integer('rating', { mode: 'number' }),
+    /** Scores out of ten by source, `{ anilist, mal, tmdb }`, each present once fetched. */
+    ratingsJson: text('ratings_json').notNull().default('{}'),
+    /** AniList: how many users have it on a list. */
+    popularity: integer('popularity'),
+    /** MAL's age rating: "PG-13", "R - 17+", ... */
+    ageRating: text('age_rating'),
+    /** When the AniList, MAL and TMDB scores were last fetched; they drift, so they are refreshed. */
+    ratingsRefreshedAt: text('ratings_refreshed_at'),
     firstAirDate: text('first_air_date'),
     posterKey: text('poster_key'),
     backdropKey: text('backdrop_key'),

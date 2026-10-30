@@ -21,6 +21,16 @@ const Media = z.object({
   genres: z.string().array().optional().default([]),
   averageScore: z.number().nullable().optional(),
   popularity: z.number().nullable().optional(),
+  tags: z
+    .object({
+      name: z.string(),
+      rank: z.number().nullable().optional(),
+      isGeneralSpoiler: z.boolean().nullable().optional(),
+      isMediaSpoiler: z.boolean().nullable().optional(),
+    })
+    .array()
+    .nullable()
+    .optional(),
   coverImage: z
     .object({ extraLarge: z.string().nullable(), large: z.string().nullable() })
     .nullable()
@@ -32,6 +42,7 @@ export type AniListMedia = z.infer<typeof Media>;
 const FIELDS = `
   id idMal title { romaji english native } synonyms format episodes seasonYear startDate { year }
   description(asHtml: false) genres averageScore popularity coverImage { extraLarge large } bannerImage
+  tags { name rank isGeneralSpoiler isMediaSpoiler }
 `;
 
 export class AniListError extends Error {
@@ -124,6 +135,16 @@ export class AniListClient {
     return data.Page.media;
   }
 
+  /** Up to 50 entries by id in one request; ids AniList does not know are left out. */
+  async getMany(ids: number[]): Promise<AniListMedia[]> {
+    const data = await this.query(
+      `query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { ${FIELDS} } } }`,
+      { ids },
+      z.object({ Page: z.object({ media: Media.array() }) }),
+    );
+    return data.Page.media;
+  }
+
   async get(id: number): Promise<AniListMedia> {
     const data = await this.query(
       `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`,
@@ -145,6 +166,14 @@ export function stripHtml(text: string | null | undefined): string | null {
     .replace(/&amp;/g, '&')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/** Tags that describe the show without giving its story away, strongest first. */
+export function mediaTags(media: AniListMedia): string[] {
+  return (media.tags ?? [])
+    .filter((t) => !t.isGeneralSpoiler && !t.isMediaSpoiler && (t.rank ?? 0) >= 60)
+    .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0))
+    .map((t) => t.name);
 }
 
 /** Titles to search and score against, best first, without duplicates or nulls. */

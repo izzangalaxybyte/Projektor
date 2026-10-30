@@ -11,6 +11,15 @@ export const ProgressState = z
   .meta({ id: 'ProgressState' });
 export type ProgressState = z.infer<typeof ProgressState>;
 
+export const ItemRatings = z
+  .object({
+    anilist: z.number().nullable().meta({ description: 'AniList average score, out of ten' }),
+    mal: z.number().nullable().meta({ description: 'MyAnimeList score, out of ten' }),
+    tmdb: z.number().nullable().meta({ description: 'TMDB vote average, out of ten' }),
+  })
+  .meta({ id: 'ItemRatings', description: 'Audience scores by source; anime has all three' });
+export type ItemRatings = z.infer<typeof ItemRatings>;
+
 export const ItemSummary = z
   .object({
     id: Id,
@@ -32,6 +41,8 @@ export const ItemSummary = z
       description:
         'Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons.',
     }),
+    genres: z.string().array().meta({ description: 'Movies and shows; empty otherwise' }),
+    ratings: ItemRatings,
   })
   .meta({ id: 'ItemSummary' });
 export type ItemSummary = z.infer<typeof ItemSummary>;
@@ -106,7 +117,13 @@ export type MediaFile = z.infer<typeof MediaFile>;
 export const ItemDetail = ItemSummary.extend({
   overview: z.string().nullable(),
   tagline: z.string().nullable(),
-  genres: z.string().array(),
+  tags: z.string().array().meta({ description: 'Anime: AniList tags, strongest first' }),
+  ageRating: z.string().nullable().meta({ description: 'Anime: MAL age rating, e.g. PG-13' }),
+  popularity: z
+    .number()
+    .int()
+    .nullable()
+    .meta({ description: 'Anime: AniList users with it on a list' }),
   rating: z.number().nullable(),
   airDate: z.string().nullable(),
   tmdbId: z.number().int().nullable(),
@@ -126,8 +143,44 @@ export const ItemsQuery = z.object({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
-  sort: z.enum(['title', 'year', 'added', 'lastPlayed']).default('title'),
+  genre: z.string().optional().meta({
+    description:
+      'Comma-separated genres or tags (case-insensitive); only items with every one are listed',
+  }),
+  sort: z
+    .enum([
+      'title',
+      'year',
+      'added',
+      'lastPlayed',
+      'rating',
+      'anilist',
+      'mal',
+      'tmdb',
+      'popularity',
+    ])
+    .default('title')
+    .meta({
+      description:
+        'rating is the best score there is (AniList, else MAL, else TMDB); anilist, mal, tmdb and popularity sort by that source. Scores and popularity sort highest first, unscored last.',
+    }),
 });
+
+export const ItemFacet = z
+  .object({ name: z.string(), count: z.number().int().positive() })
+  .meta({ id: 'ItemFacet' });
+
+export const ItemFacets = z
+  .object({
+    genres: ItemFacet.array().meta({ description: 'Most common first' }),
+    tags: ItemFacet.array().meta({
+      description: 'AniList tags on at least two titles, most common first',
+    }),
+  })
+  .meta({ id: 'ItemFacets' });
+export type ItemFacets = z.infer<typeof ItemFacets>;
+
+export const FacetsQuery = z.object({ libraryKind: LibraryKind.optional() });
 
 export const MatchCandidate = z
   .object({

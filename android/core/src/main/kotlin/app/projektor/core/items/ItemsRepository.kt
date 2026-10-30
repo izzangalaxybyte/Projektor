@@ -6,6 +6,7 @@ import app.projektor.core.api.models.ApiItemsGet200Response
 import app.projektor.core.api.models.ApiProgressItemIdWatchedPutRequest
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemKindInput
+import app.projektor.core.api.models.ItemFacets
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.core.api.models.PlaybackDecideRequestInput
@@ -26,8 +27,23 @@ class ItemsRepository(private val client: ProjektorClient) {
         sort: String? = null,
         offset: Int? = null,
         limit: Int? = null,
+        /** Genres or tags; only items with every one are listed. */
+        genres: List<String> = emptyList(),
     ): ApiItemsGet200Response =
-        client.items.apiItemsGet(libraryKind, kind, parentId, search, needsReview?.toString(), sort, offset?.toLong(), limit?.toLong()).bodyOrThrow()
+        client.items.apiItemsGet(libraryKind, kind, parentId, search, needsReview?.toString(), genres.joinToString(",").ifEmpty { null }, sort, offset?.toLong(), limit?.toLong()).bodyOrThrow()
+
+    /** Every movie or show of a library kind, fetched a page (the server's maximum, 200) at a time. */
+    suspend fun listAll(libraryKind: LibraryKindInput, sort: String, genres: List<String> = emptyList()): List<ItemSummary> {
+        val all = mutableListOf<ItemSummary>()
+        do {
+            val page = list(libraryKind = libraryKind, sort = sort, genres = genres, offset = all.size, limit = 200)
+            all += page.items
+        } while (page.items.isNotEmpty() && all.size < page.total)
+        return all
+    }
+
+    /** The genres and tags to filter a library kind by, most common first. */
+    suspend fun facets(libraryKind: LibraryKindInput): ItemFacets = client.items.apiItemsGenresGet(libraryKind).bodyOrThrow()
 
     suspend fun recentlyAdded(libraryKind: LibraryKindInput, limit: Int = 20): List<ItemSummary> =
         list(libraryKind = libraryKind, sort = "added", limit = limit).items

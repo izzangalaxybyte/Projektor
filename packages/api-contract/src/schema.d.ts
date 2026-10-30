@@ -632,7 +632,10 @@ export interface paths {
                     parentId?: string;
                     search?: string;
                     needsReview?: "true" | "false";
-                    sort?: "title" | "year" | "added" | "lastPlayed";
+                    /** @description Comma-separated genres or tags (case-insensitive); only items with every one are listed */
+                    genre?: string;
+                    /** @description rating is the best score there is (AniList, else MAL, else TMDB); anilist, mal, tmdb and popularity sort by that source. Scores and popularity sort highest first, unscored last. */
+                    sort?: "title" | "year" | "added" | "lastPlayed" | "rating" | "anilist" | "mal" | "tmdb" | "popularity";
                     offset?: number;
                     limit?: number;
                 };
@@ -654,6 +657,47 @@ export interface paths {
                             offset: number;
                             limit: number;
                         };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/genres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Genres and tags to filter by
+         * @description The genres and AniList tags across the movies and shows of a library kind, with how many titles have each. Pass one or more as `genre` to GET /api/items.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    libraryKind?: components["schemas"]["LibraryKindInput"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ItemFacets"];
                     };
                 };
             };
@@ -3627,6 +3671,15 @@ export interface components {
              */
             updatedAt: string;
         };
+        /** @description Audience scores by source; anime has all three */
+        ItemRatingsInput: {
+            /** @description AniList average score, out of ten */
+            anilist: number | null;
+            /** @description MyAnimeList score, out of ten */
+            mal: number | null;
+            /** @description TMDB vote average, out of ten */
+            tmdb: number | null;
+        };
         ItemSummaryInput: {
             /** @description Opaque identifier */
             id: string;
@@ -3645,6 +3698,9 @@ export interface components {
             favorite: boolean;
             /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
             runtimeMs: number | null;
+            /** @description Movies and shows; empty otherwise */
+            genres: string[];
+            ratings: components["schemas"]["ItemRatingsInput"];
         };
         StreamInfoInput: {
             index: number;
@@ -3714,9 +3770,17 @@ export interface components {
             favorite: boolean;
             /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
             runtimeMs: number | null;
+            /** @description Movies and shows; empty otherwise */
+            genres: string[];
+            ratings: components["schemas"]["ItemRatingsInput"];
             overview: string | null;
             tagline: string | null;
-            genres: string[];
+            /** @description Anime: AniList tags, strongest first */
+            tags: string[];
+            /** @description Anime: MAL age rating, e.g. PG-13 */
+            ageRating: string | null;
+            /** @description Anime: AniList users with it on a list */
+            popularity: number | null;
             rating: number | null;
             airDate: string | null;
             tmdbId: number | null;
@@ -3724,6 +3788,16 @@ export interface components {
             files: components["schemas"]["MediaFileInput"][];
             /** @description Seasons of a show, episodes of a season */
             children: components["schemas"]["ItemSummaryInput"][];
+        };
+        ItemFacetInput: {
+            name: string;
+            count: number;
+        };
+        ItemFacetsInput: {
+            /** @description Most common first */
+            genres: components["schemas"]["ItemFacetInput"][];
+            /** @description AniList tags on at least two titles, most common first */
+            tags: components["schemas"]["ItemFacetInput"][];
         };
         MatchCandidateInput: {
             /** @enum {string} */
@@ -4255,6 +4329,15 @@ export interface components {
              */
             updatedAt: string;
         };
+        /** @description Audience scores by source; anime has all three */
+        ItemRatings: {
+            /** @description AniList average score, out of ten */
+            anilist: number | null;
+            /** @description MyAnimeList score, out of ten */
+            mal: number | null;
+            /** @description TMDB vote average, out of ten */
+            tmdb: number | null;
+        };
         ItemSummary: {
             /** @description Opaque identifier */
             id: string;
@@ -4273,6 +4356,9 @@ export interface components {
             favorite: boolean;
             /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
             runtimeMs: number | null;
+            /** @description Movies and shows; empty otherwise */
+            genres: string[];
+            ratings: components["schemas"]["ItemRatings"];
         };
         StreamInfo: {
             index: number;
@@ -4342,9 +4428,17 @@ export interface components {
             favorite: boolean;
             /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
             runtimeMs: number | null;
+            /** @description Movies and shows; empty otherwise */
+            genres: string[];
+            ratings: components["schemas"]["ItemRatings"];
             overview: string | null;
             tagline: string | null;
-            genres: string[];
+            /** @description Anime: AniList tags, strongest first */
+            tags: string[];
+            /** @description Anime: MAL age rating, e.g. PG-13 */
+            ageRating: string | null;
+            /** @description Anime: AniList users with it on a list */
+            popularity: number | null;
             rating: number | null;
             airDate: string | null;
             tmdbId: number | null;
@@ -4352,6 +4446,16 @@ export interface components {
             files: components["schemas"]["MediaFile"][];
             /** @description Seasons of a show, episodes of a season */
             children: components["schemas"]["ItemSummary"][];
+        };
+        ItemFacet: {
+            name: string;
+            count: number;
+        };
+        ItemFacets: {
+            /** @description Most common first */
+            genres: components["schemas"]["ItemFacet"][];
+            /** @description AniList tags on at least two titles, most common first */
+            tags: components["schemas"]["ItemFacet"][];
         };
         MatchCandidate: {
             /** @enum {string} */

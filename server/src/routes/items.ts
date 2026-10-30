@@ -9,9 +9,11 @@ import { FixMatchError, FixMatchService } from '../metadata/fix-match.js';
 import {
   CandidatesQuery,
   ErrorResponse,
+  FacetsQuery,
   FixMatchRequest,
   Id,
   ItemDetail,
+  ItemFacets,
   ItemsQuery,
   ItemSummary,
   MatchCandidate,
@@ -55,6 +57,22 @@ export const itemsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => items.list(request.query, request.user!.id),
+  );
+
+  app.get(
+    '/genres',
+    {
+      schema: {
+        tags: ['items'],
+        summary: 'Genres and tags to filter by',
+        description:
+          'The genres and AniList tags across the movies and shows of a library kind, with how many titles have each. Pass one or more as `genre` to GET /api/items.',
+        security: [{ bearerAuth: [] }],
+        querystring: FacetsQuery,
+        response: { 200: ItemFacets },
+      },
+    },
+    async (request) => items.facets(request.query.libraryKind),
   );
 
   app.get(

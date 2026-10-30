@@ -409,6 +409,38 @@
           "updatedAt"
         ]
       },
+      "ItemRatingsInput": {
+        "type": "object",
+        "properties": {
+          "anilist": {
+            "description": "AniList average score, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mal": {
+            "description": "MyAnimeList score, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "tmdb": {
+            "description": "TMDB vote average, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "anilist",
+          "mal",
+          "tmdb"
+        ],
+        "description": "Audience scores by source; anime has all three"
+      },
       "ItemSummaryInput": {
         "type": "object",
         "properties": {
@@ -509,6 +541,16 @@
               }
             ],
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Movies and shows; empty otherwise"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/ItemRatingsInput"
           }
         },
         "required": [
@@ -525,7 +567,9 @@
           "needsReview",
           "progress",
           "favorite",
-          "runtimeMs"
+          "runtimeMs",
+          "genres",
+          "ratings"
         ]
       },
       "StreamInfoInput": {
@@ -886,6 +930,16 @@
             ],
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Movies and shows; empty otherwise"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/ItemRatingsInput"
+          },
           "overview": {
             "type": [
               "string",
@@ -898,11 +952,32 @@
               "null"
             ]
           },
-          "genres": {
+          "tags": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Anime: AniList tags, strongest first"
+          },
+          "ageRating": {
+            "description": "Anime: MAL age rating, e.g. PG-13",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "popularity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Anime: AniList users with it on a list"
           },
           "rating": {
             "type": [
@@ -969,15 +1044,59 @@
           "progress",
           "favorite",
           "runtimeMs",
+          "genres",
+          "ratings",
           "overview",
           "tagline",
-          "genres",
+          "tags",
+          "ageRating",
+          "popularity",
           "rating",
           "airDate",
           "tmdbId",
           "anilistId",
           "files",
           "children"
+        ]
+      },
+      "ItemFacetInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ]
+      },
+      "ItemFacetsInput": {
+        "type": "object",
+        "properties": {
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFacetInput"
+            },
+            "description": "Most common first"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFacetInput"
+            },
+            "description": "AniList tags on at least two titles, most common first"
+          }
+        },
+        "required": [
+          "genres",
+          "tags"
         ]
       },
       "MatchCandidateInput": {
@@ -3316,6 +3435,39 @@
         ],
         "additionalProperties": false
       },
+      "ItemRatings": {
+        "type": "object",
+        "properties": {
+          "anilist": {
+            "description": "AniList average score, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mal": {
+            "description": "MyAnimeList score, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "tmdb": {
+            "description": "TMDB vote average, out of ten",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "anilist",
+          "mal",
+          "tmdb"
+        ],
+        "additionalProperties": false,
+        "description": "Audience scores by source; anime has all three"
+      },
       "ItemSummary": {
         "type": "object",
         "properties": {
@@ -3416,6 +3568,16 @@
               }
             ],
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Movies and shows; empty otherwise"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/ItemRatings"
           }
         },
         "required": [
@@ -3432,7 +3594,9 @@
           "needsReview",
           "progress",
           "favorite",
-          "runtimeMs"
+          "runtimeMs",
+          "genres",
+          "ratings"
         ],
         "additionalProperties": false
       },
@@ -3798,6 +3962,16 @@
             ],
             "description": "Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons."
           },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Movies and shows; empty otherwise"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/ItemRatings"
+          },
           "overview": {
             "type": [
               "string",
@@ -3810,11 +3984,32 @@
               "null"
             ]
           },
-          "genres": {
+          "tags": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Anime: AniList tags, strongest first"
+          },
+          "ageRating": {
+            "description": "Anime: MAL age rating, e.g. PG-13",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "popularity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Anime: AniList users with it on a list"
           },
           "rating": {
             "type": [
@@ -3881,15 +4076,61 @@
           "progress",
           "favorite",
           "runtimeMs",
+          "genres",
+          "ratings",
           "overview",
           "tagline",
-          "genres",
+          "tags",
+          "ageRating",
+          "popularity",
           "rating",
           "airDate",
           "tmdbId",
           "anilistId",
           "files",
           "children"
+        ],
+        "additionalProperties": false
+      },
+      "ItemFacet": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "ItemFacets": {
+        "type": "object",
+        "properties": {
+          "genres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFacet"
+            },
+            "description": "Most common first"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFacet"
+            },
+            "description": "AniList tags on at least two titles, most common first"
+          }
+        },
+        "required": [
+          "genres",
+          "tags"
         ],
         "additionalProperties": false
       },
@@ -6457,18 +6698,33 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "genre",
+            "required": false,
+            "description": "Comma-separated genres or tags (case-insensitive); only items with every one are listed"
+          },
+          {
+            "schema": {
               "default": "title",
               "type": "string",
               "enum": [
                 "title",
                 "year",
                 "added",
-                "lastPlayed"
+                "lastPlayed",
+                "rating",
+                "anilist",
+                "mal",
+                "tmdb",
+                "popularity"
               ]
             },
             "in": "query",
             "name": "sort",
-            "required": false
+            "required": false,
+            "description": "rating is the best score there is (AniList, else MAL, else TMDB); anilist, mal, tmdb and popularity sort by that source. Scores and popularity sort highest first, unscored last."
           },
           {
             "schema": {
@@ -6535,6 +6791,42 @@
                     "limit"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/genres": {
+      "get": {
+        "summary": "Genres and tags to filter by",
+        "tags": [
+          "items"
+        ],
+        "description": "The genres and AniList tags across the movies and shows of a library kind, with how many titles have each. Pass one or more as `genre` to GET /api/items.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/LibraryKindInput"
+            },
+            "in": "query",
+            "name": "libraryKind",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemFacets"
                 }
               }
             }

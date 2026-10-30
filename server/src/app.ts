@@ -32,6 +32,8 @@ import { backfillStreamDepth } from './media/probe-service.js';
 import { LiveRelayManager } from './live/relay.js';
 import { detectHardware, type HardwareReport } from './playback/hardware.js';
 import { HlsManager } from './playback/hls.js';
+import type { RatingsSummary } from './metadata/anime-ratings.js';
+import { refreshRatings } from './metadata/deps.js';
 import { TmdbClient } from './metadata/tmdb.js';
 import { SessionRegistry } from './playback/sessions.js';
 import { SettingsService } from './settings/service.js';
@@ -75,6 +77,8 @@ declare module 'fastify' {
     recorder: RecordingManager;
     /** Comic pages and downloads, with the extraction cache shared by every request and scan. */
     comicArchives: ComicArchives;
+    /** Fetches stale anime scores in the background; resolves when that run is done. */
+    refreshAnimeRatings: () => Promise<RatingsSummary>;
   }
 }
 
@@ -200,6 +204,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     ),
   );
   let periodicScan: NodeJS.Timeout | null = null;
+  let ratingsTimer: NodeJS.Timeout | null = null;
+  let closing = false;
+  app.decorate('refreshAnimeRatings', () => refreshRatings(app, () => closing, app.log));
   app.addHook('onReady', async () => {
     app.hardware = await detectHardware(options.config, app.log);
     app.hls.setHardware(app.hardware.encoder);
@@ -212,6 +219,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         );
     }
     if (options.config.liveRefresh) app.live.start();
+    if (options.config.ratingsRefresh) {
+      // Soon after start-up (which also fills in shows matched before scores were kept), then
+      // every six hours; each show is only fetched again once its scores are a week old.
+      ratingsTimer = setTimeout(function tick() {
+        void app.refreshAnimeRatings();
+        ratingsTimer = setTimeout(tick, 6 * 60 * 60_000).unref();
+      }, 30_000).unref();
+    }
     app.recorder.start();
     backfillStreamDepth(database.db, app.log);
     // Anything still missing bit depth was probed by an older build; a scan re-probes just those.
@@ -237,7 +252,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     }
   });
   app.addHook('onClose', async () => {
+    closing = true;
     if (periodicScan) clearInterval(periodicScan);
+    if (ratingsTimer) clearTimeout(ratingsTimer);
     app.live.stop();
     await app.recorder.close();
     await app.liveHls.close();

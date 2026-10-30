@@ -147,6 +147,8 @@ export class ScanRunner {
       const anime = await deps.animeMatcher.matchPending();
       // Two folders of the same show (sub and dub) match the same entry; fold them into one.
       mergeDuplicates(this.app.db, libraryId, this.log);
+      // Scores for anything newly matched, in the background: MAL allows about a show a second.
+      if (anime.matched > 0) void this.app.refreshAnimeRatings();
       set({
         state: 'idle',
         phase: null,
