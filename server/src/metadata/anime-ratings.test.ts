@@ -161,4 +161,29 @@ describe('anime ratings', () => {
       tags: [{ name: 'School', count: 2 }],
     });
   });
+
+  it('stops asking MAL for the rest of a run once it stops answering', async () => {
+    const { db, deps } = setup();
+    const ids = addShows(
+      db,
+      [7001, 7002, 7001, 7002, 7001].map((anilistId, i) => ({ title: `Show ${i}`, anilistId })),
+    );
+    let calls = 0;
+    const down = new JikanClient(
+      async () => {
+        calls += 1;
+        throw new Error('connect timeout');
+      },
+      { minIntervalMs: 0 },
+    );
+    expect(await refreshAnimeRatings({ ...deps, jikan: down })).toEqual({
+      refreshed: 0,
+      failed: 5,
+    });
+    expect(calls).toBe(3);
+    // AniList's score is kept; the show is tried again next run.
+    const row = db.select().from(schema.shows).where(eq(schema.shows.id, ids[4]!)).get()!;
+    expect(JSON.parse(row.ratingsJson)).toEqual({ anilist: 7.2 });
+    expect(row.ratingsRefreshedAt).toBeNull();
+  });
 });

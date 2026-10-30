@@ -31,6 +31,7 @@ export interface RatingsSummary {
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const MAL_GIVE_UP = 3;
 const running = new WeakMap<Db, Promise<RatingsSummary>>();
 
 export function parseRatings(json: string): Ratings {
@@ -88,6 +89,9 @@ async function refresh(deps: AnimeRatingsDeps, stopped: () => boolean): Promise<
     .all();
   const summary: RatingsSummary = { refreshed: 0, failed: 0 };
   if (shows.length === 0) return summary;
+  // Jikan goes down now and then; after a few failures in a row MAL waits for the next run
+  // instead of costing every show a timeout.
+  let malFailures = 0;
   log?.info({ shows: shows.length }, 'refreshing anime ratings');
   for (let i = 0; i < shows.length; i += 50) {
     if (stopped()) break;
@@ -106,14 +110,19 @@ async function refresh(deps: AnimeRatingsDeps, stopped: () => boolean): Promise<
       let ageRating: string | null | undefined;
       let ok = !!m;
       if (m) ratings.anilist = score(m.averageScore != null ? m.averageScore / 10 : null);
-      if (malId) {
+      if (malId && malFailures >= MAL_GIVE_UP) ok = false;
+      else if (malId) {
         try {
           const mal = await jikan.anime(malId);
           ratings.mal = score(mal?.score);
           ageRating = mal?.ageRating ?? null;
+          malFailures = 0;
         } catch (error) {
           ok = false;
+          malFailures += 1;
           log?.debug({ showId: show.id, malId, error: String(error) }, 'MAL score unavailable');
+          if (malFailures === MAL_GIVE_UP)
+            log?.warn('MyAnimeList (Jikan) is not answering; MAL scores wait for the next run');
         }
       }
       if (tmdb && show.tmdbId) {
