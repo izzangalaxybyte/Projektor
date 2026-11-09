@@ -4,7 +4,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +24,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -34,7 +36,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Forward30
@@ -52,7 +53,6 @@ import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,6 +70,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -80,10 +81,21 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import app.projektor.core.playback.PlayerControl
 import app.projektor.core.playback.PlayerLayout
-import app.projektor.core.playback.PlayerZone
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.filled.DashboardCustomize
+import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.filled.VerticalAlignBottom
+import androidx.compose.material.icons.filled.VerticalAlignTop
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onSizeChanged
+import app.projektor.core.playback.ControlPosition
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** The icon a control shows; null for the ones that are a labelled picker or button. */
+/** The icon a control shows in the Add panel. */
 val PlayerControl.icon: ImageVector
     get() = when (this) {
         PlayerControl.BACK -> Icons.AutoMirrored.Filled.ArrowBack
@@ -103,220 +115,254 @@ val PlayerControl.icon: ImageVector
         PlayerControl.NEXT_EPISODE -> Icons.Filled.SkipNext
         PlayerControl.FIT -> Icons.Filled.AspectRatio
         PlayerControl.LOCK -> Icons.Filled.Lock
+        PlayerControl.TITLE -> Icons.Filled.Title
+        PlayerControl.CUSTOMIZE -> Icons.Filled.DashboardCustomize
     }
 
-/** Pickers and the next-episode button show as a labelled pill; the rest as a round icon. */
-val PlayerControl.isPill: Boolean
-    get() = this in setOf(PlayerControl.DOUBLE_TAP, PlayerControl.SPEED, PlayerControl.HOLD_SPEED, PlayerControl.AUDIO, PlayerControl.SUBTITLES, PlayerControl.NEXT_EPISODE)
-
 /**
- * Lays out the player's controls: drag one to another spot or zone, tap × to take it off, and
- * add hidden ones from the Add panel (tap, or hold and drag into place). Nothing is saved until
+ * Lays the player's controls out freely, over the video: drag any button anywhere (it snaps to
+ * the screen's middle lines), tap × to hide it, and bring hidden ones back from Add (tap, or hold
+ * and drag one into place). [render] draws each control as it will look. Nothing is saved until
  * Save; Back or Cancel leaves the layout as it was.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PlayerCustomizer(initial: PlayerLayout, onSave: (PlayerLayout) -> Unit, onClose: () -> Unit) {
+fun PlayerCustomizer(initial: PlayerLayout, render: @Composable (PlayerControl) -> Unit, onSave: (PlayerLayout) -> Unit, onClose: () -> Unit) {
+    val density = LocalDensity.current.density
+    val snapPx = 8 * density
     var layout by remember { mutableStateOf(initial) }
     var trayOpen by remember { mutableStateOf(false) }
-    var dragging by remember { mutableStateOf<PlayerControl?>(null) }
-    var dragFromTray by remember { mutableStateOf(false) }
-    var dragSize by remember { mutableStateOf(IntSize.Zero) }
-    // Pointer and bounds are all in root coordinates.
-    var pointer by remember { mutableStateOf(Offset.Zero) }
+    var toolbarLow by remember { mutableStateOf(false) }
     var origin by remember { mutableStateOf(Offset.Zero) }
-    val zoneBounds = remember { mutableStateMapOf<PlayerZone, Rect>() }
-    val chipBounds = remember { mutableStateMapOf<PlayerControl, Rect>() }
+    var canvas by remember { mutableStateOf(IntSize.Zero) }
+    val sizes = remember { mutableStateMapOf<PlayerControl, IntSize>() }
+    var dragging by remember { mutableStateOf<PlayerControl?>(null) }
+    var snapX by remember { mutableStateOf(false) }
+    var snapY by remember { mutableStateOf(false) }
+    // Dragging a hidden one out of the Add panel: a copy follows the finger (root px).
+    var adding by remember { mutableStateOf<PlayerControl?>(null) }
+    var ghost by remember { mutableStateOf(Offset.Zero) }
+    val trayChips = remember { mutableStateMapOf<PlayerControl, Rect>() }
     var trayBounds by remember { mutableStateOf(Rect.Zero) }
-    var trashBounds by remember { mutableStateOf(Rect.Zero) }
-    val reach = with(LocalDensity.current) { 40.dp.toPx() }
+    // A control just dragged out of the panel, centred on the drop point once its real size is known.
+    var recenter by remember { mutableStateOf<Pair<PlayerControl, Offset>?>(null) }
 
     BackHandler { if (trayOpen) trayOpen = false else onClose() }
 
-    /** The zone under the pointer, or the nearest one within reach of it. */
-    fun zoneAt(p: Offset): PlayerZone? = zoneBounds.entries
-        .map { (z, r) -> z to maxOf(r.left - p.x, 0f, p.x - r.right) + maxOf(r.top - p.y, 0f, p.y - r.bottom) }
-        .filter { it.second <= reach }
-        .minByOrNull { it.second }?.first
-
-    fun drop() {
-        val c = dragging ?: return
-        dragging = null
-        val p = pointer
-        if (!dragFromTray && (trashBounds.contains(p) || (trayOpen && trayBounds.contains(p)))) { layout = layout.remove(c); return }
-        val zone = zoneAt(p) ?: return
-        val others = layout.controls(zone) - c
-        val index = others.count { o -> chipBounds[o]?.let { b -> if (zone.vertical) b.center.y < p.y else b.center.x < p.x } ?: false }
-        layout = layout.move(c, zone, index)
+    /** Where [c]'s top-left is now, in px. */
+    fun topLeftOf(c: PlayerControl): Offset? {
+        val size = sizes[c] ?: return null
+        val pos = layout.placed[c] ?: return null
+        return Offset(pos.left(canvas.width.toFloat(), size.width.toFloat(), density), pos.top(canvas.height.toFloat(), size.height.toFloat(), density))
     }
 
-    fun startDrag(c: PlayerControl, at: Offset, fromTray: Boolean) {
-        val b = chipBounds[c] ?: return
-        dragging = c; dragFromTray = fromTray
-        dragSize = IntSize(b.width.roundToInt(), b.height.roundToInt())
-        pointer = b.topLeft + at
+    /** Puts [c]'s top-left at [want] px, kept on screen and snapped to the middle lines. */
+    fun moveTo(c: PlayerControl, want: Offset) {
+        val size = sizes[c] ?: return
+        val w = canvas.width.toFloat(); val h = canvas.height.toFloat()
+        val cw = size.width.toFloat(); val ch = size.height.toFloat()
+        var left = want.x.coerceIn(0f, maxOf(0f, w - cw))
+        var top = want.y.coerceIn(0f, maxOf(0f, h - ch))
+        snapX = abs(left + cw / 2 - w / 2) < snapPx
+        snapY = abs(top + ch / 2 - h / 2) < snapPx
+        if (snapX) left = w / 2 - cw / 2
+        if (snapY) top = h / 2 - ch / 2
+        layout = layout.place(c, ControlPosition.of(left, top, cw, ch, w, h, density))
     }
 
-    val target = dragging?.let { zoneAt(pointer) }
+    fun endMove() { dragging = null; snapX = false; snapY = false }
 
-    @Composable
-    fun Chip(c: PlayerControl, inTray: Boolean) {
-        val handle = Modifier
-            .onGloballyPositioned { chipBounds[c] = it.boundsInRoot() }
-            .pointerInput(c, inTray) {
-                val onStart = { at: Offset -> startDrag(c, at, inTray) }
-                if (inTray) detectDragGesturesAfterLongPress(
-                    onDragStart = onStart,
-                    onDrag = { ch, d -> ch.consume(); pointer += d },
-                    onDragEnd = ::drop,
-                    onDragCancel = { dragging = null },
-                ) else detectDragGestures(
-                    onDragStart = onStart,
-                    onDrag = { ch, d -> ch.consume(); pointer += d },
-                    onDragEnd = ::drop,
-                    onDragCancel = { dragging = null },
-                )
-            }
-            .alpha(if (dragging == c) 0.3f else 1f)
-            .testTag("custom-${c.name.lowercase()}")
-        Box(handle) {
-            ChipFace(c, Modifier.then(if (inTray) Modifier.clickable { layout = layout.add(c) } else Modifier))
-            if (!inTray) {
-                Box(
-                    Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp).size(20.dp)
-                        .background(MaterialTheme.colorScheme.error, CircleShape)
-                        .clickable { layout = layout.remove(c) }
-                        .testTag("remove-${c.name.lowercase()}"),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Filled.Close, "Remove ${c.label}", Modifier.size(14.dp), tint = Color.White) }
-            }
-        }
-    }
-
-    @Composable
-    fun Zone(zone: PlayerZone, modifier: Modifier = Modifier) {
-        val highlight = target == zone
-        val shape = RoundedCornerShape(12.dp)
-        val frame = modifier
-            .onGloballyPositioned { zoneBounds[zone] = it.boundsInRoot() }
-            .sizeIn(minWidth = 64.dp, minHeight = 56.dp)
-            .background(if (highlight) Color.White.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f), shape)
-            .border(if (highlight) 2.dp else 1.dp, if (highlight) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.3f), shape)
-            .padding(10.dp)
-            .testTag("zone-${zone.name.lowercase()}")
-        val items = layout.controls(zone)
-        val content: @Composable () -> Unit = {
-            if (items.isEmpty()) Text(zone.label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
-            items.forEach { c -> key(c) { Chip(c, inTray = false) } }
-        }
-        if (zone.vertical) Column(frame, verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) { content() }
-        else Row(frame, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) { content() }
+    fun dropNew() {
+        val c = adding ?: return
+        adding = null
+        if (trayBounds.contains(ghost)) return
+        val chip = trayChips[c]
+        val cw = chip?.width ?: 0f; val ch = chip?.height ?: 0f
+        val local = ghost - origin
+        val w = canvas.width.toFloat(); val h = canvas.height.toFloat()
+        val left = (local.x - cw / 2).coerceIn(0f, maxOf(0f, w - cw))
+        val top = (local.y - ch / 2).coerceIn(0f, maxOf(0f, h - ch))
+        layout = layout.place(c, ControlPosition.of(left, top, cw, ch, w, h, density))
+        recenter = c to local
     }
 
     PlayerChrome {
         Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.88f))
-                .onGloballyPositioned { origin = it.positionInRoot() }
+            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f))
+                .onGloballyPositioned { origin = it.positionInRoot(); canvas = it.size }
                 // Swallows taps so they don't reach the player underneath.
                 .pointerInput(Unit) { detectTapGestures { } }
                 .testTag("player-customizer"),
         ) {
-            Zone(PlayerZone.TOP_START, Modifier.align(Alignment.TopStart).padding(12.dp))
-            Zone(PlayerZone.TOP_END, Modifier.align(Alignment.TopEnd).padding(12.dp))
-            Zone(PlayerZone.LEFT, Modifier.align(Alignment.CenterStart).padding(start = 12.dp))
-            Zone(PlayerZone.CENTER, Modifier.align(Alignment.Center))
-            Zone(PlayerZone.RIGHT, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
-            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Stands in for the seek bar, which always stays put.
-                Box(Modifier.fillMaxWidth().padding(horizontal = 40.dp).height(4.dp).background(Color.White.copy(alpha = 0.35f), RoundedCornerShape(2.dp)))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Zone(PlayerZone.BOTTOM_START, Modifier.weight(1f))
-                    Zone(PlayerZone.BOTTOM_END)
-                }
-            }
+            PlayerBackdrop(seekBar = {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 20.dp).height(4.dp).background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(2.dp)))
+            })
 
-            // Toolbar; while a placed control is dragged it becomes the bin.
-            Box(Modifier.align(Alignment.TopCenter).padding(top = 12.dp)) {
-                if (dragging != null && !dragFromTray) {
-                    val over = trashBounds.contains(pointer)
-                    Row(
-                        Modifier.onGloballyPositioned { trashBounds = it.boundsInRoot() }
-                            .background(if (over) MaterialTheme.colorScheme.error else Color.Black.copy(alpha = 0.7f), RoundedCornerShape(50))
-                            .border(1.dp, MaterialTheme.colorScheme.error, RoundedCornerShape(50))
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                            .testTag("customize-bin"),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(Icons.Filled.Delete, null)
-                        Text("Drop here to remove", style = MaterialTheme.typography.labelLarge)
-                    }
-                } else Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = { trayOpen = !trayOpen }, modifier = Modifier.testTag("customize-add")) {
-                            Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Add")
-                        }
-                        TextButton(onClick = { layout = PlayerLayout.DEFAULT }, modifier = Modifier.testTag("customize-reset")) { Text("Reset", color = Color.White) }
-                        TextButton(onClick = onClose, modifier = Modifier.testTag("customize-cancel")) { Text("Cancel", color = Color.White) }
-                        Button(onClick = { onSave(layout) }, modifier = Modifier.testTag("customize-save")) { Text("Save") }
-                    }
-                    Text("Drag buttons to move them · × removes", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
-                }
-            }
-
-            // The hidden controls. It fades while one of its own is dragged so the zones show through.
-            if (trayOpen) {
-                Column(
-                    Modifier.align(Alignment.Center).widthIn(max = 460.dp).heightIn(max = 240.dp)
-                        .onGloballyPositioned { trayBounds = it.boundsInRoot() }
-                        .alpha(if (dragging != null && dragFromTray) 0.15f else 1f)
-                        .background(Color(0xFF1E1E1E), RoundedCornerShape(16.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
-                        .padding(16.dp)
-                        .testTag("customize-tray"),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+            // Toolbar; it stays under the buttons and out of the way while one is moved.
+            if (dragging == null && adding == null) Column(
+                Modifier.align(if (toolbarLow) Alignment.BottomCenter else Alignment.TopCenter).padding(top = 64.dp, bottom = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Row(
+                    Modifier.background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(50)).padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Add buttons", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(Icons.Filled.Close, "Close", Modifier.size(20.dp).clickable { trayOpen = false })
+                    TextButton(onClick = { trayOpen = !trayOpen }, modifier = Modifier.testTag("customize-add")) {
+                        Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Add", color = Color.White)
                     }
-                    Text("Tap to add, or hold and drag into place. Drag a button here to remove it.", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
-                    val hidden = layout.hidden
-                    if (hidden.isEmpty()) Text("Every button is already on screen.", style = MaterialTheme.typography.bodySmall)
-                    FlowRow(Modifier.verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        hidden.forEach { c -> key(c) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Chip(c, inTray = true); if (!c.isPill) Text(c.label, style = MaterialTheme.typography.labelSmall) } } }
+                    TextButton(onClick = { layout = PlayerLayout.DEFAULT }, modifier = Modifier.testTag("customize-reset")) { Text("Reset", color = Color.White) }
+                    TextButton(onClick = onClose, modifier = Modifier.testTag("customize-cancel")) { Text("Cancel", color = Color.White) }
+                    Button(onClick = { onSave(layout) }, modifier = Modifier.testTag("customize-save")) { Text("Save") }
+                    IconButton(onClick = { toolbarLow = !toolbarLow }, modifier = Modifier.size(40.dp).testTag("customize-toolbar-move")) {
+                        Icon(if (toolbarLow) Icons.Filled.VerticalAlignTop else Icons.Filled.VerticalAlignBottom, "Move this toolbar")
+                    }
+                }
+                Text("Drag any button anywhere · × hides it", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+            }
+
+            // Guides when a button snaps to the middle.
+            if (snapX) Box(Modifier.align(Alignment.Center).fillMaxHeight().width(1.dp).background(MaterialTheme.colorScheme.primary))
+            if (snapY) Box(Modifier.align(Alignment.Center).fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.primary))
+
+            FreeControls(layout, Modifier.fillMaxSize()) { c ->
+                val active = dragging == c
+                Box(
+                    Modifier.onSizeChanged { size ->
+                        sizes[c] = size
+                        recenter?.takeIf { it.first == c }?.let { (_, at) -> recenter = null; moveTo(c, at - Offset(size.width / 2f, size.height / 2f)) }
+                    },
+                ) {
+                    render(c)
+                    // Covers the real control so a touch moves it instead of pressing it.
+                    Box(
+                        Modifier.matchParentSize()
+                            .background(if (active) Color.White.copy(alpha = 0.2f) else Color.Transparent, RoundedCornerShape(10.dp))
+                            .border(if (active) 2.dp else 1.dp, if (active) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                            .pointerInput(c) {
+                                // Follows the finger from where it first touched, slop included. The
+                                // wanted spot is tracked unclamped so a snap or an edge never sticks.
+                                awaitEachGesture {
+                                    val down = awaitFirstDown()
+                                    val start = awaitTouchSlopOrCancellation(down.id) { ch, _ -> ch.consume() } ?: return@awaitEachGesture
+                                    var want = (topLeftOf(c) ?: return@awaitEachGesture) + (start.position - down.position)
+                                    dragging = c
+                                    try {
+                                        moveTo(c, want)
+                                        drag(start.id) { ch -> want += ch.positionChange(); ch.consume(); moveTo(c, want) }
+                                    } finally { endMove() }
+                                }
+                            }
+                            .testTag("custom-${c.name.lowercase()}"),
+                    )
+                    if (c.removable && !active) Box(
+                        Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(20.dp)
+                            .background(MaterialTheme.colorScheme.error, CircleShape)
+                            .clickable { layout = layout.remove(c) }
+                            .testTag("remove-${c.name.lowercase()}"),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Filled.Close, "Hide ${c.label}", Modifier.size(14.dp), tint = Color.White) }
+                }
+            }
+
+            // The hidden controls. It fades while one is dragged out so the screen shows through.
+            if (trayOpen) Column(
+                Modifier.align(Alignment.Center).widthIn(max = 480.dp).heightIn(max = 250.dp)
+                    .onGloballyPositioned { trayBounds = it.boundsInRoot() }
+                    .alpha(if (adding != null) 0.15f else 1f)
+                    .background(Color(0xFF1E1E1E), RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+                    .testTag("customize-tray"),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Add buttons", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(Icons.Filled.Close, "Close", Modifier.size(20.dp).clickable { trayOpen = false })
+                }
+                Text("Tap to add, or hold and drag one to where you want it.", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+                val hidden = layout.hidden
+                if (hidden.isEmpty()) Text("Every button is already on screen.", style = MaterialTheme.typography.bodySmall)
+                FlowRow(Modifier.verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    hidden.forEach { c ->
+                        key(c) {
+                            TrayChip(
+                                c,
+                                Modifier.onGloballyPositioned { trayChips[c] = it.boundsInRoot() }
+                                    .pointerInput(c) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = { at -> adding = c; ghost = (trayChips[c]?.topLeft ?: Offset.Zero) + at },
+                                            onDrag = { ch, d -> ch.consume(); ghost += d },
+                                            onDragEnd = ::dropNew,
+                                            onDragCancel = { adding = null },
+                                        )
+                                    }
+                                    .clickable { layout = layout.add(c) }
+                                    .testTag("add-${c.name.lowercase()}"),
+                            )
+                        }
                     }
                 }
             }
 
-            // What's being dragged follows the finger.
-            dragging?.let { c ->
+            adding?.let { c ->
+                val size = trayChips[c]
                 Box(
-                    Modifier.offset { IntOffset((pointer.x - origin.x - dragSize.width / 2f).roundToInt(), (pointer.y - origin.y - dragSize.height / 2f).roundToInt()) }
+                    Modifier.offset { IntOffset((ghost.x - origin.x - (size?.width ?: 0f) / 2).roundToInt(), (ghost.y - origin.y - (size?.height ?: 0f) / 2).roundToInt()) }
                         .alpha(0.9f),
-                ) { ChipFace(c) }
+                ) { TrayChip(c) }
             }
         }
     }
 }
 
-/** How a control looks in the editor: a round icon, or a labelled pill for pickers. */
+/**
+ * Places each control of [controls] at its own position over the whole area, the same way in the
+ * player and in the editor. [onBottomInset] gets how far up from the bottom the controls in the
+ * lower part of the screen reach, so subtitles can move above them.
+ */
 @Composable
-private fun ChipFace(c: PlayerControl, modifier: Modifier = Modifier) {
-    if (c.isPill) {
-        Row(
-            modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50)).border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Icon(c.icon, null, Modifier.size(16.dp))
-            Text(c.label, style = MaterialTheme.typography.labelMedium)
+fun FreeControls(controls: PlayerLayout, modifier: Modifier = Modifier, onBottomInset: (Int) -> Unit = {}, control: @Composable (PlayerControl) -> Unit) {
+    val density = LocalDensity.current.density
+    Layout(
+        content = { controls.placed.keys.forEach { c -> key(c) { Box(Modifier.layoutId(c)) { control(c) } } } },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val w = constraints.maxWidth
+        val h = constraints.maxHeight
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val placeables = measurables.map { (it.layoutId as PlayerControl) to it.measure(loose) }
+        layout(w, h) {
+            var highest = h
+            placeables.forEach { (c, p) ->
+                val pos = controls.placed[c] ?: return@forEach
+                val x = pos.left(w.toFloat(), p.width.toFloat(), density).roundToInt()
+                val y = pos.top(h.toFloat(), p.height.toFloat(), density).roundToInt()
+                if (p.height > 0 && y + p.height / 2 > h * 0.55f) highest = minOf(highest, y)
+                p.place(x, y)
+            }
+            onBottomInset(h - highest)
         }
-    } else {
-        val big = c == PlayerControl.PLAY_PAUSE
-        Box(modifier.size(if (big) 56.dp else 44.dp).then(ButtonScrim).border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
-            if (c == PlayerControl.SKIP_90) Text("+90", style = MaterialTheme.typography.labelLarge)
-            else Icon(c.icon, c.label, Modifier.size(if (big) 36.dp else 26.dp))
-        }
+    }
+}
+
+/** The fixed parts behind the controls: the top and bottom shading, and the seek bar along the bottom. */
+@Composable
+fun BoxScope.PlayerBackdrop(seekBar: @Composable () -> Unit, onSeekBarHeight: (Int) -> Unit = {}) {
+    Box(Modifier.align(Alignment.TopStart).fillMaxWidth().height(96.dp).then(TopScrim))
+    Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(150.dp).then(BottomScrim))
+    Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { onSeekBarHeight(it.height) }) { seekBar() }
+}
+
+/** A hidden control as the Add panel shows it: its icon and name. */
+@Composable
+private fun TrayChip(c: PlayerControl, modifier: Modifier = Modifier) {
+    Row(
+        modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50)).border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (c == PlayerControl.SKIP_90) Text("+90", style = MaterialTheme.typography.labelMedium) else Icon(c.icon, null, Modifier.size(16.dp))
+        Text(c.label, style = MaterialTheme.typography.labelMedium)
     }
 }

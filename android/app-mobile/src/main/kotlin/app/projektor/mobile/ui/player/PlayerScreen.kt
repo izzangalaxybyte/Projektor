@@ -39,7 +39,8 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.key
 import androidx.media3.ui.AspectRatioFrameLayout
 import app.projektor.core.playback.PlayerControl
-import app.projektor.core.playback.PlayerZone
+import app.projektor.core.playback.Anchor
+import app.projektor.core.playback.PlayerLayout
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Replay30
@@ -48,6 +49,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -122,8 +124,9 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var audioIndex by remember { mutableStateOf<Long?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var controlsVisible by remember { mutableStateOf(true) }
-    // Height of the bottom bar while it shows; subtitles move up out of its way.
-    var bottomBarPx by remember { mutableStateOf(0) }
+    // How far up the seek bar and the lower controls reach while they show; subtitles move above them.
+    var seekBarPx by remember { mutableStateOf(0) }
+    var controlsInsetPx by remember { mutableStateOf(0) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     var resumeAt by remember { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -238,24 +241,28 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var fill by remember { mutableStateOf(false) }
     val pickerOpen = { open: Boolean -> menuOpen = open; if (!open) touched() }
 
-    /** One control, sized for where it sits: larger in the middle and down the edges than in the bars. */
+    /** One control as it shows on screen; [preview] shows it even when it has nothing to offer, for the editor. */
     @Composable
-    fun Control(c: PlayerControl, zone: PlayerZone) {
-        val inBar = zone in setOf(PlayerZone.TOP_START, PlayerZone.TOP_END, PlayerZone.BOTTOM_START, PlayerZone.BOTTOM_END)
-        val skipSize = if (inBar) 44.dp else 56.dp
-        val skipIcon = if (inBar) 28.dp else 36.dp
+    fun Control(c: PlayerControl, preview: Boolean = false) {
+        val skipSize = 56.dp
+        val skipIcon = 36.dp
         fun skipButton(icon: ImageVector, description: String, tag: String, onClick: () -> Unit): @Composable () -> Unit = {
-            IconButton(onClick = onClick, modifier = Modifier.size(skipSize).then(if (inBar) Modifier else ButtonScrim).testTag(tag).semantics { contentDescription = description }) {
+            IconButton(onClick = onClick, modifier = Modifier.size(skipSize).then(ButtonScrim).testTag(tag).semantics { contentDescription = description }) {
                 Icon(icon, null, Modifier.size(skipIcon))
             }
         }
         when (c) {
             PlayerControl.BACK -> IconButton(onClick = ::exit, modifier = Modifier.testTag("back")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-            PlayerControl.PLAY_PAUSE -> {
-                val big = zone == PlayerZone.CENTER
-                IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(if (big) 80.dp else skipSize).then(ButtonScrim).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
-                    Icon(if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, null, Modifier.size(if (big) 56.dp else skipIcon))
+            PlayerControl.CUSTOMIZE -> IconButton(onClick = { player.pause(); customizing = true }, modifier = Modifier.testTag("customize-player")) { Icon(Icons.Filled.DashboardCustomize, "Customize player") }
+            PlayerControl.TITLE -> Column(Modifier.widthIn(max = 420.dp)) {
+                val title = detail?.let { d -> if (d.kind.value == "episode") listOfNotNull(d.showTitle, episodeCode(d), d.title).joinToString(" · ") else d.title }
+                Text(title ?: if (preview) "Title" else "", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                (decision?.let(::badge) ?: "Downloaded".takeIf { local != null })?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
                 }
+            }
+            PlayerControl.PLAY_PAUSE -> IconButton(onClick = { player.togglePlayPause(); touched() }, modifier = Modifier.size(80.dp).then(ButtonScrim).testTag("toggle").semantics { contentDescription = if (state.isPlaying) "Pause" else "Play" }) {
+                Icon(if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, null, Modifier.size(56.dp))
             }
             PlayerControl.REPLAY_30 -> skipButton(Icons.Filled.Replay30, "Skip back 30 seconds", "skip-back-30") { skip(-30_000) }()
             PlayerControl.REPLAY_10 -> skipButton(Icons.Filled.Replay10, "Skip back 10 seconds", "skip-back-10") { skip(-10_000) }()
@@ -267,43 +274,45 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
             PlayerControl.FIT -> skipButton(if (fill) Icons.Filled.FitScreen else Icons.Filled.AspectRatio, if (fill) "Fit to screen" else "Fill screen", "fit") { fill = !fill; touched() }()
             PlayerControl.LOCK -> skipButton(Icons.Filled.Lock, "Lock screen", "lock") { locked = true; controlsVisible = false }()
             // Anime: one tap past the opening.
-            PlayerControl.SKIP_90 -> if (detail?.libraryKind == LibraryKind.ANIME) OutlinedButton(
+            PlayerControl.SKIP_90 -> if (preview || detail?.libraryKind == LibraryKind.ANIME) OutlinedButton(
                 onClick = { skip(90_000) },
                 shape = CircleShape,
                 contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.size(if (inBar) 44.dp else 64.dp).then(ButtonScrim).testTag("skip-forward-90").semantics { contentDescription = "Skip forward 90 seconds" },
-            ) { Text("+90", style = if (inBar) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium, color = Color.White) }
+                modifier = Modifier.size(64.dp).then(ButtonScrim).testTag("skip-forward-90").semantics { contentDescription = "Skip forward 90 seconds" },
+            ) { Text("+90", style = MaterialTheme.typography.titleMedium, color = Color.White) }
             PlayerControl.DOUBLE_TAP -> Picker(
                 label = "Double tap ${settings.skipSeconds}s",
                 options = SKIP_OPTIONS.map { it to "+${it}s" },
                 onPick = { container.playerPrefs.update(skipSeconds = it); touched() },
-                tag = "skip-select", onOpenChange = pickerOpen,
+                tag = "skip-select", onOpenChange = pickerOpen, compact = true,
             )
             PlayerControl.SPEED -> Picker(
                 label = formatRate(settings.rate),
                 options = RATE_OPTIONS.map { it to formatRate(it) },
                 onPick = { container.playerPrefs.update(rate = it); touched() },
-                tag = "speed-select", onOpenChange = pickerOpen,
+                tag = "speed-select", onOpenChange = pickerOpen, compact = true,
             )
             PlayerControl.HOLD_SPEED -> Picker(
                 label = "Hold ${formatRate(settings.holdRate)}",
                 options = HOLD_RATE_OPTIONS.map { it to formatRate(it) },
                 onPick = { container.playerPrefs.update(holdRate = it); touched() },
-                tag = "hold-speed-select", onOpenChange = pickerOpen,
+                tag = "hold-speed-select", onOpenChange = pickerOpen, compact = true,
             )
             PlayerControl.AUDIO -> {
                 val audioTracks = file?.streams?.filter { it.type.value == "audio" }.orEmpty()
-                if (audioTracks.size > 1) {
+                if (preview && audioTracks.size <= 1) Picker(label = "Audio: English", options = emptyList<Pair<Int, String>>(), onPick = {}, tag = "audio-select", compact = true)
+                else if (audioTracks.size > 1) {
                     val current = audioTracks.firstOrNull { it.index == (audioIndex ?: decision?.audioStreamIndex) } ?: audioTracks.firstOrNull { it.isDefault } ?: audioTracks.first()
                     Picker(
                         label = "Audio: ${current.title ?: current.language ?: current.index}",
                         options = audioTracks.map { it.index to "${it.title ?: it.language ?: "Track ${it.index}"} (${it.codec})" },
                         onPick = { resumeAt = state.positionMs; audioIndex = it; rememberChoice(audio = it); touched() },
-                        tag = "audio-select", onOpenChange = pickerOpen,
+                        tag = "audio-select", onOpenChange = pickerOpen, compact = true,
                     )
                 }
             }
-            PlayerControl.SUBTITLES -> if (state.subtitleTracks.isNotEmpty()) {
+            PlayerControl.SUBTITLES -> if (preview && state.subtitleTracks.isEmpty()) Picker(label = "Subtitles: off", options = emptyList<Pair<Int, String>>(), onPick = {}, tag = "subtitle-select", compact = true)
+            else if (state.subtitleTracks.isNotEmpty()) {
                 val current = state.subtitleTracks.firstOrNull { it.id == state.selectedSubtitle }
                 Picker(
                     label = "Subtitles: ${current?.label ?: "off"}",
@@ -313,10 +322,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
                         rememberChoice(subtitle = state.subtitleTracks.firstOrNull { it.id == id }, off = id == null)
                         touched()
                     },
-                    tag = "subtitle-select", onOpenChange = pickerOpen,
+                    tag = "subtitle-select", onOpenChange = pickerOpen, compact = true,
                 )
             }
-            PlayerControl.NEXT_EPISODE -> if (nextEpisode != null) {
+            PlayerControl.NEXT_EPISODE -> if (preview || nextEpisode != null) {
                 OutlinedButton(onClick = ::playNextEpisode, modifier = Modifier.testTag("next-episode-bar")) {
                     Text("Next episode", style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.width(4.dp))
@@ -348,7 +357,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         AndroidView(
             factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } },
             update = {
-                it.liftSubtitles(if (chromeShown) bottomBarPx else 0)
+                it.liftSubtitles(if (chromeShown) maxOf(seekBarPx, controlsInsetPx) else 0)
                 it.resizeMode = if (fill) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
             },
             modifier = Modifier.fillMaxSize(),
@@ -367,53 +376,24 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         }
 
         if (chromeShown) PlayerChrome {
-            // Top bar: both ends hold whatever was placed there; the title fills the middle.
-            Row(Modifier.align(Alignment.TopStart).fillMaxWidth().then(TopScrim).padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                layout.controls(PlayerZone.TOP_START).forEach { key(it) { Control(it, PlayerZone.TOP_START) } }
-                Column(Modifier.weight(1f).padding(start = 4.dp)) {
-                    Text(detail?.let { d -> if (d.kind.value == "episode") listOfNotNull(d.showTitle, episodeCode(d), d.title).joinToString(" · ") else d.title } ?: "", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    (decision?.let(::badge) ?: "Downloaded".takeIf { local != null })?.let {
-                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("decision"))
+            PlayerBackdrop(
+                seekBar = {
+                    Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(formatMs(state.positionMs), style = MaterialTheme.typography.labelMedium)
+                        Slider(
+                            value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.coerceAtLeast(1).toFloat()),
+                            onValueChange = { player.seekTo(it.toLong()); touched() },
+                            valueRange = 0f..state.durationMs.coerceAtLeast(1).toFloat(),
+                            modifier = Modifier.weight(1f).testTag("seek"),
+                        )
+                        Text(formatMs(state.durationMs), style = MaterialTheme.typography.labelMedium)
                     }
-                }
-                layout.controls(PlayerZone.TOP_END).forEach { key(it) { Control(it, PlayerZone.TOP_END) } }
-                IconButton(onClick = { player.pause(); customizing = true }, modifier = Modifier.testTag("customize-player")) { Icon(Icons.Filled.DashboardCustomize, "Customize player") }
-            }
-            if (!showNextOnly) {
-                Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                    layout.controls(PlayerZone.CENTER).forEach { key(it) { Control(it, PlayerZone.CENTER) } }
-                }
-                Column(Modifier.align(Alignment.CenterStart).padding(start = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    layout.controls(PlayerZone.LEFT).forEach { key(it) { Control(it, PlayerZone.LEFT) } }
-                }
-                Column(Modifier.align(Alignment.CenterEnd).padding(end = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    layout.controls(PlayerZone.RIGHT).forEach { key(it) { Control(it, PlayerZone.RIGHT) } }
-                }
-            }
-            // Bottom bar: the seek bar stays put; the row under it holds the two bottom zones.
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { bottomBarPx = it.height }.then(BottomScrim).padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(formatMs(state.positionMs), style = MaterialTheme.typography.labelMedium)
-                    Slider(
-                        value = state.positionMs.toFloat().coerceIn(0f, state.durationMs.coerceAtLeast(1).toFloat()),
-                        onValueChange = { player.seekTo(it.toLong()); touched() },
-                        valueRange = 0f..state.durationMs.coerceAtLeast(1).toFloat(),
-                        modifier = Modifier.weight(1f).testTag("seek"),
-                    )
-                    Text(formatMs(state.durationMs), style = MaterialTheme.typography.labelMedium)
-                }
-                val bottomStart = layout.controls(PlayerZone.BOTTOM_START)
-                val bottomEnd = layout.controls(PlayerZone.BOTTOM_END)
-                if (bottomStart.isNotEmpty() || bottomEnd.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        bottomStart.forEach { key(it) { Control(it, PlayerZone.BOTTOM_START) } }
-                        Spacer(Modifier.width(4.dp))
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        bottomEnd.forEach { key(it) { Control(it, PlayerZone.BOTTOM_END) } }
-                    }
-                }
-            }
+                },
+                onSeekBarHeight = { seekBarPx = it },
+            )
+            // At the end, what sits mid-height gives way to the up-next card.
+            val shown = if (showNextOnly) PlayerLayout(layout.placed.filterValues { it.v != Anchor.CENTER }) else layout
+            FreeControls(shown, Modifier.fillMaxSize(), onBottomInset = { controlsInsetPx = it }) { c -> Control(c) }
         }
         // Locked: the screen ignores touches except to bring up the way to unlock it.
         if (locked && controlsVisible) PlayerChrome {
@@ -423,6 +403,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         }
         if (customizing) PlayerCustomizer(
             initial = layout,
+            render = { c -> Control(c, preview = true) },
             onSave = { container.playerPrefs.updateLayout(it); customizing = false; touched() },
             onClose = { customizing = false; touched() },
         )
@@ -459,11 +440,17 @@ private fun UpNext(image: String?, next: ItemDetail?, play: () -> Unit, modifier
 }
 
 @Composable
-internal fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String, onOpenChange: (Boolean) -> Unit = {}) {
+internal fun <T> Picker(label: String, options: List<Pair<T, String>>, onPick: (T) -> Unit, tag: String, onOpenChange: (Boolean) -> Unit = {}, compact: Boolean = false) {
     var open by remember { mutableStateOf(false) }
     fun setOpen(value: Boolean) { open = value; onOpenChange(value) }
     Box {
-        OutlinedButton(onClick = { setOpen(true) }, modifier = Modifier.testTag(tag)) { Text(label, style = MaterialTheme.typography.labelMedium) }
+        OutlinedButton(
+            onClick = { setOpen(true) },
+            modifier = Modifier.testTag(tag),
+            contentPadding = if (compact) PaddingValues(horizontal = 14.dp, vertical = 8.dp) else ButtonDefaults.ContentPadding,
+        ) {
+            Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = if (compact) Modifier.widthIn(max = 120.dp) else Modifier)
+        }
         DropdownMenu(expanded = open, onDismissRequest = { setOpen(false) }) {
             options.forEach { (value, text) ->
                 DropdownMenuItem(text = { Text(text) }, onClick = { setOpen(false); onPick(value) }, modifier = Modifier.testTag("$tag-$text"))
