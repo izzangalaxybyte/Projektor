@@ -30,6 +30,9 @@ fun sanitizeSettings(skipSeconds: Int?, rate: Float?, holdRate: Float? = null): 
 interface PlayerPrefs {
     val settings: StateFlow<PlayerSettings>
     fun update(skipSeconds: Int? = null, rate: Float? = null, holdRate: Float? = null)
+    /** Where the player's controls sit on screen. */
+    val layout: StateFlow<PlayerLayout>
+    fun updateLayout(layout: PlayerLayout)
 }
 
 class SharedPrefsPlayerPrefs(context: Context) : PlayerPrefs {
@@ -42,6 +45,13 @@ class SharedPrefsPlayerPrefs(context: Context) : PlayerPrefs {
         ),
     )
     override val settings: StateFlow<PlayerSettings> = _settings
+    private val _layout = MutableStateFlow(PlayerLayout.decode(prefs.getString(KEY_LAYOUT, null)))
+    override val layout: StateFlow<PlayerLayout> = _layout
+
+    override fun updateLayout(layout: PlayerLayout) {
+        prefs.edit().putString(KEY_LAYOUT, layout.encode()).apply()
+        _layout.value = layout
+    }
 
     override fun update(skipSeconds: Int?, rate: Float?, holdRate: Float?) {
         val current = _settings.value
@@ -54,12 +64,16 @@ class SharedPrefsPlayerPrefs(context: Context) : PlayerPrefs {
         const val KEY_SKIP = "skipSeconds"
         const val KEY_RATE = "rate"
         const val KEY_HOLD_RATE = "holdRate"
+        const val KEY_LAYOUT = "layout"
     }
 }
 
-class MemoryPlayerPrefs(initial: PlayerSettings = PlayerSettings()) : PlayerPrefs {
+class MemoryPlayerPrefs(initial: PlayerSettings = PlayerSettings(), initialLayout: PlayerLayout = PlayerLayout.DEFAULT) : PlayerPrefs {
     private val _settings = MutableStateFlow(initial)
     override val settings: StateFlow<PlayerSettings> = _settings
+    private val _layout = MutableStateFlow(initialLayout)
+    override val layout: StateFlow<PlayerLayout> = _layout
+    override fun updateLayout(layout: PlayerLayout) { _layout.value = layout }
     override fun update(skipSeconds: Int?, rate: Float?, holdRate: Float?) {
         val current = _settings.value
         _settings.value = sanitizeSettings(skipSeconds ?: current.skipSeconds, rate ?: current.rate, holdRate ?: current.holdRate)
