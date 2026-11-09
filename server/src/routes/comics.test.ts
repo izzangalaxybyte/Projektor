@@ -99,6 +99,25 @@ describe('comic libraries', () => {
     expect(series[0]!.coverKey).toMatch(/^[a-f0-9]{40}$/);
   });
 
+  it('favorites series apart from movie and show favorites', async () => {
+    const id = await seriesId('Watchmen');
+    const put = (favorite: boolean) =>
+      app.inject({
+        method: 'PUT',
+        url: `/api/favorites/${id}`,
+        headers: asAdmin(),
+        payload: { favorite },
+      });
+    expect((await put(true)).json()).toEqual({ favorite: true });
+    expect((await get<{ id: string }[]>('/api/comics/favorites')).map((s) => s.id)).toEqual([id]);
+    expect(
+      (await get<{ series: { favorite: boolean } }>(`/api/comics/series/${id}`)).series.favorite,
+    ).toBe(true);
+    expect(await get<unknown[]>('/api/favorites')).toEqual([]);
+    await put(false);
+    expect(await get<unknown[]>('/api/comics/favorites')).toEqual([]);
+  });
+
   it('orders volumes, then the chapters after them, then extras', async () => {
     const books = await booksOf('One Piece');
     expect(books.map((b) => b.label ?? b.fileName)).toEqual([

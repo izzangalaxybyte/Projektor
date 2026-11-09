@@ -386,6 +386,22 @@ private fun Reader(container: AppContainer, book: ReaderBook, online: Boolean, o
         // Dimmer below the phone's own brightness; touches pass through to the pages.
         if (settings.brightness < 1f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = (1f - settings.brightness).coerceIn(0f, 0.85f))))
 
+        // While reading with the bars hidden: a small "page / total" in the top right corner.
+        if (!ui && panel == Panel.NONE && !atEnd) {
+            val shown = if (mode == ReadMode.WEBTOON) listOf(page) else layout.getOrNull(layout.indexOfPage(page))?.pages ?: listOf(page)
+            Text(
+                "${shown.map { it + 1 }.sorted().joinToString("–")} / $pageCount",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(6.dp)
+                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                    .testTag("comic-page-corner"),
+            )
+        }
         if (ui) {
             TopBar(book, onBack = back, onPages = { panel = Panel.PAGES }, onSettings = { panel = Panel.SETTINGS }, modifier = Modifier.align(Alignment.TopCenter))
             BottomBar(

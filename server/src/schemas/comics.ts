@@ -70,6 +70,7 @@ export const ComicSeries = z
       description: 'rtl when most of its books read right to left',
     }),
     lastReadAt: Timestamp.nullable(),
+    favorite: z.boolean().meta({ description: 'Favorited by this user (PUT /api/favorites/{id})' }),
     createdAt: Timestamp,
   })
   .meta({ id: 'ComicSeries' });

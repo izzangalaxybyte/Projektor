@@ -62,6 +62,20 @@ export const comicsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
+    '/favorites',
+    {
+      schema: {
+        tags: ['comics'],
+        summary: 'Favorite series, most recently added first',
+        description: 'Add or remove one with PUT /api/favorites/{seriesId}.',
+        security: [{ bearerAuth: [] }],
+        response: { 200: ComicSeries.array() },
+      },
+    },
+    async (request) => comics.favoriteSeries(request.user!.id),
+  );
+
+  app.get(
     '/series/:id',
     {
       schema: {

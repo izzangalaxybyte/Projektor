@@ -47,7 +47,7 @@ export const favoritesRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['favorites'],
-        summary: 'Add or remove a movie or show from favorites',
+        summary: 'Add or remove a movie, show or comic series from favorites',
         security: [{ bearerAuth: [] }],
         params: z.object({ itemId: Id }),
         body: z.object({ favorite: z.boolean() }),

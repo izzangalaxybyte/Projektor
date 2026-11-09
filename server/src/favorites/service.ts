@@ -1,6 +1,8 @@
-// Per-user favorite movies and shows.
+// Per-user favorite movies, shows and comic series.
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { now, schema, type Db } from '../db/index.js';
+
+export type FavoriteKind = (typeof schema.favorites.$inferSelect)['itemKind'];
 
 export class FavoriteError extends Error {
   constructor(
@@ -14,7 +16,7 @@ export class FavoriteError extends Error {
 export class FavoritesService {
   constructor(private readonly db: Db) {}
 
-  /** Adds or removes a favorite. Only movies and shows can be favorited. */
+  /** Adds or removes a favorite. Movies, shows and comic series can be favorited. */
   set(userId: string, itemId: string, favorite: boolean): boolean {
     const kind = this.kindOf(itemId);
     const where = and(eq(schema.favorites.userId, userId), eq(schema.favorites.itemId, itemId));
@@ -43,18 +45,18 @@ export class FavoritesService {
     );
   }
 
-  /** Favorite ids, most recently added first. */
-  list(userId: string): string[] {
+  /** Favorite ids of these kinds, most recently added first. */
+  list(userId: string, kinds: FavoriteKind[] = ['movie', 'show']): string[] {
     return this.db
       .select({ itemId: schema.favorites.itemId })
       .from(schema.favorites)
-      .where(eq(schema.favorites.userId, userId))
+      .where(and(eq(schema.favorites.userId, userId), inArray(schema.favorites.itemKind, kinds)))
       .orderBy(desc(schema.favorites.createdAt))
       .all()
       .map((r) => r.itemId);
   }
 
-  private kindOf(itemId: string): 'movie' | 'show' {
+  private kindOf(itemId: string): FavoriteKind {
     if (
       this.db
         .select({ id: schema.movies.id })
@@ -71,6 +73,14 @@ export class FavoritesService {
         .get()
     )
       return 'show';
-    throw new FavoriteError(404, 'Only movies and shows can be favorited');
+    if (
+      this.db
+        .select({ id: schema.comicSeries.id })
+        .from(schema.comicSeries)
+        .where(eq(schema.comicSeries.id, itemId))
+        .get()
+    )
+      return 'comic_series';
+    throw new FavoriteError(404, 'Only movies, shows and comic series can be favorited');
   }
 }

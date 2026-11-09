@@ -64,7 +64,7 @@ import app.projektor.mobile.ui.userMessage
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
-private data class ComicsHome(val reading: List<ComicBook>, val history: List<ComicBook>, val series: List<ComicSeries>)
+private data class ComicsHome(val reading: List<ComicBook>, val history: List<ComicBook>, val series: List<ComicSeries>, val favorites: List<ComicSeries> = emptyList())
 
 /**
  * The tab as last loaded, for its sort and search. Opening a series leaves the tab's composition;
@@ -106,6 +106,7 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
                 reading = if (search.isEmpty()) repo.continueReading() else emptyList(),
                 history = if (search.isEmpty()) repo.history(limit = 12) else emptyList(),
                 series = repo.series(search, sort),
+                favorites = if (search.isEmpty()) repo.favorites() else emptyList(),
             )
             container.comicProgress.flush(repo)
             lastHome = Triple(sort, search, home)
@@ -140,7 +141,7 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
             is UiState.Failed -> item(span = { GridItemSpan(maxLineSpan) }) { OfflineComics(container, s.message, openBook) }
             is UiState.Ready -> {
                 val home = s.value.let { h ->
-                    ComicsHome(h.reading.filter { shelf.shows(it.direction) }, h.history.filter { shelf.shows(it.direction) }, h.series.filter { shelf.shows(it.direction) })
+                    ComicsHome(h.reading.filter { shelf.shows(it.direction) }, h.history.filter { shelf.shows(it.direction) }, h.series.filter { shelf.shows(it.direction) }, h.favorites.filter { shelf.shows(it.direction) })
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -156,6 +157,9 @@ fun ComicsScreen(container: AppContainer, openSeries: (String) -> Unit, openBook
                 }
                 if (home.reading.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     BookRow("Continue reading", home.reading, container, openBook, "comics-continue")
+                }
+                if (home.favorites.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                    SeriesRow("Favorites", home.favorites, container, openSeries, "comics-favorites")
                 }
                 if (home.history.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     BookRow("Recently read", home.history, container, openBook, "comics-recent", action = "See all" to openHistory)
@@ -208,18 +212,28 @@ private fun OfflineComics(container: AppContainer, message: String, openBook: (S
 }
 
 @Composable
-internal fun BookRow(title: String, books: List<ComicBook>, container: AppContainer, openBook: (String) -> Unit, tag: String, action: Pair<String, () -> Unit>? = null) {
+internal fun BookRow(title: String, books: List<ComicBook>, container: AppContainer, openBook: (String) -> Unit, tag: String, action: Pair<String, () -> Unit>? = null, edge: androidx.compose.ui.unit.Dp = 0.dp) {
     val repo = container.comics()
     val downloads by container.comicDownloads.downloads.collectAsState()
     Column(Modifier.testTag(tag)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = edge), verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             action?.let { (label, run) -> TextButton(onClick = run) { Text(label) } }
         }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(top = 8.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(start = edge, end = edge, top = 8.dp)) {
             items(books, key = { it.id }) { book ->
                 BookTile(book, repo?.coverUrl(book.coverKey), onClick = { openBook(book.id) }, downloaded = downloads.any { it.bookId == book.id && it.state == app.projektor.mobile.download.DownloadState.DONE })
             }
+        }
+    }
+}
+
+@Composable
+internal fun SeriesRow(title: String, series: List<ComicSeries>, container: AppContainer, openSeries: (String) -> Unit, tag: String, edge: androidx.compose.ui.unit.Dp = 0.dp) {
+    Column(Modifier.testTag(tag)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = edge))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(start = edge, end = edge, top = 8.dp)) {
+            items(series, key = { it.id }) { s -> Box(Modifier.width(112.dp)) { SeriesTile(s, container, onClick = { openSeries(s.id) }) } }
         }
     }
 }
@@ -235,7 +249,7 @@ internal fun BookTile(book: ComicBook, cover: String?, onClick: () -> Unit, down
 }
 
 @Composable
-private fun SeriesTile(series: ComicSeries, container: AppContainer, onClick: () -> Unit) {
+internal fun SeriesTile(series: ComicSeries, container: AppContainer, onClick: () -> Unit) {
     Column(Modifier.clickable(onClick = onClick).testTag("comic-series")) {
         val fraction = if (series.bookCount > 0) series.readCount.toFloat() / series.bookCount else null
         ComicCover(container.comics()?.coverUrl(series.coverKey), Modifier.fillMaxWidth(), fraction?.takeIf { it > 0f && it < 1f }, series.readCount == series.bookCount && series.bookCount > 0)

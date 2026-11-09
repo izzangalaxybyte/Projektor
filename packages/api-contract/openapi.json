@@ -2921,6 +2921,10 @@
               }
             ]
           },
+          "favorite": {
+            "type": "boolean",
+            "description": "Favorited by this user (PUT /api/favorites/{id})"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -2937,6 +2941,7 @@
           "coverKey",
           "direction",
           "lastReadAt",
+          "favorite",
           "createdAt"
         ]
       },
@@ -5985,6 +5990,10 @@
               }
             ]
           },
+          "favorite": {
+            "type": "boolean",
+            "description": "Favorited by this user (PUT /api/favorites/{id})"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -6001,6 +6010,7 @@
           "coverKey",
           "direction",
           "lastReadAt",
+          "favorite",
           "createdAt"
         ],
         "additionalProperties": false
@@ -7983,7 +7993,7 @@
     },
     "/api/favorites/{itemId}": {
       "put": {
-        "summary": "Add or remove a movie or show from favorites",
+        "summary": "Add or remove a movie, show or comic series from favorites",
         "tags": [
           "favorites"
         ],
@@ -9410,6 +9420,35 @@
             "required": false
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComicSeries"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comics/favorites": {
+      "get": {
+        "summary": "Favorite series, most recently added first",
+        "tags": [
+          "comics"
+        ],
+        "description": "Add or remove one with PUT /api/favorites/{seriesId}.",
         "security": [
           {
             "bearerAuth": []

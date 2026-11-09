@@ -272,7 +272,7 @@ export const favorites = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     itemId: text('item_id').notNull(),
-    itemKind: text('item_kind', { enum: ['movie', 'show'] }).notNull(),
+    itemKind: text('item_kind', { enum: ['movie', 'show', 'comic_series'] }).notNull(),
     createdAt: text('created_at').notNull(),
   },
   (t) => [

@@ -82,7 +82,7 @@ fun MainScaffold(
     ) { padding ->
         val modifier = Modifier.padding(padding)
         when (tab) {
-            Tab.Home -> HomeScreen(container, openItem, modifier, openDownloads = { tab = Tab.Downloads })
+            Tab.Home -> HomeScreen(container, openItem, modifier, openDownloads = { tab = Tab.Downloads }, openComic = openComic, openComicSeries = openComicSeries)
             Tab.Movies -> LibraryScreen(container, LibraryKindInput.MOVIE, "Movies", openItem, modifier)
             Tab.Tv -> LibraryScreen(container, LibraryKindInput.TV, "TV Shows", openItem, modifier)
             Tab.Anime -> LibraryScreen(container, LibraryKindInput.ANIME, "Anime", openItem, modifier)

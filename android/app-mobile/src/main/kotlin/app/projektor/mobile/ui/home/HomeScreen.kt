@@ -25,11 +25,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import app.projektor.core.api.models.ComicBook
+import app.projektor.core.api.models.ComicSeries
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.BuildConfig
 import app.projektor.mobile.ui.UiState
+import app.projektor.mobile.ui.comics.BookRow
+import app.projektor.mobile.ui.comics.SeriesRow
 import app.projektor.mobile.ui.components.TileAction
 import app.projektor.mobile.ui.components.TileRow
 import app.projektor.mobile.ui.userMessage
@@ -37,8 +41,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-data class HomeRows(val continueWatching: Map<LibraryKindInput, List<ItemSummary>>, val favorites: List<ItemSummary>, val recent: Map<LibraryKindInput, List<ItemSummary>>) {
-    val isEmpty get() = continueWatching.values.all { it.isEmpty() } && favorites.isEmpty() && recent.values.all { it.isEmpty() }
+data class HomeRows(
+    val continueWatching: Map<LibraryKindInput, List<ItemSummary>>,
+    val favorites: List<ItemSummary>,
+    val recent: Map<LibraryKindInput, List<ItemSummary>>,
+    val reading: List<ComicBook> = emptyList(),
+    val favoriteComics: List<ComicSeries> = emptyList(),
+) {
+    val isEmpty get() = continueWatching.values.all { it.isEmpty() } && favorites.isEmpty() && recent.values.all { it.isEmpty() } && reading.isEmpty() && favoriteComics.isEmpty()
 }
 
 private val KINDS = listOf(LibraryKindInput.MOVIE, LibraryKindInput.TV, LibraryKindInput.ANIME)
@@ -46,7 +56,14 @@ private val LABEL = mapOf(LibraryKindInput.MOVIE to "Movies", LibraryKindInput.T
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Modifier = Modifier, openDownloads: () -> Unit = {}) {
+fun HomeScreen(
+    container: AppContainer,
+    openItem: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    openDownloads: () -> Unit = {},
+    openComic: (String) -> Unit = {},
+    openComicSeries: (String) -> Unit = {},
+) {
     val items = container.items() ?: return
     val client = container.client() ?: return
     val context = LocalContext.current
@@ -61,7 +78,11 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
                 val cont = KINDS.associateWith { k -> async { items.continueWatching(k) } }
                 val favorites = async { items.favorites() }
                 val recent = KINDS.associateWith { k -> async { items.recentlyAdded(k) } }
-                UiState.Ready(HomeRows(cont.mapValues { it.value.await() }, favorites.await(), recent.mapValues { it.value.await() }))
+                // Comics are extra: a server without them still shows the rest of Home.
+                val comics = container.comics()
+                val reading = async { comics?.let { runCatching { it.continueReading() }.getOrNull() }.orEmpty() }
+                val favoriteComics = async { comics?.let { runCatching { it.favorites() }.getOrNull() }.orEmpty() }
+                UiState.Ready(HomeRows(cont.mapValues { it.value.await() }, favorites.await(), recent.mapValues { it.value.await() }, reading.await(), favoriteComics.await()))
             }
         } catch (e: Exception) { UiState.Failed(e.userMessage()) }
     }
@@ -112,7 +133,9 @@ fun HomeScreen(container: AppContainer, openItem: (String) -> Unit, modifier: Mo
             }
             is UiState.Ready -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 KINDS.forEach { k -> TileRow("Continue watching · ${LABEL[k]}", s.value.continueWatching[k].orEmpty(), client, { openItem(it.id) }, "continue-${k.value}", ::actions) }
+                if (s.value.reading.isNotEmpty()) BookRow("Continue reading · Comics & manga", s.value.reading, container, openComic, "continue-comics", edge = 16.dp)
                 TileRow("Favorites", s.value.favorites, client, { openItem(it.id) }, "favorites", ::actions)
+                if (s.value.favoriteComics.isNotEmpty()) SeriesRow("Favorite comics & manga", s.value.favoriteComics, container, openComicSeries, "favorite-comics", edge = 16.dp)
                 KINDS.forEach { k -> TileRow("Recently added · ${LABEL[k]}", s.value.recent[k].orEmpty(), client, { openItem(it.id) }, "recent-${k.value}", ::actions) }
                 if (s.value.isEmpty) Text("Nothing here yet. Add a library on the server and scan it.", Modifier.padding(24.dp).testTag("home-empty"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Projektor build ${BuildConfig.VERSION_NAME}", Modifier.padding(horizontal = 16.dp, vertical = 12.dp).testTag("build-number"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

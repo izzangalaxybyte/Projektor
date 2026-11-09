@@ -2,6 +2,7 @@ package app.projektor.core.comics
 
 import app.projektor.core.ProjektorClient
 import app.projektor.core.api.models.ApiComicsSeriesIdReadPutRequest
+import app.projektor.core.api.models.ApiFavoritesItemIdPutRequest
 import app.projektor.core.api.models.ComicBook
 import app.projektor.core.api.models.ComicBookDetail
 import app.projektor.core.api.models.ComicProgress
@@ -35,6 +36,13 @@ class ComicsRepository(private val client: ProjektorClient) {
 
     suspend fun setSeriesRead(seriesId: String, read: Boolean) {
         client.comics.apiComicsSeriesIdReadPut(seriesId, ApiComicsSeriesIdReadPutRequest(read)).okOrThrow()
+    }
+
+    /** Favorite series, most recently added first. */
+    suspend fun favorites(): List<ComicSeries> = client.comics.apiComicsFavoritesGet().bodyOrThrow()
+
+    suspend fun setFavorite(seriesId: String, favorite: Boolean) {
+        client.favorites.apiFavoritesItemIdPut(seriesId, ApiFavoritesItemIdPutRequest(favorite)).bodyOrThrow()
     }
 
     suspend fun continueReading(limit: Int = 20): List<ComicBook> = client.comics.apiComicsContinueGet(limit.toLong()).bodyOrThrow()

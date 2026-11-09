@@ -11,6 +11,7 @@ import type {
 } from '../schemas/index.js';
 import { cleanName, numberingLabel, sortBooks } from './naming.js';
 import { matchesSearch } from '../search.js';
+import { FavoritesService } from '../favorites/service.js';
 
 type BookRow = typeof schema.comicBooks.$inferSelect;
 type SeriesRow = typeof schema.comicSeries.$inferSelect;
@@ -21,7 +22,11 @@ export class ComicNotFound extends Error {}
 export type SeriesSort = 'title' | 'added' | 'recent';
 
 export class ComicsService {
-  constructor(private readonly db: Db) {}
+  private readonly favorites: FavoritesService;
+
+  constructor(private readonly db: Db) {
+    this.favorites = new FavoritesService(db);
+  }
 
   listSeries(
     userId: string,
@@ -43,12 +48,17 @@ export class ComicsService {
       userId,
       books.map((b) => b.id),
     );
+    const favorite = this.favorites.getMany(
+      userId,
+      filtered.map((s) => s.id),
+    );
     const list = filtered
       .map((s) =>
         this.seriesSummary(
           s,
           books.filter((b) => b.seriesId === s.id),
           progress,
+          favorite.has(s.id),
         ),
       )
       .filter((s) => s.bookCount > 0);
@@ -79,7 +89,12 @@ export class ComicsService {
       books.map((b) => b.id),
     );
     return {
-      series: this.seriesSummary(row, books, progress),
+      series: this.seriesSummary(
+        row,
+        books,
+        progress,
+        this.favorites.getMany(userId, [id]).has(id),
+      ),
       books: books.map((b) => toBook(b, row.title, progress.get(b.id))),
     };
   }
@@ -102,6 +117,14 @@ export class ComicsService {
       previousId: at > 0 ? order[at - 1]!.id : null,
       nextId: at >= 0 && at < order.length - 1 ? order[at + 1]!.id : null,
     };
+  }
+
+  /** The user's favorite series, most recently added first. */
+  favoriteSeries(userId: string): ComicSeries[] {
+    const ids = this.favorites.list(userId, ['comic_series']);
+    if (ids.length === 0) return [];
+    const byId = new Map(this.listSeries(userId, {}).map((s) => [s.id, s]));
+    return ids.map((id) => byId.get(id)).filter((s): s is ComicSeries => !!s);
   }
 
   bookRow(id: string): BookRow {
@@ -286,6 +309,7 @@ export class ComicsService {
     s: SeriesRow,
     books: BookRow[],
     progress: Map<string, ProgressRow>,
+    favorite: boolean,
   ): ComicSeries {
     const read = books.filter((b) => progress.get(b.id)?.finished).length;
     const lastReadAt = books
@@ -303,6 +327,7 @@ export class ComicsService {
       coverKey: books.find((b) => b.coverKey)?.coverKey ?? null,
       direction: rtl > 0 && rtl >= books.length / 2 ? 'rtl' : null,
       lastReadAt: lastReadAt ?? null,
+      favorite,
       createdAt: s.createdAt,
     };
   }

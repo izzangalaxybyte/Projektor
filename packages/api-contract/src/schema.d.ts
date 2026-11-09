@@ -1787,7 +1787,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Add or remove a movie or show from favorites */
+        /** Add or remove a movie, show or comic series from favorites */
         put: {
             parameters: {
                 query?: never;
@@ -3137,6 +3137,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/comics/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Favorite series, most recently added first
+         * @description Add or remove one with PUT /api/favorites/{seriesId}.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComicSeries"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/comics/series/{id}": {
         parameters: {
             query?: never;
@@ -4194,6 +4233,8 @@ export interface components {
             /** @description rtl when most of its books read right to left */
             direction: components["schemas"]["ReadingDirectionInput"] | null;
             lastReadAt: string | null;
+            /** @description Favorited by this user (PUT /api/favorites/{id}) */
+            favorite: boolean;
             /**
              * Format: date-time
              * @description ISO 8601 UTC timestamp
@@ -4852,6 +4893,8 @@ export interface components {
             /** @description rtl when most of its books read right to left */
             direction: components["schemas"]["ReadingDirection"] | null;
             lastReadAt: string | null;
+            /** @description Favorited by this user (PUT /api/favorites/{id}) */
+            favorite: boolean;
             /**
              * Format: date-time
              * @description ISO 8601 UTC timestamp
