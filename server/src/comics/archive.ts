@@ -236,6 +236,8 @@ export class ComicArchives {
       if (width !== null) img = img.resize({ width, withoutEnlargement: true });
       await img.jpeg({ quality: 88 }).toFile(tmp);
       await rename(tmp, target);
+      // These files count towards the cache limit like an extraction does.
+      this.scheduleEvict(book.id);
     }
     await this.touch(book);
     const info = await stat(target);

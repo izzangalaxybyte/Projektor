@@ -237,6 +237,18 @@ describe('cache', () => {
     expect(left).toEqual(['b_cb7']);
   });
 
+  it('counts resized pages of books read in place towards the cap', async () => {
+    const small = new ComicArchives({ cacheDir: path.join(dir, 'resize-cache'), cacheBytes: 1 });
+    const a = path.join(dir, 'resize-a.cbz');
+    const b = path.join(dir, 'resize-b.cbz');
+    await makeCbz(a, [{ name: '1.png' }]);
+    await makeCbz(b, [{ name: '1.png' }]);
+    await bytes((await small.page(await ref(a, small), 0, 64)).body);
+    await bytes((await small.page(await ref(b, small), 0, 64)).body);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(await readdir(path.join(dir, 'resize-cache'))).toEqual(['resize_b_cbz']);
+  });
+
   it('makes covers without extracting the whole book', async () => {
     const cacheDir = path.join(dir, 'cover-cache');
     const covers = new ComicArchives({ cacheDir, cacheBytes: 50 * 1024 * 1024 });
