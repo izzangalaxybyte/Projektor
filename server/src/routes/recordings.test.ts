@@ -1,5 +1,6 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { eq } from 'drizzle-orm';
 import { execa } from 'execa';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
@@ -368,6 +369,30 @@ describe('recordings', () => {
         ).statusCode,
       ).toBe(404);
       await app.recorder.remove(created.json().id);
+    });
+
+    it('records a guide programme on any of the channels that share its guide id', async () => {
+      // Providers list HD, SD, and backup feeds of one channel under the same guide id.
+      app.db
+        .update(schema.liveChannels)
+        .set({ epgChannelId: 'sport1.uk' })
+        .where(eq(schema.liveChannels.id, '1003'))
+        .run();
+      const guide = (
+        await app.inject({ method: 'GET', url: '/api/live/guide?channel=1003', headers: auth() })
+      ).json() as Array<{ id: string; title: string }>;
+      const onAir = guide.find((p) => p.title === 'Big Match')!;
+      for (const channelId of ['1001', '1003']) {
+        const created = await app.inject({
+          method: 'POST',
+          url: '/api/recordings',
+          headers: auth(),
+          payload: { channelId, programmeId: onAir.id },
+        });
+        expect(created.statusCode).toBe(201);
+        expect(created.json()).toMatchObject({ channelId, programmeId: onAir.id });
+        await app.recorder.remove(created.json().id);
+      }
     });
 
     it('marks a recording cut off by a restart as failed and keeps the file', async () => {

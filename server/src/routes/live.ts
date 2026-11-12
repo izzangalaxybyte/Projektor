@@ -252,7 +252,7 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!channel) return reply.notFound('No such channel');
 
       if (request.body.programmeId !== undefined) {
-        const found = live.programme(request.body.programmeId);
+        const found = live.programme(request.body.programmeId, channel.id);
         if (!found || found.channel.id !== channel.id)
           return reply.notFound('No such programme on this channel');
         const { programme } = found;

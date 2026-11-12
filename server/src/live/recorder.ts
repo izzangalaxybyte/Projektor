@@ -125,7 +125,7 @@ export class RecordingManager {
     let description: string | null = null;
     let programmeId: string | null = null;
     if (request.programmeId !== undefined) {
-      const found = this.live.programme(request.programmeId);
+      const found = this.live.programme(request.programmeId, channel.id);
       if (!found || found.channel.id !== channel.id)
         throw new RecordingError(404, 'No such programme on this channel');
       const p = found.programme;
