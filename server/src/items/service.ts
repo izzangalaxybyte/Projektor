@@ -65,7 +65,15 @@ export class ItemsService {
       ranked.push(...this.movies(q));
     if (wantShows && q.libraryKind !== 'movie') ranked.push(...this.shows(q));
     if (wantSeasons && q.parentId) ranked.push(...this.seasons(q.parentId));
-    if (wantEpisodes && q.parentId) ranked.push(...this.episodes(q.parentId, q.parentId));
+    if (wantEpisodes && q.parentId) {
+      const episodes = this.episodes(q.parentId, null);
+      // Listed beside a show's seasons, only the episodes no season holds; the rest are reached
+      // through their season.
+      const besideSeasons = wantSeasons && this.isShow(q.parentId);
+      ranked.push(
+        ...(besideSeasons ? episodes.filter((e) => e.summary.seasonNumber === null) : episodes),
+      );
+    }
     const wanted = (q.genre ?? '')
       .split(',')
       .map((g) => g.trim().toLowerCase())
@@ -320,6 +328,16 @@ export class ItemsService {
       .orderBy(asc(schema.seasons.seasonNumber))
       .all()
       .map((s) => seasonSummary(s, show, lib));
+  }
+
+  private isShow(id: string): boolean {
+    return (
+      this.db
+        .select({ id: schema.shows.id })
+        .from(schema.shows)
+        .where(eq(schema.shows.id, id))
+        .get() !== undefined
+    );
   }
 
   /** Episodes of a show; when parentId is a season id, only that season's. */

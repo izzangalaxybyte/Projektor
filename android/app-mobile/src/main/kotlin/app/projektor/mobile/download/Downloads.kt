@@ -9,6 +9,7 @@ import app.projektor.core.ProjektorClient
 import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.MediaFile
 import app.projektor.core.items.ItemsRepository
+import app.projektor.core.store.SavedList
 import app.projektor.player.MIME_SSA
 import app.projektor.player.MIME_VTT
 import app.projektor.player.MediaSpec
@@ -28,9 +29,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.json.JSONArray
 
 enum class DownloadState { QUEUED, DOWNLOADING, WAITING, DONE, FAILED }
@@ -75,8 +73,7 @@ data class Download(
 class DownloadStore(context: Context, private val client: () -> ProjektorClient?) {
     private val app = context.applicationContext
     private val manager by lazy { app.getSystemService(DownloadManager::class.java) }
-    private val json = Json { ignoreUnknownKeys = true }
-    private val index = File(app.filesDir, "downloads.json")
+    private val index = SavedList(File(app.filesDir, "downloads.json"), Download.serializer()) { Log.w(TAG, "read index", it) }
     private val lock = Any()
     // One worker: a delete and a fresh download of the same item never touch its folder at once.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
@@ -239,17 +236,13 @@ class DownloadStore(context: Context, private val client: () -> ProjektorClient?
     private fun update(change: (List<Download>) -> List<Download>) {
         synchronized(lock) {
             _downloads.update(change)
-            runCatching {
-                val tmp = File(index.path + ".tmp")
-                tmp.writeText(json.encodeToString(_downloads.value))
-                tmp.renameTo(index)
-            }.onFailure { Log.w(TAG, "save index", it) }
+            runCatching { index.save(_downloads.value) }.onFailure { Log.w(TAG, "save index", it) }
         }
     }
 
     // Unfinished ones start over in line; one an older version handed to DownloadManager is taken back.
     private fun load(): List<Download> =
-        runCatching { json.decodeFromString<List<Download>>(index.readText()) }.getOrDefault(emptyList())
+        index.load()
             .map { d ->
                 if (!d.isActive) return@map d
                 if (d.managerId >= 0) runCatching { manager.remove(d.managerId) }

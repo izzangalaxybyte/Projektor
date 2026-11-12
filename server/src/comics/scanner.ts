@@ -252,7 +252,14 @@ export async function scanComicLibrary(
         mtimeMs: file.mtimeMs,
         missing: false,
         ...numbering,
-        ...(changed ? { indexedAt: null, indexError: null } : {}),
+        // Indexing fills in from ComicInfo what the file name does not say; an unchanged book is
+        // not indexed again, so it keeps those rather than losing them to every rescan.
+        ...(changed
+          ? { indexedAt: null, indexError: null }
+          : {
+              volume: numbering.volume ?? existing.volume,
+              chapter: numbering.chapter ?? existing.chapter,
+            }),
         updatedAt: ts,
       })
       .where(eq(schema.comicBooks.id, existing.id))

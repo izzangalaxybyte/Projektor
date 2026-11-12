@@ -21,7 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -90,7 +93,10 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
     var bottomBarPx by remember { mutableStateOf(0) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     var picker by remember { mutableStateOf<Picker?>(null) }
-    var resumeAt by remember { mutableStateOf(startMs) }
+    // Saved across the screen being rebuilt (the app killed in the background, a configuration
+    // change): the route still names the position playback first started from, and starting
+    // there again would report it over the progress made since.
+    var resumeAt by rememberSaveable { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
     var countdown by remember { mutableStateOf<Int?>(null) }
 
@@ -101,6 +107,7 @@ fun TvPlayerScreen(container: TvContainer, fileId: String, itemId: String, start
     val pickerFocus = remember { FocusRequester() }
 
     TvPlayerLifecycle(player)
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { player.state.value.positionMs.takeIf { it > 0 }?.let { resumeAt = it } }
     LaunchedEffect(itemId) {
         try {
             val d = items.detail(itemId)

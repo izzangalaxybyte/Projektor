@@ -153,6 +153,17 @@ describe.skipIf(!existsSync(fixtures))('items over the generated fixtures', () =
     expect(
       show.children.map((c) => [c.kind, c.seasonNumber, c.episodeNumber, c.title, c.needsReview]),
     ).toEqual([['episode', null, 13, 'Episode 13', false]]);
+    // The list endpoint the clients page through answers the same as the detail's children.
+    for (const query of ['', '&kind=episode']) {
+      const listed = (
+        await app.inject({
+          method: 'GET',
+          url: `/api/items?parentId=${anime.items[0]!.id}${query}`,
+          headers,
+        })
+      ).json() as Page;
+      expect(listed.items.map((c) => c.id)).toEqual(show.children.map((c) => c.id));
+    }
     const episode = (
       await app.inject({ method: 'GET', url: `/api/items/${show.children[0]!.id}`, headers })
     ).json() as {

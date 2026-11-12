@@ -259,13 +259,18 @@ export class HlsManager {
   }
 
   private highestSegment(session: PlaybackSession): number {
+    return Math.max(-1, ...this.writtenSegments(session));
+  }
+
+  /** Numbers of the segments in the session's directory, from every run so far. */
+  private writtenSegments(session: PlaybackSession): Set<number> {
     const ext = hlsNaming(session.profile.hlsSegmentContainer).segmentExtension;
-    let highest = -1;
+    const written = new Set<number>();
     for (const name of readdirSyncSafe(this.dir(session.id))) {
       const m = new RegExp(`^seg-(\\d+)\\.${ext}$`).exec(name);
-      if (m) highest = Math.max(highest, Number(m[1]));
+      if (m) written.add(Number(m[1]));
     }
-    return highest;
+    return written;
   }
 
   /** Returns the file's contents once ffmpeg has produced it, or throws 504/404. */
@@ -288,11 +293,11 @@ export class HlsManager {
         throw new HlsError(404, 'Segment past the end');
       if (!existsSync(file)) {
         const run = this.running.get(session.id)!;
-        const produced = this.highestSegment(session);
         const ahead = this.options.seekAheadSegments ?? 3;
         const behind = requested < run.startSegment;
         // The run writes nextSegment next; only a request beyond that plus the window restarts.
-        const nextSegment = Math.max(produced, run.startSegment - 1) + 1;
+        const nextSegment = nextSegmentOfRun(this.writtenSegments(session), run.startSegment);
+        const produced = nextSegment - 1;
         const farAhead = requested > nextSegment + ahead;
         if (behind || farAhead || run.exited) {
           this.log.info(
@@ -384,6 +389,17 @@ export class HlsManager {
     clearInterval(this.sweeper);
     await Promise.all(this.registry.list().map((s) => this.stop(s.id)));
   }
+}
+
+/**
+ * The segment a run writes next: the first one missing from where it started. Segments an earlier
+ * run left further on are not its progress; counting them would make a seek into the gap before
+ * them wait for a run that is minutes away instead of restarting ffmpeg there.
+ */
+export function nextSegmentOfRun(written: ReadonlySet<number>, startSegment: number): number {
+  let next = startSegment;
+  while (written.has(next)) next++;
+  return next;
 }
 
 /** How long the first remux playlist request waits for ffmpeg to finish before serving it live. */

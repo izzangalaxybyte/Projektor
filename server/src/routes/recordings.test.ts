@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { eq } from 'drizzle-orm';
 import { execa } from 'execa';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
@@ -161,6 +162,56 @@ describe('recordings', () => {
       ).toBe(404);
     });
 
+    it('fails a recording whose folder cannot be made, rather than rejecting the scheduler', async () => {
+      // A file where the recordings folder should be: the scheduler cannot create it.
+      const blocker = path.join(cfg.config.dataDir, 'blocker');
+      writeFileSync(blocker, '');
+      cfg.config.recordingsDir = path.join(blocker, 'recordings');
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/recordings',
+        headers: auth(),
+        payload: { channelId: '1001', durationMinutes: 1 },
+      });
+      expect(created.statusCode).toBe(201);
+      const rec = created.json();
+      expect(rec.state).toBe('failed');
+      expect(rec.error).toMatch(/Could not start/);
+      // The scheduler keeps running and does not pick the failed one up again.
+      await expect(app.recorder.tick()).resolves.toBeUndefined();
+      expect(app.recorder.get(rec.id)?.state).toBe('failed');
+    });
+
+    it('fails a recording whose file cannot be opened', async () => {
+      const payload = { channelId: '1001', durationMinutes: 1 };
+      const first = await app.inject({
+        method: 'POST',
+        url: '/api/recordings',
+        headers: auth(),
+        payload,
+      });
+      await waitState(first.json().id, 'recording');
+      const folder = path.dirname(app.recorder.filePath(first.json().id)!);
+      await app.recorder.remove(first.json().id);
+      // The channel's folder exists but nothing can be written in it.
+      chmodSync(folder, 0o555);
+      try {
+        const created = await app.inject({
+          method: 'POST',
+          url: '/api/recordings',
+          headers: auth(),
+          payload,
+        });
+        expect(created.statusCode).toBe(201);
+        expect(created.json().state).toBe('failed');
+        // The file stream reports its failure a moment later; nothing may be left unhandled.
+        await sleep(200);
+        expect(app.recorder.get(created.json().id)?.state).toBe('failed');
+      } finally {
+        chmodSync(folder, 0o755);
+      }
+    });
+
     it('stops promptly while a viewer shares the relay and data is still buffered', async () => {
       const created = await app.inject({
         method: 'POST',
@@ -318,6 +369,30 @@ describe('recordings', () => {
         ).statusCode,
       ).toBe(404);
       await app.recorder.remove(created.json().id);
+    });
+
+    it('records a guide programme on any of the channels that share its guide id', async () => {
+      // Providers list HD, SD, and backup feeds of one channel under the same guide id.
+      app.db
+        .update(schema.liveChannels)
+        .set({ epgChannelId: 'sport1.uk' })
+        .where(eq(schema.liveChannels.id, '1003'))
+        .run();
+      const guide = (
+        await app.inject({ method: 'GET', url: '/api/live/guide?channel=1003', headers: auth() })
+      ).json() as Array<{ id: string; title: string }>;
+      const onAir = guide.find((p) => p.title === 'Big Match')!;
+      for (const channelId of ['1001', '1003']) {
+        const created = await app.inject({
+          method: 'POST',
+          url: '/api/recordings',
+          headers: auth(),
+          payload: { channelId, programmeId: onAir.id },
+        });
+        expect(created.statusCode).toBe(201);
+        expect(created.json()).toMatchObject({ channelId, programmeId: onAir.id });
+        await app.recorder.remove(created.json().id);
+      }
     });
 
     it('marks a recording cut off by a restart as failed and keeps the file', async () => {

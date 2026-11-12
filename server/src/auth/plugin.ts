@@ -31,7 +31,10 @@ export const authPlugin = fp(
 
     app.addHook('onRequest', async (request, reply) => {
       if (request.routeOptions.config.public) return;
-      if (!request.url.startsWith('/api/')) return;
+      // The matched route decides, not only the raw URL: the router decodes the path before
+      // matching, so "/%61pi/libraries" reaches an /api route without starting with "/api/".
+      const route = request.routeOptions.url;
+      if (!request.url.startsWith('/api/') && !route?.startsWith('/api/')) return;
       const header = request.headers.authorization;
       // <video src> and <img src> cannot set headers, so read-only requests may carry the token
       // as ?access_token=. It is never accepted for mutations.

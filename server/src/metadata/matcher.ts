@@ -3,6 +3,7 @@ import { and, eq, isNull, inArray } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import pLimit from 'p-limit';
 import { now, schema, type Db } from '../db/index.js';
+import { sortKey } from '../identify/identifier.js';
 import type { ImageStore } from '../images/store.js';
 import { movieSearchTitles } from './movie-queries.js';
 import { ACCEPT_THRESHOLD, rankCandidates } from './score.js';
@@ -272,11 +273,7 @@ export class Matcher {
 }
 
 export function sortTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/^(the|a|an)\s+/, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  return sortKey(title);
 }
 
 export type { MovieDetails };

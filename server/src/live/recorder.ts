@@ -73,9 +73,14 @@ export class RecordingManager {
       this.log.warn({ recordingId: r.id, title: r.title }, 'recording cut off by a restart');
     }
     this.stop();
-    this.timer = setInterval(() => void this.tick(), this.options.tickMs);
+    // Nothing awaits these: a rejection here would be unhandled and end the process.
+    const run = () =>
+      void this.tick().catch((error: unknown) =>
+        this.log.error({ error: String(error) }, 'recording scheduler tick failed'),
+      );
+    this.timer = setInterval(run, this.options.tickMs);
     this.timer.unref();
-    void this.tick();
+    run();
   }
 
   stop(): void {
@@ -120,7 +125,7 @@ export class RecordingManager {
     let description: string | null = null;
     let programmeId: string | null = null;
     if (request.programmeId !== undefined) {
-      const found = this.live.programme(request.programmeId);
+      const found = this.live.programme(request.programmeId, channel.id);
       if (!found || found.channel.id !== channel.id)
         throw new RecordingError(404, 'No such programme on this channel');
       const p = found.programme;
@@ -220,7 +225,13 @@ export class RecordingManager {
         .orderBy(asc(schema.recordings.startAt))
         .all()
         .filter((r) => r.startAt <= nowIso);
-      for (const r of due) await this.begin(r.id);
+      for (const r of due) {
+        try {
+          await this.begin(r.id);
+        } catch (error) {
+          await this.abandon(r.id, error);
+        }
+      }
       for (const [id, a] of this.active) {
         const row = this.db
           .select({ endAt: schema.recordings.endAt })
@@ -232,6 +243,27 @@ export class RecordingManager {
     } finally {
       this.ticking = false;
     }
+  }
+
+  /**
+   * A recording that could not be set up (the folder cannot be made, the disk is full). It is
+   * failed for good: left scheduled it would be tried, and fail, on every tick.
+   */
+  private async abandon(id: string, error: unknown): Promise<void> {
+    const message = `Could not start: ${error instanceof Error ? error.message : String(error)}`;
+    this.log.warn({ recordingId: id, error: message }, 'recording could not start');
+    // Far enough along to hold the channel and an open file: let go of both.
+    if (this.active.has(id)) await this.finish(id, message).catch(() => undefined);
+    this.db
+      .update(schema.recordings)
+      .set({ state: 'failed', error: message, actualEndAt: now(), updatedAt: now() })
+      .where(
+        and(
+          eq(schema.recordings.id, id),
+          inArray(schema.recordings.state, ['scheduled', 'recording']),
+        ),
+      )
+      .run();
   }
 
   private async begin(id: string): Promise<void> {
@@ -276,6 +308,9 @@ export class RecordingManager {
       return;
     }
     const file = createWriteStream(filePath);
+    // Listening from the start: a file that cannot be opened reports it here a moment later, and
+    // an 'error' event nobody listens for ends the process.
+    file.on('error', (error) => void this.finish(id, `Could not write the file: ${error.message}`));
     const active: Active = { subscription, file, bytes: 0, stopping: false };
     this.active.set(id, active);
     this.db
@@ -306,7 +341,6 @@ export class RecordingManager {
     subscription.stream.on('end', () => {
       if (!active.stopping) void this.finish(id, 'The stream ended before the planned end');
     });
-    file.on('error', (error) => void this.finish(id, `Could not write the file: ${error.message}`));
   }
 
   private async finish(id: string, error: string | null): Promise<void> {

@@ -102,6 +102,9 @@ import app.projektor.player.applyRememberedSubtitle
 import app.projektor.player.TrackOption
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.delay
 
 /**
@@ -128,7 +131,10 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     var seekBarPx by remember { mutableStateOf(0) }
     var controlsInsetPx by remember { mutableStateOf(0) }
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
-    var resumeAt by remember { mutableStateOf(startMs) }
+    // Saved across the screen being rebuilt (the app killed in the background, a configuration
+    // change): the route still names the position playback first started from, and starting
+    // there again would report it over the progress made since.
+    var resumeAt by rememberSaveable { mutableStateOf(startMs) }
     var nextEpisode by remember { mutableStateOf<Pair<String, String>?>(null) }
     var nextDetail by remember { mutableStateOf<ItemDetail?>(null) }
     var nextImage by remember { mutableStateOf<String?>(null) }
@@ -145,6 +151,7 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
     val state by player.state.collectAsState()
 
     PlayerWindow(player)
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { player.state.value.positionMs.takeIf { it > 0 }?.let { resumeAt = it } }
 
     suspend fun findNextOnServer(d: ItemDetail) {
         runCatching { items.nextEpisode(d.id) }.getOrNull()?.let { n ->

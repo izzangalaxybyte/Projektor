@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { withAccessToken } from '../api/client.js';
-import { activeCues, parseVtt, type Cue } from '../player/vtt.js';
+import { activeCues, cueLines, parseVtt, type Cue, type CueSpan } from '../player/vtt.js';
 
 interface Props {
   url: string | null;
@@ -35,8 +35,28 @@ export function SubtitleOverlay({ url, currentMs, liftPx = 0 }: Props) {
       style={liftPx > 0 ? { bottom: `max(12%, ${liftPx + 8}px)` } : undefined}
     >
       {active.map((c, i) => (
-        <p key={i} dangerouslySetInnerHTML={{ __html: c.text.replace(/\n/g, '<br>') }} />
+        <p key={i}>
+          {cueLines(c.text).map((line, j) => (
+            <Fragment key={j}>
+              {j > 0 && <br />}
+              {line.map((span, k) => (
+                <span key={k} style={spanStyle(span)}>
+                  {span.text}
+                </span>
+              ))}
+            </Fragment>
+          ))}
+        </p>
       ))}
     </div>
   );
+}
+
+function spanStyle(span: CueSpan): CSSProperties | undefined {
+  if (!span.italic && !span.bold && !span.underline) return undefined;
+  return {
+    fontStyle: span.italic ? 'italic' : undefined,
+    fontWeight: span.bold ? 'bold' : undefined,
+    textDecoration: span.underline ? 'underline' : undefined,
+  };
 }

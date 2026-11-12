@@ -74,6 +74,15 @@ test('plays the hevc/ac3 episode through HLS, shows subtitles, seeks, and report
   // Back on the detail page the button offers to resume.
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByTestId('play')).toHaveText(/Resume from/);
+
+  // Playing it again opens a new session; the one the first visit used was stopped on leaving.
+  await page.getByTestId('play').click();
+  await expect(page).toHaveURL(/\/play\//);
+  await expect(page.getByTestId('toggle')).toHaveAttribute('aria-label', 'Pause', {
+    timeout: 30_000,
+  });
+  await expect.poll(() => currentTime(page), { timeout: 30_000 }).toBeGreaterThan(0.5);
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('direct plays the mp4 movie', async ({ page }) => {

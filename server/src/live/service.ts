@@ -69,8 +69,15 @@ export class LiveService {
       .map(toProgramme);
   }
 
-  /** A programme with the channel it belongs to, or null. */
-  programme(id: string): { programme: LiveProgramme; channel: LiveChannel } | null {
+  /**
+   * A programme with the channel it belongs to, or null. Several channels can share a guide id
+   * (HD, SD, and backup feeds), so a caller asking about one channel names it; otherwise the
+   * first channel carrying the programme is returned.
+   */
+  programme(
+    id: string,
+    channelId?: string,
+  ): { programme: LiveProgramme; channel: LiveChannel } | null {
     const row = this.db
       .select()
       .from(schema.liveProgrammes)
@@ -80,7 +87,12 @@ export class LiveService {
     const ch = this.db
       .select({ id: schema.liveChannels.id })
       .from(schema.liveChannels)
-      .where(eq(schema.liveChannels.epgChannelId, row.epgChannelId))
+      .where(
+        and(
+          eq(schema.liveChannels.epgChannelId, row.epgChannelId),
+          channelId === undefined ? undefined : eq(schema.liveChannels.id, channelId),
+        ),
+      )
       .get();
     const channel = ch ? this.channel(ch.id) : null;
     if (!channel) return null;

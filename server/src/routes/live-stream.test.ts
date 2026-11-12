@@ -304,6 +304,34 @@ describe('live streaming routes', () => {
         await app.liveHls.stop(sessionId);
       },
     );
+
+    it(
+      'gives each viewer of a past programme a stream from its start',
+      { timeout: 60_000 },
+      async () => {
+        const guide = (
+          await app.inject({ method: 'GET', url: '/api/live/guide?channel=1001', headers: auth() })
+        ).json() as Array<{ id: string; title: string }>;
+        const earlier = guide.find((p) => p.title === 'Earlier Match')!;
+        const open = async () =>
+          (
+            await app.inject({
+              method: 'POST',
+              url: '/api/live/decide',
+              headers: auth(),
+              payload: { channelId: '1001', profile: profile(['mp4']), programmeId: earlier.id },
+            })
+          ).json() as { sessionId: string; url: string };
+        const sessions = [await open(), await open()];
+        const playlists = await Promise.all(
+          sessions.map((s) => app.inject({ method: 'GET', url: `${s.url}?access_token=${token}` })),
+        );
+        expect(playlists.map((p) => p.statusCode)).toEqual([200, 200]);
+        // A viewer joining another's connection would start wherever that one had got to.
+        expect(provider.timeshiftCalls).toHaveLength(2);
+        for (const s of sessions) await app.liveHls.stop(s.sessionId);
+      },
+    );
   });
 
   function cfgFfmpeg() {

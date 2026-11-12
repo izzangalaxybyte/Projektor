@@ -23,7 +23,7 @@ import {
   prewarm,
 } from '../player/prewarm.js';
 import { buildDeviceProfile } from '../player/profile.js';
-import { releaseSessionOnPageHide } from '../player/release.js';
+import { keepSessionAlive, releaseSessionOnPageHide } from '../player/release.js';
 import { planSeek } from '../player/timeline.js';
 import { closestVersion } from '../player/versions.js';
 import { fmt } from './ItemPage.js';
@@ -31,6 +31,15 @@ import { fmt } from './ItemPage.js';
 const PROGRESS_INTERVAL_MS = 10_000;
 /** How long before the end the next episode's playback is opened, so "Next" starts at once. */
 const PREWARM_BEFORE_END_MS = 120_000;
+/** How long the seek bar must rest before the seek is made, so a drag is one seek and not many. */
+const SCRUB_SETTLE_MS = 200;
+
+/** Stops a server session; a failure only means the idle sweep frees it a little later. */
+function endSession(id: string): void {
+  void api
+    .DELETE('/api/playback/sessions/{id}', { params: { path: { id } } })
+    .catch(() => undefined);
+}
 
 export function PlayerPage() {
   const { fileId } = useParams();
@@ -117,29 +126,62 @@ function Player() {
     if (p)
       seekTo(p.currentMs + offsetRef.current + direction * prefsRef.current.skipSeconds * 1000);
   };
+  // The seek bar follows the pointer while it is dragged and seeks once it rests: each seek past
+  // what a remux has written opens a new server session.
+  const [scrubMs, setScrubMs] = useState<number | null>(null);
+  const scrubTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const scrubTo = (absoluteMs: number) => {
+    setScrubMs(absoluteMs);
+    clearTimeout(scrubTimer.current);
+    scrubTimer.current = setTimeout(() => {
+      setScrubMs(null);
+      seekTo(absoluteMs);
+    }, SCRUB_SETTLE_MS);
+  };
+  useEffect(() => () => clearTimeout(scrubTimer.current), []);
   const reportRef = useRef<(force?: boolean) => void>(() => undefined);
 
   const profile = useMemo(() => buildDeviceProfile(), []);
+  // The request the page is waiting on. An answer to any other one (the viewer seeked or switched
+  // track again, or left) opened a session that nothing will play or stop.
+  const wanted = `${audioIndex ?? ''}:${seekEpoch}`;
+  const wantedRef = useRef(wanted);
+  wantedRef.current = wanted;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const decision = useQuery({
     queryKey: ['decide', fileId, audioIndex, profile.name, seekEpoch],
     enabled: !!fileId,
     staleTime: Infinity,
+    // A decision names a session that is stopped when the page lets go of it; never reuse one.
+    gcTime: 0,
     queryFn: async () => {
-      // "Next" from the previous episode: its session was opened while that one was ending.
-      if (seekEpoch === 0 && audioIndex === undefined && resumeAt.current === 0) {
-        const prewarmed = await claimPrewarmed(fileId!);
-        if (prewarmed) return prewarmed;
-      }
-      return unwrap(
-        await api.POST('/api/playback/decide', {
-          body: {
-            fileId: fileId!,
-            profile,
-            startPositionMs: resumeAt.current,
-            ...(audioIndex !== undefined ? { audioStreamIndex: audioIndex } : {}),
-          },
-        }),
-      );
+      const decide = async () => {
+        // "Next" from the previous episode: its session was opened while that one was ending.
+        if (seekEpoch === 0 && audioIndex === undefined && resumeAt.current === 0) {
+          const prewarmed = await claimPrewarmed(fileId!);
+          if (prewarmed) return prewarmed;
+        }
+        return unwrap(
+          await api.POST('/api/playback/decide', {
+            body: {
+              fileId: fileId!,
+              profile,
+              startPositionMs: resumeAt.current,
+              ...(audioIndex !== undefined ? { audioStreamIndex: audioIndex } : {}),
+            },
+          }),
+        );
+      };
+      const decided = await decide();
+      if (decided.sessionId && (!mountedRef.current || wantedRef.current !== wanted))
+        endSession(decided.sessionId);
+      return decided;
     },
   });
 
@@ -227,11 +269,12 @@ function Player() {
     const offPageHide = d.sessionId
       ? releaseSessionOnPageHide(`/api/playback/sessions/${d.sessionId}`)
       : () => undefined;
+    const stopKeepAlive = d.sessionId ? keepSessionAlive(d.sessionId) : () => undefined;
     return () => {
       offPageHide();
+      stopKeepAlive();
       // Free the server's ffmpeg as soon as this session is replaced or the page closes.
-      if (d.sessionId)
-        void api.DELETE('/api/playback/sessions/{id}', { params: { path: { id: d.sessionId } } });
+      if (d.sessionId) endSession(d.sessionId);
     };
   }, [decision.data, knownDurationMs]);
 
@@ -413,8 +456,8 @@ function Player() {
           className="seek"
           min={0}
           max={Math.max(effectiveDurationMs, 1)}
-          value={Math.min(currentMs, effectiveDurationMs)}
-          onChange={(e) => seekTo(Number(e.target.value))}
+          value={scrubMs ?? Math.min(currentMs, effectiveDurationMs)}
+          onChange={(e) => scrubTo(Number(e.target.value))}
           aria-label="Seek"
           data-testid="seek"
         />

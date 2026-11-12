@@ -116,7 +116,7 @@ private fun KindGrid(container: TvContainer, kind: LibraryKindInput, openItem: (
     val items = container.items() ?: return
     val client = container.client() ?: return
     var state by remember(kind) { mutableStateOf<UiState<List<ItemSummary>>>(UiState.Loading) }
-    LaunchedEffect(kind) { state = try { UiState.Ready(items.list(libraryKind = kind, sort = "title", limit = 200).items) } catch (e: Exception) { UiState.Failed(e.userMessage()) } }
+    LaunchedEffect(kind) { state = try { UiState.Ready(items.listAll(kind, "title")) } catch (e: Exception) { UiState.Failed(e.userMessage()) } }
     when (val s = state) {
         UiState.Loading -> Text("Loading…", Modifier.padding(48.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         is UiState.Failed -> Text(s.message, Modifier.padding(48.dp), color = MaterialTheme.colorScheme.error)
