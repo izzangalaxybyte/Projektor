@@ -45,15 +45,63 @@ export function parseVtt(source: string): Cue[] {
   return cues;
 }
 
-/** Drops every tag except simple italics, bold, underline; unescapes the few VTT entities. */
+/**
+ * Drops every tag except simple italics, bold, underline; unescapes the VTT entities and numeric
+ * ones, since the text is shown as written and nothing else decodes them.
+ */
 export function sanitise(text: string): string {
   return text
     .replace(/<\/?(?!\/?[ibu]>)[^>]*>/g, '')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&lrm;/g, '‎')
+    .replace(/&rlm;/g, '‏')
+    .replace(/&#(x[0-9a-f]+|\d+);/gi, (entity, code: string) => {
+      const point = /^x/i.test(code) ? parseInt(code.slice(1), 16) : Number(code);
+      return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : entity;
+    })
     .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ')
     .trim();
+}
+
+export interface CueSpan {
+  text: string;
+  italic: boolean;
+  bold: boolean;
+  underline: boolean;
+}
+
+const MARKUP = /<(\/?)([ibu])>|\n/g;
+
+/**
+ * Splits sanitised cue text into lines of styled spans. Cue text comes from subtitle files and
+ * downloads, so it is rendered as text nodes and never parsed as HTML.
+ */
+export function cueLines(text: string): CueSpan[][] {
+  const lines: CueSpan[][] = [[]];
+  const depth = { i: 0, b: 0, u: 0 };
+  const push = (part: string) => {
+    if (!part) return;
+    lines[lines.length - 1]!.push({
+      text: part,
+      italic: depth.i > 0,
+      bold: depth.b > 0,
+      underline: depth.u > 0,
+    });
+  };
+  let last = 0;
+  for (const m of text.matchAll(MARKUP)) {
+    push(text.slice(last, m.index));
+    last = m.index + m[0].length;
+    if (m[0] === '\n') lines.push([]);
+    else {
+      const tag = m[2] as 'i' | 'b' | 'u';
+      depth[tag] = Math.max(0, depth[tag] + (m[1] ? -1 : 1));
+    }
+  }
+  push(text.slice(last));
+  return lines;
 }
 
 /** Cues active at a time, in order. */

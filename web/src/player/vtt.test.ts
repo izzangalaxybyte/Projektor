@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeCues, parseTimestamp, parseVtt, sanitise } from './vtt.js';
+import { activeCues, cueLines, parseTimestamp, parseVtt, sanitise } from './vtt.js';
 
 const SAMPLE = `WEBVTT
 
@@ -40,5 +40,34 @@ describe('vtt', () => {
   });
   it('strips class and voice tags but keeps basic formatting', () => {
     expect(sanitise('<v Speaker>Hello <c.red>there</c> <u>you</u>')).toBe('Hello there <u>you</u>');
+  });
+  it('decodes direction marks and numeric entities, but not escaped ones', () => {
+    expect(sanitise('&lrm;שלום&rlm; &#233;&#xE9; &amp;#233; &amp;lt;')).toBe(
+      '‎שלום‏ éé &#233; &lt;',
+    );
+  });
+  it('splits cue text into styled spans per line', () => {
+    const plain = { italic: false, bold: false, underline: false };
+    expect(cueLines('One <i>two\nthree</i> <b>four</b>')).toEqual([
+      [
+        { ...plain, text: 'One ' },
+        { ...plain, text: 'two', italic: true },
+      ],
+      [
+        { ...plain, text: 'three', italic: true },
+        { ...plain, text: ' ' },
+        { ...plain, text: 'four', bold: true },
+      ],
+    ]);
+  });
+  it('keeps escaped and unterminated markup as text', () => {
+    const [cue] = parseVtt(
+      'WEBVTT\n\n00:01.000 --> 00:02.000\n&lt;img src=x onerror=alert(1)&gt;\n<img src=x onerror=alert(2)//',
+    );
+    expect(
+      cueLines(cue!.text)
+        .flat()
+        .map((s) => s.text),
+    ).toEqual(['<img src=x onerror=alert(1)>', '<img src=x onerror=alert(2)//']);
   });
 });
