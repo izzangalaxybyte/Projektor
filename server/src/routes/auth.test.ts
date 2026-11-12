@@ -31,6 +31,9 @@ describe('auth', () => {
         })
       ).statusCode,
     ).toBe(401);
+    // The router decodes the path before matching, so an encoded "/api" still reaches the route.
+    expect((await app.inject({ method: 'GET', url: '/%61pi/auth/me' })).statusCode).toBe(401);
+    expect((await app.inject({ method: 'GET', url: '/%61pi/libraries' })).statusCode).toBe(401);
     expect((await app.inject({ method: 'GET', url: '/api/health' })).statusCode).toBe(200);
     expect(json(await app.inject({ method: 'GET', url: '/api/auth/setup' }))).toEqual({
       needsSetup: true,
