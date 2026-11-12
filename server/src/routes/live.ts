@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { LiveStreamError } from '../live/relay.js';
@@ -266,7 +267,9 @@ export const liveRoutes: FastifyPluginAsyncZod = async (app) => {
         const session = app.liveHls.create({
           channelId: channel.id,
           kind: 'catchup',
-          sourceKey: `catchup:${programme.id}`,
+          // A key of its own: the relay shares one connection per key, which suits a live channel
+          // but would start a second viewer of this programme wherever the first had got to.
+          sourceKey: `catchup:${programme.id}:${randomUUID()}`,
           sourceUrl: client.timeshiftUrl(
             channel.id,
             new Date(start),
