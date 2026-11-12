@@ -9,6 +9,7 @@ import app.projektor.core.api.models.ComicFormat
 import app.projektor.core.comics.BookOrderKey
 import app.projektor.core.comics.ComicsRepository
 import app.projektor.core.comics.sortedInReadingOrder
+import app.projektor.core.store.SavedList
 import app.projektor.mobile.download.DownloadNotifications
 import app.projektor.mobile.download.DownloadService
 import app.projektor.mobile.download.DownloadState
@@ -26,8 +27,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.Json
 
 /** A comic kept on the phone: the book as the server described it, its file, and its cover. */
 @Serializable
@@ -59,9 +58,7 @@ data class ComicDownload(
 class ComicDownloadStore(context: Context, private val repo: () -> ComicsRepository?) {
     private val app = context.applicationContext
     private val manager by lazy { app.getSystemService(DownloadManager::class.java) }
-    private val json = Json { ignoreUnknownKeys = true }
-    private val serializer = ListSerializer(ComicDownload.serializer())
-    private val index = File(app.filesDir, "comic-downloads.json")
+    private val index = SavedList(File(app.filesDir, "comic-downloads.json"), ComicDownload.serializer()) { Log.w(TAG, "read index", it) }
     private val lock = Any()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private var pump: Job? = null
@@ -175,17 +172,13 @@ class ComicDownloadStore(context: Context, private val repo: () -> ComicsReposit
     private fun update(change: (List<ComicDownload>) -> List<ComicDownload>) {
         synchronized(lock) {
             _downloads.update(change)
-            runCatching {
-                val tmp = File(index.path + ".tmp")
-                tmp.writeText(json.encodeToString(serializer, _downloads.value))
-                tmp.renameTo(index)
-            }.onFailure { Log.w(TAG, "save index", it) }
+            runCatching { index.save(_downloads.value) }.onFailure { Log.w(TAG, "save index", it) }
         }
     }
 
     // Unfinished ones start over in line; one an older version handed to DownloadManager is taken back.
     private fun load(): List<ComicDownload> =
-        runCatching { json.decodeFromString(serializer, index.readText()) }.getOrDefault(emptyList())
+        index.load()
             .map { d ->
                 if (!d.isActive) return@map d
                 if (d.managerId >= 0) runCatching { manager.remove(d.managerId) }
