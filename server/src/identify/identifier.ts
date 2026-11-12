@@ -17,11 +17,33 @@ export interface IdentifySummary {
 
 /** Lowercased title without leading articles, used to group files under the same item. */
 export function sortKey(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/^(the|a|an)\s+/, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  const lower = title.toLowerCase().replace(/^(the|a|an)\s+/, '');
+  const latin = lower.replace(/[^a-z0-9]+/g, ' ').trim();
+  // A title with no a-z letter at all (Japanese, Cyrillic) keeps its own letters: reduced to
+  // a-z and digits it is empty or a bare number, and every such title in a library would be
+  // taken for one item. Any title with Latin letters keeps the key it has always had, so
+  // existing items are still found, bilingual release names included.
+  return /[a-z]/.test(latin) ? latin : lower.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+/**
+ * Gives movies and shows saved before titles in other scripts had keys of their own the key they
+ * get now, so the next file of one of them finds it instead of starting a second item. Only rows
+ * whose saved key has no a-z letter can differ.
+ */
+export function rekeyNonLatinTitles(db: Db): void {
+  for (const table of [schema.movies, schema.shows]) {
+    const rows = db
+      .select({ id: table.id, title: table.title, sortTitle: table.sortTitle })
+      .from(table)
+      .all();
+    for (const row of rows) {
+      if (/[a-z]/.test(row.sortTitle)) continue;
+      const key = sortKey(row.title);
+      if (key !== row.sortTitle)
+        db.update(table).set({ sortTitle: key }).where(eq(table.id, row.id)).run();
+    }
+  }
 }
 
 // Comic libraries never reach the identifier; their books are scanned by comics/scanner.ts.
@@ -115,6 +137,7 @@ export function identifyFiles(
 ): IdentifySummary {
   const summary: IdentifySummary = { movies: 0, episodes: 0, skipped: 0 };
   if (fileIds.length === 0) return summary;
+  rekeyNonLatinTitles(db);
 
   const files = db
     .select({

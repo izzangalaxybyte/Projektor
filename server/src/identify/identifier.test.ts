@@ -46,6 +46,20 @@ describe('sortKey', () => {
     expect(sortKey('Mr. Robot')).toBe('mr robot');
     expect(sortKey('A Quiet Place')).toBe('quiet place');
   });
+  it('keeps titles in other scripts apart', () => {
+    expect(sortKey('進撃の巨人')).toBe('進撃の巨人');
+    expect(sortKey('鬼滅の刃')).not.toBe(sortKey('進撃の巨人'));
+    expect(sortKey('進撃の巨人 2')).not.toBe(sortKey('鬼滅の刃 2'));
+    expect(sortKey('Ёлки (2010)')).toBe('ёлки 2010');
+  });
+  it('keys a bilingual title by its Latin part, as before', () => {
+    expect(sortKey('鬼灭之刃 / Kimetsu no Yaiba')).toBe('kimetsu no yaiba');
+    expect(sortKey('Attack on Titan - 進撃の巨人')).toBe('attack on titan');
+  });
+  it('keys accented Latin titles as before, so existing items are still found', () => {
+    expect(sortKey('Pokémon')).toBe('pok mon');
+    expect(sortKey('Amélie')).toBe('am lie');
+  });
 });
 
 describe('relativeParentDirs', () => {
@@ -59,6 +73,36 @@ describe('relativeParentDirs', () => {
 });
 
 describe('identifyFiles', () => {
+  it('finds a show in another script that was saved with the old empty key', async () => {
+    const root = tree(['進撃の巨人/Season 01/S01E02.mkv', '鬼滅の刃/Season 01/S01E01.mkv']);
+    const { db, id } = library('tv', root);
+    const ts = now();
+    db.insert(schema.shows)
+      .values({
+        id: 'saved',
+        libraryId: id,
+        title: '進撃の巨人',
+        sortTitle: '',
+        needsReview: true,
+        createdAt: ts,
+        updatedAt: ts,
+      })
+      .run();
+    const scan = await scanLibrary(db, id);
+    identifyFiles(db, scan.changedFileIds);
+    const shows = db.select().from(schema.shows).orderBy(schema.shows.title).all();
+    expect(shows.map((s) => [s.id === 'saved', s.title])).toEqual([
+      [true, '進撃の巨人'],
+      [false, '鬼滅の刃'],
+    ]);
+    const episodes = db
+      .select()
+      .from(schema.episodes)
+      .where(eq(schema.episodes.showId, 'saved'))
+      .all();
+    expect(episodes.map((e) => e.episodeNumber)).toEqual([2]);
+  });
+
   it('groups movie files into movies by title and year', async () => {
     const root = tree([
       'Heat (1995)/Heat.1995.1080p.mkv',
