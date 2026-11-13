@@ -1,6 +1,7 @@
 package app.projektor.player
 
 import android.text.SpannableStringBuilder
+import android.view.View
 import androidx.annotation.OptIn
 import androidx.media3.common.Player
 import androidx.media3.common.text.Cue
@@ -60,9 +61,10 @@ fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
  * picture counts, so letterboxed video with room below it does not move.
  *
  * The subtitle view lives inside the video frame, so when the video is zoomed to fill the screen
- * its bottom is cropped off with the picture; the part below the screen counts as overlap too, so
- * every line stays visible. The lift is worked out again whenever the subtitle view is laid out
- * (a resize-mode switch, rotation), since that happens after the call that asked for it.
+ * its edges are cropped off with the picture. It is then scaled down around the screen's centre to
+ * fit the screen, which puts every line, top or bottom, where fit mode would. This is worked out
+ * again whenever the subtitle view is laid out (a resize-mode switch, rotation), since that happens
+ * after the call that asked for it.
  */
 @OptIn(UnstableApi::class)
 fun PlayerView.liftSubtitles(controlsPx: Int) {
@@ -82,10 +84,23 @@ fun PlayerView.liftSubtitles(controlsPx: Int) {
 private fun PlayerView.applyLift(controlsPx: Int) {
     val subs = subtitleView ?: return
     if (subs.height == 0) return
-    val loc = IntArray(2).also(subs::getLocationInWindow)
-    val own = IntArray(2).also(::getLocationInWindow)
-    val gapBelow = (own[1] + height) - (loc[1] + subs.height)
-    val overlap = (controlsPx - gapBelow).coerceAtLeast(0)
+    // Where the subtitle view sits in this view, before scaling: it fills the video frame, which is
+    // a child of this view.
+    val frame = (subs.parent as? View)?.takeIf { it.parent === this }
+    val subsLeft = (frame?.left ?: 0) + subs.left
+    val subsTop = (frame?.top ?: 0) + subs.top
+    // Zoomed video is bigger than the screen; shrink the subtitles to the visible part, as they
+    // would be laid out in fit mode, so lines at the top and the bottom are not cropped.
+    val scale = minOf(1f, width.toFloat() / subs.width, height.toFloat() / subs.height)
+    val pivotY = height / 2f - subsTop
+    subs.pivotX = width / 2f - subsLeft
+    subs.pivotY = pivotY
+    subs.scaleX = scale
+    subs.scaleY = scale
+    val shownBottom = subsTop + pivotY + (subs.height - pivotY) * scale
+    val gapBelow = height - shownBottom
+    // In the subtitle view's own (unscaled) pixels.
+    val overlap = ((controlsPx - gapBelow).coerceAtLeast(0f) / scale).toInt()
     subs.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION + overlap.toFloat() / subs.height)
     for (i in 0 until subs.childCount) {
         val child = subs.getChildAt(i)
