@@ -364,8 +364,8 @@ fun PlayerScreen(container: AppContainer, fileId: String, itemId: String, startM
         AndroidView(
             factory = { ctx -> PlayerView(ctx).apply { useController = false; showWithStackedSubtitles(player) } },
             update = {
-                it.liftSubtitles(if (chromeShown) maxOf(seekBarPx, controlsInsetPx) else 0)
                 it.resizeMode = if (fill) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
+                it.liftSubtitles(if (chromeShown) maxOf(seekBarPx, controlsInsetPx) else 0)
             },
             modifier = Modifier.fillMaxSize(),
         )

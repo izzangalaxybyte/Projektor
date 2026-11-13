@@ -58,9 +58,28 @@ fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
  * are, or puts them back with 0. Cues get a larger bottom padding; the ASS layer, whose script
  * places its own lines, slides up as a whole. Only the part of the controls that overlaps the
  * picture counts, so letterboxed video with room below it does not move.
+ *
+ * The subtitle view lives inside the video frame, so when the video is zoomed to fill the screen
+ * its bottom is cropped off with the picture; the part below the screen counts as overlap too, so
+ * every line stays visible. The lift is worked out again whenever the subtitle view is laid out
+ * (a resize-mode switch, rotation), since that happens after the call that asked for it.
  */
 @OptIn(UnstableApi::class)
 fun PlayerView.liftSubtitles(controlsPx: Int) {
+    val subs = subtitleView ?: return
+    if (subs.getTag(R.id.projektor_lift_px) == null) {
+        subs.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            if (top != oldTop || bottom != oldBottom) {
+                post { applyLift(subs.getTag(R.id.projektor_lift_px) as? Int ?: 0) }
+            }
+        }
+    }
+    subs.setTag(R.id.projektor_lift_px, controlsPx)
+    applyLift(controlsPx)
+}
+
+@OptIn(UnstableApi::class)
+private fun PlayerView.applyLift(controlsPx: Int) {
     val subs = subtitleView ?: return
     if (subs.height == 0) return
     val loc = IntArray(2).also(subs::getLocationInWindow)
