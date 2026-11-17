@@ -4,4939 +4,5004 @@
  */
 
 export interface paths {
-    "/api/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liveness check */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["HealthResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/setup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Whether the first admin profile still needs creating */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SetupStatus"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Create the first admin profile and log it in */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["SetupRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LoginResponse"];
-                    };
-                };
-                /** @description Default Response */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/profiles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Profiles to pick from on the login screen */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Profile"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Exchange a profile id for a bearer token */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["LoginRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LoginResponse"];
-                    };
-                };
-                /** @description Default Response */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The profile behind the current token */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Profile"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke the current token */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Devices logged in to this profile */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Session"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/sessions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Log out another device */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/libraries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List libraries */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Library"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Create a library (admin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateLibraryRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Library"];
-                    };
-                };
-                /** @description Default Response */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/libraries/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a library */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Library"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        /** Delete a library and everything indexed from it (admin) */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/libraries/{id}/scan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Status of the latest scan of this library */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ScanStatus"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Queue a scan of this library (admin)
-         * @description Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ScanStatus"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Browse or search items
-         * @description Without kind or parentId, lists movies and shows. With parentId set to a show, lists its seasons and season-less episodes; set to a season, lists its episodes.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    libraryKind?: components["schemas"]["LibraryKindInput"];
-                    kind?: components["schemas"]["ItemKindInput"];
-                    /** @description Opaque identifier */
-                    parentId?: string;
-                    search?: string;
-                    needsReview?: "true" | "false";
-                    /** @description Comma-separated genres or tags (case-insensitive); only items with every one are listed */
-                    genre?: string;
-                    /** @description rating is the best score there is (AniList, else MAL, else TMDB); anilist, mal, tmdb and popularity sort by that source. Scores and popularity sort highest first, unscored last. */
-                    sort?: "title" | "year" | "added" | "lastPlayed" | "rating" | "anilist" | "mal" | "tmdb" | "popularity";
-                    offset?: number;
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            items: components["schemas"]["ItemSummary"][];
-                            total: number;
-                            offset: number;
-                            limit: number;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items/genres": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Genres and tags to filter by
-         * @description The genres and AniList tags across the movies and shows of a library kind, with how many titles have each. Pass one or more as `genre` to GET /api/items.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    libraryKind?: components["schemas"]["LibraryKindInput"];
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemFacets"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Item detail with files, streams, and children */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemDetail"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items/{id}/candidates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search TMDB (and AniList for anime) for possible matches (admin) */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Defaults to the item title */
-                    query?: string;
-                    year?: number;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["MatchCandidate"][];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items/{id}/match": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Apply a chosen match and refetch metadata (admin)
-         * @description Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["FixMatchRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemDetail"];
-                    };
-                };
-                /** @description Default Response */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/items/{id}/next": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The episode that follows this one in its show */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemSummary"] | null;
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/images/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cached artwork, optionally resized */
-        get: {
-            parameters: {
-                query?: {
-                    w?: number;
-                };
-                header?: never;
-                path: {
-                    key: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Server settings (admin). Secrets are masked. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SettingsView"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update settings (admin) */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["SettingsUpdateInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SettingsView"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/api/files/{id}/subtitles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Text subtitle tracks available for a file */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SubtitleTrack"][];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/files/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Direct play: the original file with byte-range support
-         * @description Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                416: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/playback/decide": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Choose direct play, remux, or transcode for a file and device profile
-         * @description Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PlaybackDecideRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["PlaybackDecision"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/playback/track-choice": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Remember an audio or subtitle pick for the file's show
-         * @description Later episodes of the show start with the same tracks, matched by language and title. Movies are ignored.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["TrackChoiceRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/playback/sessions/{id}/master.m3u8": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** HLS master playlist for a session */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/playback/sessions/{id}/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * HLS media playlist, init segment, or media segment
-         * @description Starts ffmpeg on first request and waits up to 20 seconds for the requested file.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                    name: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                501: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                504: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/playback/sessions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Stop a session and delete its segments */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/subtitles/{id}.vtt": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** A subtitle track as WebVTT, converted from its source on first request */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/subtitles/{id}.ass": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** An ASS or SSA subtitle track as written, for clients that render it with libass */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/subtitles/{id}/fonts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Fonts attached to the media file of an ASS or SSA subtitle */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SubtitleFont"][];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/subtitles/{id}/fonts/{index}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One attached font, by its position in the font list */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                    index: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Report the playback position of a movie or episode
-         * @description Positions at or past 90% of the duration mark the item watched. Send every few seconds and on pause or stop.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ProgressUpdateRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProgressState"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/progress/{itemId}/watched": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark a movie or episode watched or unwatched */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    itemId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        watched: boolean;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProgressState"] | null;
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/progress/continue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** In-progress movies and episodes plus next episodes, most recent first */
-        get: {
-            parameters: {
-                query?: {
-                    libraryKind?: components["schemas"]["LibraryKindInput"];
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemSummary"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/favorites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Favorite movies and shows, most recently added first */
-        get: {
-            parameters: {
-                query?: {
-                    libraryKind?: components["schemas"]["LibraryKindInput"];
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ItemSummary"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/favorites/{itemId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Add or remove a movie, show or comic series from favorites */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    itemId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        favorite: boolean;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            favorite: boolean;
-                        };
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** All profiles (admin) */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Profile"][];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Create a profile (admin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateUserRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Profile"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a profile and its sessions and watch state (admin). You cannot delete yourself. */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Provider configuration and last refresh */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveStatus"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pull channels and guide from the provider now (admin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveStatus"];
-                    };
-                };
-                /** @description Default Response */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/categories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Live channel categories */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveCategory"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/channels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Live channels with what is on now and next */
-        get: {
-            parameters: {
-                query?: {
-                    category?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveChannel"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/channels/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One channel */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveChannel"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/guide": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Programmes for a channel in a time window */
-        get: {
-            parameters: {
-                query: {
-                    channel: string;
-                    /** @description Defaults to now minus 2 hours */
-                    from?: string;
-                    /** @description Defaults to from plus 24 hours */
-                    to?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveProgramme"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/decide": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode
-         * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["LiveDecideRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LivePlaybackDecision"];
-                    };
-                };
-                /** @description Default Response */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/channels/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The channel's MPEG-TS stream, relayed from the provider
-         * @description One provider connection per channel is shared by every viewer and closes shortly after the last one leaves. Players that cannot set headers may pass `?access_token=`.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/sessions/{id}/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Live HLS playlist or segment
-         * @description `index.m3u8` is a sliding window of the last six 4-second segments; `seg-N.ts` are the segments. The first request starts ffmpeg.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                    name: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                504: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/sessions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Stop a live HLS session */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/vod/categories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** IPTV movie categories */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveCategory"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/vod": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** IPTV movies, paged */
-        get: {
-            parameters: {
-                query?: {
-                    category?: string;
-                    search?: string;
-                    sort?: "title" | "added";
-                    offset?: number;
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IptvMoviePage"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/vod/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One IPTV movie */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IptvMovie"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/vod/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The movie file, passed through from the provider with byte ranges
-         * @description Send `Range` to seek. Players that cannot set headers may pass `?access_token=`.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/series/categories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** IPTV series categories */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveCategory"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/series": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** IPTV series, paged */
-        get: {
-            parameters: {
-                query?: {
-                    category?: string;
-                    search?: string;
-                    sort?: "title" | "added";
-                    offset?: number;
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IptvSeriesPage"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/series/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * One IPTV series with its seasons and episodes
-         * @description Episodes are pulled from the provider on first open and refreshed after a day.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["IptvSeriesDetail"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/live/series/episodes/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The episode file, passed through from the provider with byte ranges */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/recordings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recordings, newest first */
-        get: {
-            parameters: {
-                query?: {
-                    state?: components["schemas"]["RecordingStateInput"];
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Recording"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Record a channel: now, at a time, or a guide programme
-         * @description With `programmeId` the recording runs from the programme start (or now) to its end plus padding. Otherwise it starts at `startAt` (default now) and runs `durationMinutes`, or until stopped.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateRecordingRequestInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Recording"];
-                    };
-                };
-                /** @description Default Response */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/recordings/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One recording */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Recording"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        /** Delete a recording and its file */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/recordings/{id}/stop": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Stop a running recording (kept as done) or cancel a scheduled one (removed) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Recording"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/recordings/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The recorded MPEG-TS file with byte ranges; grows while recording */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                416: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/series": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Comic and manga series
-         * @description sort=title (default), added (newest first), or recent (series read most recently, read ones only).
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Opaque identifier */
-                    libraryId?: string;
-                    search?: string;
-                    sort?: "title" | "added" | "recent";
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicSeries"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/favorites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Favorite series, most recently added first
-         * @description Add or remove one with PUT /api/favorites/{seriesId}.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicSeries"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/series/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** A series and its books in reading order */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicSeriesDetail"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/series/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark every book of a series read or unread */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        read: boolean;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/books/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** A book, with the books before and after it */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicBookDetail"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/books/{id}/pages/{page}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * One page image
-         * @description Pages count from 0. Without `w` an archive page is the original image, byte for byte; with `w` (or always for PDF, 2048 wide by default) a JPEG at that width. Readers that cannot set headers may pass `?access_token=`.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    w?: number;
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                    page: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/books/{id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * The book for reading offline
-         * @description PDFs as they are (with byte ranges). Archives as an uncompressed CBZ of the original page images named 0001.jpg, 0002.png ... in reading order.
-         */
-        get: {
-            parameters: {
-                query?: {
-                    access_token?: string;
-                };
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Default Response */
-                416: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/books/{id}/progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Save the page being read
-         * @description Reaching the last page marks the book read. Send on every page turn (debounced) and when the reader closes.
-         */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ComicProgressUpdateInput"];
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicProgress"];
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/books/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark a book read, or unread (removes it from history) */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Opaque identifier */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        read: boolean;
-                    };
-                };
-            };
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicProgress"] | null;
-                    };
-                };
-                /** @description Default Response */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/continue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Continue reading: per series, the unfinished book or the next one, most recent first */
-        get: {
-            parameters: {
-                query?: {
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicBook"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/comics/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Reading history: every book opened, most recently read first */
-        get: {
-            parameters: {
-                query?: {
-                    offset?: number;
-                    limit?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Default Response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ComicBook"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+  '/api/health': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Liveness check */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['HealthResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/setup': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Whether the first admin profile still needs creating */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SetupStatus'];
+          };
+        };
+      };
+    };
+    put?: never;
+    /** Create the first admin profile and log it in */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['SetupRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LoginResponse'];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/profiles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Profiles to pick from on the login screen */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Profile'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Exchange a profile id for a bearer token */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['LoginRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LoginResponse'];
+          };
+        };
+        /** @description Default Response */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        429: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The profile behind the current token */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Profile'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/logout': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Revoke the current token */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sessions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Devices logged in to this profile */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Session'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Log out another device */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/libraries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List libraries */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Library'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    /** Create a library (admin) */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['CreateLibraryRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Library'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/libraries/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a library */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Library'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    /** Delete a library and everything indexed from it (admin) */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/libraries/{id}/scan': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Status of the latest scan of this library */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ScanStatus'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    /**
+     * Queue a scan of this library (admin)
+     * @description Returns immediately with the current status. Poll GET /libraries/{id}/scan until state is idle.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        202: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ScanStatus'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Browse or search items
+     * @description Without kind or parentId, lists movies and shows. With parentId set to a show, lists its seasons and season-less episodes; set to a season, lists its episodes.
+     */
+    get: {
+      parameters: {
+        query?: {
+          libraryKind?: components['schemas']['LibraryKindInput'];
+          kind?: components['schemas']['ItemKindInput'];
+          /** @description Opaque identifier */
+          parentId?: string;
+          search?: string;
+          needsReview?: 'true' | 'false';
+          /** @description Comma-separated genres or tags (case-insensitive); only items with every one are listed */
+          genre?: string;
+          /** @description rating is the best score there is (AniList, else MAL, else TMDB); anilist, mal, tmdb and popularity sort by that source. Scores and popularity sort highest first, unscored last. */
+          sort?:
+            | 'title'
+            | 'year'
+            | 'added'
+            | 'lastPlayed'
+            | 'rating'
+            | 'anilist'
+            | 'mal'
+            | 'tmdb'
+            | 'popularity';
+          offset?: number;
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              items: components['schemas']['ItemSummary'][];
+              total: number;
+              offset: number;
+              limit: number;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/genres': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Genres and tags to filter by
+     * @description The genres and AniList tags across the movies and shows of a library kind, with how many titles have each. Pass one or more as `genre` to GET /api/items.
+     */
+    get: {
+      parameters: {
+        query?: {
+          libraryKind?: components['schemas']['LibraryKindInput'];
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemFacets'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Item detail with files, streams, and children */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemDetail'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}/candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search TMDB (and AniList for anime) for possible matches (admin) */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Defaults to the item title */
+          query?: string;
+          year?: number;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['MatchCandidate'][];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}/match': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply a chosen match and refetch metadata (admin)
+     * @description Movies and TV shows take tmdbId. Anime shows take anilistId, tmdbId, and/or seasonOffset.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['FixMatchRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemDetail'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/items/{id}/next': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The episode that follows this one in its show */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemSummary'] | null;
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/images/{key}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Cached artwork, optionally resized */
+    get: {
+      parameters: {
+        query?: {
+          w?: number;
+        };
+        header?: never;
+        path: {
+          key: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Server settings (admin). Secrets are masked. */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SettingsView'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update settings (admin) */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['SettingsUpdateInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SettingsView'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
+  '/api/files/{id}/subtitles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Text subtitle tracks available for a file */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SubtitleTrack'][];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/files/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Direct play: the original file with byte-range support
+     * @description Send `Range: bytes=a-b` for partial content. Players that cannot set headers may pass the bearer token as `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        416: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/decide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Choose direct play, remux, or transcode for a file and device profile
+     * @description Direct play returns the file URL. Remux and transcode create an HLS session and return its master playlist URL.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['PlaybackDecideRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['PlaybackDecision'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/track-choice': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remember an audio or subtitle pick for the file's show
+     * @description Later episodes of the show start with the same tracks, matched by language and title. Movies are ignored.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['TrackChoiceRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}/master.m3u8': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** HLS master playlist for a session */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * HLS media playlist, init segment, or media segment
+     * @description Starts ffmpeg on first request and waits up to 20 seconds for the requested file.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+          name: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        501: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        504: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/playback/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Stop a session and delete its segments */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}.vtt': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A subtitle track as WebVTT, converted from its source on first request */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}.ass': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** An ASS or SSA subtitle track as written, for clients that render it with libass */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}/fonts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Fonts attached to the media file of an ASS or SSA subtitle */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['SubtitleFont'][];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/subtitles/{id}/fonts/{index}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One attached font, by its position in the font list */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+          index: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Report the playback position of a movie or episode
+     * @description Positions at or past 90% of the duration mark the item watched. Send every few seconds and on pause or stop.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['ProgressUpdateRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ProgressState'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/progress/{itemId}/watched': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Mark a movie or episode watched or unwatched */
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          itemId: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            watched: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ProgressState'] | null;
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/progress/continue': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** In-progress movies and episodes plus next episodes, most recent first */
+    get: {
+      parameters: {
+        query?: {
+          libraryKind?: components['schemas']['LibraryKindInput'];
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemSummary'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/progress/continue/{itemId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Take a movie or episode off continue watching
+     * @description Leaves its progress and watched mark alone. It comes back when it is played again, or, for a next episode, when another episode of the show is finished.
+     */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          itemId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/favorites': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Favorite movies and shows, most recently added first */
+    get: {
+      parameters: {
+        query?: {
+          libraryKind?: components['schemas']['LibraryKindInput'];
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ItemSummary'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/favorites/{itemId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Add or remove a movie, show or comic series from favorites */
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          itemId: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            favorite: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              favorite: boolean;
+            };
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** All profiles (admin) */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Profile'][];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    /** Create a profile (admin) */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['CreateUserRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Profile'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/users/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a profile and its sessions and watch state (admin). You cannot delete yourself. */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Provider configuration and last refresh */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveStatus'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/refresh': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pull channels and guide from the provider now (admin) */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveStatus'];
+          };
+        };
+        /** @description Default Response */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/categories': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Live channel categories */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveCategory'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/channels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Live channels with what is on now and next */
+    get: {
+      parameters: {
+        query?: {
+          category?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveChannel'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/channels/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One channel */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveChannel'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/guide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Programmes for a channel in a time window */
+    get: {
+      parameters: {
+        query: {
+          channel: string;
+          /** @description Defaults to now minus 2 hours */
+          from?: string;
+          /** @description Defaults to from plus 24 hours */
+          to?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveProgramme'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/decide': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Choose how to play a channel, a catch-up programme, an IPTV movie, or an episode
+     * @description Profiles that list the `ts` container get the relay URL. Others get a live HLS session: video copied, audio as stereo AAC. With `programmeId`, a finished programme on a catch-up channel is packaged as seekable HLS for every device.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['LiveDecideRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LivePlaybackDecision'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/channels/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The channel's MPEG-TS stream, relayed from the provider
+     * @description One provider connection per channel is shared by every viewer and closes shortly after the last one leaves. Players that cannot set headers may pass `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        502: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/sessions/{id}/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Live HLS playlist or segment
+     * @description `index.m3u8` is a sliding window of the last six 4-second segments; `seg-N.ts` are the segments. The first request starts ffmpeg.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+          name: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        502: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        504: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Stop a live HLS session */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/vod/categories': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** IPTV movie categories */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveCategory'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/vod': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** IPTV movies, paged */
+    get: {
+      parameters: {
+        query?: {
+          category?: string;
+          search?: string;
+          sort?: 'title' | 'added';
+          offset?: number;
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['IptvMoviePage'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/vod/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One IPTV movie */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['IptvMovie'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/vod/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The movie file, passed through from the provider with byte ranges
+     * @description Send `Range` to seek. Players that cannot set headers may pass `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        502: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/series/categories': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** IPTV series categories */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['LiveCategory'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/series': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** IPTV series, paged */
+    get: {
+      parameters: {
+        query?: {
+          category?: string;
+          search?: string;
+          sort?: 'title' | 'added';
+          offset?: number;
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['IptvSeriesPage'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/series/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One IPTV series with its seasons and episodes
+     * @description Episodes are pulled from the provider on first open and refreshed after a day.
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['IptvSeriesDetail'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/live/series/episodes/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The episode file, passed through from the provider with byte ranges */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        502: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/recordings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recordings, newest first */
+    get: {
+      parameters: {
+        query?: {
+          state?: components['schemas']['RecordingStateInput'];
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Recording'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    /**
+     * Record a channel: now, at a time, or a guide programme
+     * @description With `programmeId` the recording runs from the programme start (or now) to its end plus padding. Otherwise it starts at `startAt` (default now) and runs `durationMinutes`, or until stopped.
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['CreateRecordingRequestInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Recording'];
+          };
+        };
+        /** @description Default Response */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/recordings/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One recording */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Recording'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    /** Delete a recording and its file */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/recordings/{id}/stop': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stop a running recording (kept as done) or cancel a scheduled one (removed) */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['Recording'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/recordings/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The recorded MPEG-TS file with byte ranges; grows while recording */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        416: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/series': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Comic and manga series
+     * @description sort=title (default), added (newest first), or recent (series read most recently, read ones only).
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Opaque identifier */
+          libraryId?: string;
+          search?: string;
+          sort?: 'title' | 'added' | 'recent';
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicSeries'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/favorites': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Favorite series, most recently added first
+     * @description Add or remove one with PUT /api/favorites/{seriesId}.
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicSeries'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/series/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A series and its books in reading order */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicSeriesDetail'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/series/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Mark every book of a series read or unread */
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            read: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        204: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/books/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A book, with the books before and after it */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicBookDetail'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/books/{id}/pages/{page}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One page image
+     * @description Pages count from 0. Without `w` an archive page is the original image, byte for byte; with `w` (or always for PDF, 2048 wide by default) a JPEG at that width. Readers that cannot set headers may pass `?access_token=`.
+     */
+    get: {
+      parameters: {
+        query?: {
+          w?: number;
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+          page: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/books/{id}/file': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The book for reading offline
+     * @description PDFs as they are (with byte ranges). Archives as an uncompressed CBZ of the original page images named 0001.jpg, 0002.png ... in reading order.
+     */
+    get: {
+      parameters: {
+        query?: {
+          access_token?: string;
+        };
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+        /** @description Default Response */
+        416: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/books/{id}/progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save the page being read
+     * @description Reaching the last page marks the book read. Send on every page turn (debounced) and when the reader closes.
+     */
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['ComicProgressUpdateInput'];
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicProgress'];
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/books/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Mark a book read, or unread (removes it from history) */
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Opaque identifier */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            read: boolean;
+          };
+        };
+      };
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicProgress'] | null;
+          };
+        };
+        /** @description Default Response */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ErrorResponse'];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/continue': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Continue reading: per series, the unfinished book or the next one, most recent first */
+    get: {
+      parameters: {
+        query?: {
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicBook'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/comics/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Reading history: every book opened, most recently read first */
+    get: {
+      parameters: {
+        query?: {
+          offset?: number;
+          limit?: number;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ComicBook'][];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** @enum {string} */
-        LibraryKindInput: "movie" | "tv" | "anime" | "comic";
-        /** @enum {string} */
-        ItemKindInput: "movie" | "show" | "season" | "episode";
-        ErrorResponseInput: {
-            statusCode: number;
-            error: string;
-            message: string;
-        };
-        ProfileInput: {
-            /** @description Opaque identifier */
-            id: string;
-            name: string;
-            isAdmin: boolean;
-            avatarColor: string;
-        };
-        /** @description True until the first admin profile exists */
-        SetupStatusInput: {
-            needsSetup: boolean;
-        };
-        SetupRequestInput: {
-            name: string;
-        };
-        LoginRequestInput: {
-            /** @description Opaque identifier */
-            profileId: string;
-            deviceName: string;
-        };
-        LoginResponseInput: {
-            token: string;
-            profile: components["schemas"]["ProfileInput"];
-        };
-        SessionInput: {
-            /** @description Opaque identifier */
-            id: string;
-            deviceName: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            lastSeenAt: string;
-            current: boolean;
-        };
-        LibraryInput: {
-            /** @description Opaque identifier */
-            id: string;
-            name: string;
-            kind: components["schemas"]["LibraryKindInput"];
-            paths: string[];
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-            lastScannedAt: string | null;
-        };
-        CreateLibraryRequestInput: {
-            name: string;
-            kind: components["schemas"]["LibraryKindInput"];
-            paths: string[];
-        };
-        ScanStatusInput: {
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @enum {string} */
-            state: "idle" | "running";
-            phase: ("walking" | "probing" | "identifying" | "matching") | null;
-            filesSeen: number;
-            filesChanged: number;
-            filesMissing: number;
-            filesProbed: number;
-            /** @description Files ffprobe could not read */
-            filesFailed: number;
-            /** @description Files linked to a movie or episode this scan */
-            itemsLinked: number;
-            /** @description Items matched to TMDB this scan */
-            itemsMatched: number;
-            /** @description Items TMDB search could not match confidently */
-            itemsUnmatched: number;
-            startedAt: string | null;
-            finishedAt: string | null;
-            /** @description Set when the last scan failed */
-            error: string | null;
-        };
-        ProgressStateInput: {
-            positionMs: number;
-            durationMs: number;
-            watched: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            updatedAt: string;
-        };
-        /** @description Audience scores by source; anime has all three */
-        ItemRatingsInput: {
-            /** @description AniList average score, out of ten */
-            anilist: number | null;
-            /** @description MyAnimeList score, out of ten */
-            mal: number | null;
-            /** @description TMDB vote average, out of ten */
-            tmdb: number | null;
-        };
-        ItemSummaryInput: {
-            /** @description Opaque identifier */
-            id: string;
-            kind: components["schemas"]["ItemKindInput"];
-            libraryKind: components["schemas"]["LibraryKindInput"];
-            title: string;
-            year: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            seasonNumber: number | null;
-            episodeNumber: number | null;
-            showTitle: string | null;
-            needsReview: boolean;
-            progress: components["schemas"]["ProgressStateInput"] | null;
-            /** @description Movies and shows in the user's favorites; always false otherwise. */
-            favorite: boolean;
-            /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
-            runtimeMs: number | null;
-            /** @description Movies and shows; empty otherwise */
-            genres: string[];
-            ratings: components["schemas"]["ItemRatingsInput"];
-        };
-        StreamInfoInput: {
-            index: number;
-            /** @enum {string} */
-            type: "video" | "audio" | "subtitle";
-            codec: string;
-            language: string | null;
-            title: string | null;
-            isDefault: boolean;
-            isForced: boolean;
-            width: number | null;
-            height: number | null;
-            channels: number | null;
-            /** @description Video bits per sample; null when unknown */
-            bitDepth: number | null;
-            /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
-            hdr: boolean;
-        };
-        SubtitleTrackInput: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @enum {string} */
-            source: "embedded" | "external" | "opensubtitles";
-            streamIndex: number | null;
-            language: string | null;
-            title: string | null;
-            /** @description Source format: subrip, ass, mov_text, webvtt, ... */
-            format: string;
-            /** @description WebVTT URL under /api/subtitles */
-            url: string;
-            /** @description ASS and SSA tracks: the original script, styling intact, for libass */
-            assUrl: string | null;
-            /** @description ASS and SSA tracks: lists the fonts attached to the media file */
-            fontsUrl: string | null;
-        };
-        SubtitleFontInput: {
-            /** @description The attachment file name in the media file */
-            name: string;
-            url: string;
-        };
-        MediaFileInput: {
-            /** @description Opaque identifier */
-            id: string;
-            fileName: string;
-            sizeBytes: number;
-            container: string;
-            durationMs: number;
-            bitrate: number | null;
-            streams: components["schemas"]["StreamInfoInput"][];
-            subtitles: components["schemas"]["SubtitleTrackInput"][];
-        };
-        ItemDetailInput: {
-            /** @description Opaque identifier */
-            id: string;
-            kind: components["schemas"]["ItemKindInput"];
-            libraryKind: components["schemas"]["LibraryKindInput"];
-            title: string;
-            year: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            seasonNumber: number | null;
-            episodeNumber: number | null;
-            showTitle: string | null;
-            needsReview: boolean;
-            progress: components["schemas"]["ProgressStateInput"] | null;
-            /** @description Movies and shows in the user's favorites; always false otherwise. */
-            favorite: boolean;
-            /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
-            runtimeMs: number | null;
-            /** @description Movies and shows; empty otherwise */
-            genres: string[];
-            ratings: components["schemas"]["ItemRatingsInput"];
-            overview: string | null;
-            tagline: string | null;
-            /** @description Anime: AniList tags, strongest first */
-            tags: string[];
-            /** @description Anime: MAL age rating, e.g. PG-13 */
-            ageRating: string | null;
-            /** @description Anime: AniList users with it on a list */
-            popularity: number | null;
-            rating: number | null;
-            airDate: string | null;
-            tmdbId: number | null;
-            anilistId: number | null;
-            files: components["schemas"]["MediaFileInput"][];
-            /** @description Seasons of a show, episodes of a season */
-            children: components["schemas"]["ItemSummaryInput"][];
-        };
-        ItemFacetInput: {
-            name: string;
-            count: number;
-        };
-        ItemFacetsInput: {
-            /** @description Most common first */
-            genres: components["schemas"]["ItemFacetInput"][];
-            /** @description AniList tags on at least two titles, most common first */
-            tags: components["schemas"]["ItemFacetInput"][];
-        };
-        MatchCandidateInput: {
-            /** @enum {string} */
-            source: "tmdb" | "anilist";
-            id: number;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            /** @description Remote poster URL for preview; not cached */
-            posterUrl: string | null;
-            /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
-            score: number;
-        };
-        FixMatchRequestInput: {
-            tmdbId?: number;
-            anilistId?: number;
-            /** @description Anime only: shift when mapping absolute episodes onto TMDB seasons */
-            seasonOffset?: number;
-        };
-        DeviceProfileInput: {
-            name: string;
-            /** @description e.g. mp4, mkv, webm */
-            containers: string[];
-            /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
-            videoCodecs: string[];
-            /** @description e.g. aac, ac3, eac3, opus, flac */
-            audioCodecs: string[];
-            maxWidth: number | null;
-            /** @description bits per second */
-            maxBitrate: number | null;
-            /** @enum {string} */
-            hlsSegmentContainer: "ts" | "fmp4";
-            /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
-            hdr?: boolean;
-        };
-        PlaybackDecideRequestInput: {
-            /** @description Opaque identifier */
-            fileId: string;
-            profile: components["schemas"]["DeviceProfileInput"];
-            audioStreamIndex?: number;
-            subtitleStreamIndex?: number;
-            /** @default 0 */
-            startPositionMs: number;
-        };
-        /** @enum {string} */
-        PlaybackMethodInput: "direct" | "remux" | "transcode";
-        PlaybackDecisionInput: {
-            method: components["schemas"]["PlaybackMethodInput"];
-            /** @enum {string} */
-            video: "copy" | "transcode";
-            /** @enum {string} */
-            audio: "copy" | "transcode" | "none";
-            /** @description Relative URL of the media or HLS master playlist */
-            url: string;
-            sessionId: string | null;
-            reason: string;
-            /** @description Text subtitles available for this file as WebVTT */
-            subtitles: components["schemas"]["SubtitleTrackInput"][];
-            /** @description The audio stream played: the request's, else the one last picked for this show; null leaves it to the player */
-            audioStreamIndex: number | null;
-            /** @description The subtitle last picked for this show, matched in this file; null when none */
-            preferredSubtitleId: string | null;
-            /** @description Subtitles were last turned off for this show */
-            subtitlesOff: boolean;
-        };
-        TrackChoiceRequestInput: {
-            /** @description Opaque identifier */
-            fileId: string;
-            /** @description The audio stream picked */
-            audioStreamIndex?: number;
-            /** @description The subtitle picked */
-            subtitleId?: string;
-            /** @description Subtitles were turned off */
-            subtitlesOff?: boolean;
-        };
-        ProgressUpdateRequestInput: {
-            /** @description Opaque identifier */
-            itemId: string;
-            positionMs: number;
-            durationMs: number;
-        };
-        SecretStatusInput: {
-            set: boolean;
-            /** @description Last characters of the stored value, for recognition */
-            hint: string | null;
-        };
-        SettingsViewInput: {
-            tmdbApiKey: components["schemas"]["SecretStatusInput"];
-            openSubtitlesApiKey: components["schemas"]["SecretStatusInput"];
-            openSubtitlesUsername: string | null;
-            openSubtitlesPassword: components["schemas"]["SecretStatusInput"];
-            /** @description Xtream Codes server URL; defaults to the owner's provider */
-            iptvUrl: string;
-            iptvUsername: string | null;
-            iptvPassword: components["schemas"]["SecretStatusInput"];
-        };
-        /** @description Only fields present are changed */
-        SettingsUpdateInput: {
-            /** @description TMDB v3 API key or v4 read access token. Null clears it. */
-            tmdbApiKey?: string | null;
-            openSubtitlesApiKey?: string | null;
-            openSubtitlesUsername?: string | null;
-            openSubtitlesPassword?: string | null;
-            iptvUrl?: string | null;
-            iptvUsername?: string | null;
-            iptvPassword?: string | null;
-        };
-        LiveCategoryInput: {
-            id: string;
-            name: string;
-            /** @enum {string} */
-            kind: "live" | "vod" | "series";
-        };
-        LiveProgrammeInput: {
-            id: string;
-            title: string;
-            description: string | null;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            startAt: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            endAt: string;
-        };
-        LiveChannelInput: {
-            id: string;
-            name: string;
-            number: number | null;
-            logoUrl: string | null;
-            categoryId: string | null;
-            hasArchive: boolean;
-            archiveDays: number;
-            /** @description Programme on air at request time, if the guide knows */
-            now: components["schemas"]["LiveProgrammeInput"] | null;
-            next: components["schemas"]["LiveProgrammeInput"] | null;
-        };
-        LiveStatusInput: {
-            /** @description Provider URL, username, and password are all set */
-            configured: boolean;
-            refreshing: boolean;
-            lastRefreshAt: string | null;
-            lastError: string | null;
-            channels: number;
-            programmes: number;
-            /** @description Provider's account status, e.g. Active */
-            accountStatus: string | null;
-            accountExpiresAt: string | null;
-            movies: number;
-            series: number;
-            /** @description TMDB matching of provider titles is running */
-            matching: boolean;
-        };
-        LiveDecideRequestInput: {
-            /** @description Required unless vodId or episodeId is given */
-            channelId?: string;
-            profile: components["schemas"]["DeviceProfileInput"];
-            /** @description An IPTV movie */
-            vodId?: string;
-            /** @description An IPTV series episode */
-            episodeId?: string;
-            /** @description A past programme on a catch-up channel; omit for the live stream */
-            programmeId?: string;
-            /** @description A recording made by the server */
-            recordingId?: string;
-        };
-        LivePlaybackDecisionInput: {
-            /**
-             * @description direct: raw MPEG-TS relay; hls: live playlist
-             * @enum {string}
-             */
-            method: "direct" | "hls";
-            /** @description Relative URL of the TS stream or the HLS playlist */
-            url: string;
-            sessionId: string | null;
-            reason: string;
-            /** @enum {string} */
-            kind: "live" | "catchup" | "vod" | "recording";
-            /** @description Programme length for catch-up (seekable); null while live */
-            durationMs: number | null;
-            /** @description Programme title for catch-up */
-            title: string | null;
-        };
-        IptvMovieInput: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            runtimeMs: number | null;
-            /** @description Cached TMDB artwork; null when unmatched */
-            posterKey: string | null;
-            backdropKey: string | null;
-            /** @description The provider's own cover image URL */
-            logoUrl: string | null;
-            categoryId: string | null;
-            containerExtension: string;
-            needsReview: boolean;
-            tmdbId: number | null;
-            addedAt: string | null;
-        };
-        IptvMoviePageInput: {
-            items: components["schemas"]["IptvMovieInput"][];
-            total: number;
-            offset: number;
-        };
-        IptvSeriesInput: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            coverUrl: string | null;
-            categoryId: string | null;
-            needsReview: boolean;
-            tmdbId: number | null;
-        };
-        IptvSeriesPageInput: {
-            items: components["schemas"]["IptvSeriesInput"][];
-            total: number;
-            offset: number;
-        };
-        IptvEpisodeInput: {
-            id: string;
-            seriesId: string;
-            seasonNumber: number;
-            episodeNumber: number;
-            title: string;
-            overview: string | null;
-            imageUrl: string | null;
-            durationMs: number | null;
-            containerExtension: string;
-        };
-        IptvSeriesDetailInput: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            coverUrl: string | null;
-            categoryId: string | null;
-            needsReview: boolean;
-            tmdbId: number | null;
-            seasons: {
-                number: number;
-                episodes: components["schemas"]["IptvEpisodeInput"][];
-            }[];
-        };
-        /** @enum {string} */
-        RecordingStateInput: "scheduled" | "recording" | "done" | "failed";
-        RecordingInput: {
-            /** @description Opaque identifier */
-            id: string;
-            channelId: string;
-            channelName: string;
-            channelLogoUrl: string | null;
-            title: string;
-            description: string | null;
-            programmeId: string | null;
-            /**
-             * Format: date-time
-             * @description Planned start
-             */
-            startAt: string;
-            /** @description Planned end including padding; null until stopped by hand */
-            endAt: string | null;
-            actualStartAt: string | null;
-            actualEndAt: string | null;
-            state: components["schemas"]["RecordingStateInput"];
-            sizeBytes: number;
-            /** @description Measured once the recording is done */
-            durationMs: number | null;
-            error: string | null;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-        };
-        CreateRecordingRequestInput: {
-            channelId: string;
-            /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
-            programmeId?: string;
-            /**
-             * Format: date-time
-             * @description When to start; defaults to now (ignored with programmeId)
-             */
-            startAt?: string;
-            /** @description How long to record; omit for manual stop (ignored with programmeId) */
-            durationMinutes?: number;
-            title?: string;
-            /** @description Overrides RECORDING_PADDING_MS for a programme recording */
-            paddingMs?: number;
-        };
-        /** @enum {string} */
-        ComicFormatInput: "cbz" | "cbr" | "cb7" | "cbt" | "pdf";
-        /**
-         * @description rtl: manga, read right to left
-         * @enum {string}
-         */
-        ReadingDirectionInput: "ltr" | "rtl";
-        ComicProgressInput: {
-            /** @description 0-based index of the page last shown */
-            page: number;
-            pageCount: number;
-            /** @description Reached the last page, or marked read */
-            finished: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            updatedAt: string;
-        };
-        ComicBookInput: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            seriesId: string;
-            seriesTitle: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @description ComicInfo title, else the file name without tags */
-            title: string;
-            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
-            label: string | null;
-            fileName: string;
-            /** @description Null until the book is indexed */
-            format: components["schemas"]["ComicFormatInput"] | null;
-            sizeBytes: number;
-            pageCount: number | null;
-            volume: number | null;
-            chapter: number | null;
-            special: boolean;
-            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
-            direction: components["schemas"]["ReadingDirectionInput"] | null;
-            /** @description Image key for GET /api/images/{key} */
-            coverKey: string | null;
-            indexError: string | null;
-            progress: components["schemas"]["ComicProgressInput"] | null;
-        };
-        ComicBookDetailInput: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            seriesId: string;
-            seriesTitle: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @description ComicInfo title, else the file name without tags */
-            title: string;
-            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
-            label: string | null;
-            fileName: string;
-            /** @description Null until the book is indexed */
-            format: components["schemas"]["ComicFormatInput"] | null;
-            sizeBytes: number;
-            pageCount: number | null;
-            volume: number | null;
-            chapter: number | null;
-            special: boolean;
-            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
-            direction: components["schemas"]["ReadingDirectionInput"] | null;
-            /** @description Image key for GET /api/images/{key} */
-            coverKey: string | null;
-            indexError: string | null;
-            progress: components["schemas"]["ComicProgressInput"] | null;
-            summary: string | null;
-            writer: string | null;
-            year: number | null;
-            /** @description The book before this one in reading order */
-            previousId: string | null;
-            /** @description The book after this one in reading order */
-            nextId: string | null;
-        };
-        ComicSeriesInput: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            title: string;
-            bookCount: number;
-            readCount: number;
-            coverKey: string | null;
-            /** @description rtl when most of its books read right to left */
-            direction: components["schemas"]["ReadingDirectionInput"] | null;
-            lastReadAt: string | null;
-            /** @description Favorited by this user (PUT /api/favorites/{id}) */
-            favorite: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-        };
-        ComicSeriesDetailInput: {
-            series: components["schemas"]["ComicSeriesInput"];
-            /** @description Reading order: volumes, then loose chapters, then unnumbered books */
-            books: components["schemas"]["ComicBookInput"][];
-        };
-        ComicProgressUpdateInput: {
-            page: number;
-            /**
-             * Format: date-time
-             * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
-             */
-            at?: string;
-        };
-        HealthResponseInput: {
-            /** @constant */
-            status: "ok";
-            version: string;
-            time: string;
-            /**
-             * @description Video encoder transcodes will use
-             * @enum {string}
-             */
-            encoder: "h264_vaapi" | "libx264";
-            encoderReason: string;
-        };
-        CreateUserRequestInput: {
-            name: string;
-            /** @default false */
-            isAdmin: boolean;
-        };
-        /** @enum {string} */
-        LibraryKind: "movie" | "tv" | "anime" | "comic";
-        /** @enum {string} */
-        ItemKind: "movie" | "show" | "season" | "episode";
-        ErrorResponse: {
-            statusCode: number;
-            error: string;
-            message: string;
-        };
-        Profile: {
-            /** @description Opaque identifier */
-            id: string;
-            name: string;
-            isAdmin: boolean;
-            avatarColor: string;
-        };
-        /** @description True until the first admin profile exists */
-        SetupStatus: {
-            needsSetup: boolean;
-        };
-        SetupRequest: {
-            name: string;
-        };
-        LoginRequest: {
-            /** @description Opaque identifier */
-            profileId: string;
-            deviceName: string;
-        };
-        LoginResponse: {
-            token: string;
-            profile: components["schemas"]["Profile"];
-        };
-        Session: {
-            /** @description Opaque identifier */
-            id: string;
-            deviceName: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            lastSeenAt: string;
-            current: boolean;
-        };
-        Library: {
-            /** @description Opaque identifier */
-            id: string;
-            name: string;
-            kind: components["schemas"]["LibraryKind"];
-            paths: string[];
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-            lastScannedAt: string | null;
-        };
-        CreateLibraryRequest: {
-            name: string;
-            kind: components["schemas"]["LibraryKind"];
-            paths: string[];
-        };
-        ScanStatus: {
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @enum {string} */
-            state: "idle" | "running";
-            phase: ("walking" | "probing" | "identifying" | "matching") | null;
-            filesSeen: number;
-            filesChanged: number;
-            filesMissing: number;
-            filesProbed: number;
-            /** @description Files ffprobe could not read */
-            filesFailed: number;
-            /** @description Files linked to a movie or episode this scan */
-            itemsLinked: number;
-            /** @description Items matched to TMDB this scan */
-            itemsMatched: number;
-            /** @description Items TMDB search could not match confidently */
-            itemsUnmatched: number;
-            startedAt: string | null;
-            finishedAt: string | null;
-            /** @description Set when the last scan failed */
-            error: string | null;
-        };
-        ProgressState: {
-            positionMs: number;
-            durationMs: number;
-            watched: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            updatedAt: string;
-        };
-        /** @description Audience scores by source; anime has all three */
-        ItemRatings: {
-            /** @description AniList average score, out of ten */
-            anilist: number | null;
-            /** @description MyAnimeList score, out of ten */
-            mal: number | null;
-            /** @description TMDB vote average, out of ten */
-            tmdb: number | null;
-        };
-        ItemSummary: {
-            /** @description Opaque identifier */
-            id: string;
-            kind: components["schemas"]["ItemKind"];
-            libraryKind: components["schemas"]["LibraryKind"];
-            title: string;
-            year: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            seasonNumber: number | null;
-            episodeNumber: number | null;
-            showTitle: string | null;
-            needsReview: boolean;
-            progress: components["schemas"]["ProgressState"] | null;
-            /** @description Movies and shows in the user's favorites; always false otherwise. */
-            favorite: boolean;
-            /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
-            runtimeMs: number | null;
-            /** @description Movies and shows; empty otherwise */
-            genres: string[];
-            ratings: components["schemas"]["ItemRatings"];
-        };
-        StreamInfo: {
-            index: number;
-            /** @enum {string} */
-            type: "video" | "audio" | "subtitle";
-            codec: string;
-            language: string | null;
-            title: string | null;
-            isDefault: boolean;
-            isForced: boolean;
-            width: number | null;
-            height: number | null;
-            channels: number | null;
-            /** @description Video bits per sample; null when unknown */
-            bitDepth: number | null;
-            /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
-            hdr: boolean;
-        };
-        SubtitleTrack: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @enum {string} */
-            source: "embedded" | "external" | "opensubtitles";
-            streamIndex: number | null;
-            language: string | null;
-            title: string | null;
-            /** @description Source format: subrip, ass, mov_text, webvtt, ... */
-            format: string;
-            /** @description WebVTT URL under /api/subtitles */
-            url: string;
-            /** @description ASS and SSA tracks: the original script, styling intact, for libass */
-            assUrl: string | null;
-            /** @description ASS and SSA tracks: lists the fonts attached to the media file */
-            fontsUrl: string | null;
-        };
-        SubtitleFont: {
-            /** @description The attachment file name in the media file */
-            name: string;
-            url: string;
-        };
-        MediaFile: {
-            /** @description Opaque identifier */
-            id: string;
-            fileName: string;
-            sizeBytes: number;
-            container: string;
-            durationMs: number;
-            bitrate: number | null;
-            streams: components["schemas"]["StreamInfo"][];
-            subtitles: components["schemas"]["SubtitleTrack"][];
-        };
-        ItemDetail: {
-            /** @description Opaque identifier */
-            id: string;
-            kind: components["schemas"]["ItemKind"];
-            libraryKind: components["schemas"]["LibraryKind"];
-            title: string;
-            year: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            seasonNumber: number | null;
-            episodeNumber: number | null;
-            showTitle: string | null;
-            needsReview: boolean;
-            progress: components["schemas"]["ProgressState"] | null;
-            /** @description Movies and shows in the user's favorites; always false otherwise. */
-            favorite: boolean;
-            /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
-            runtimeMs: number | null;
-            /** @description Movies and shows; empty otherwise */
-            genres: string[];
-            ratings: components["schemas"]["ItemRatings"];
-            overview: string | null;
-            tagline: string | null;
-            /** @description Anime: AniList tags, strongest first */
-            tags: string[];
-            /** @description Anime: MAL age rating, e.g. PG-13 */
-            ageRating: string | null;
-            /** @description Anime: AniList users with it on a list */
-            popularity: number | null;
-            rating: number | null;
-            airDate: string | null;
-            tmdbId: number | null;
-            anilistId: number | null;
-            files: components["schemas"]["MediaFile"][];
-            /** @description Seasons of a show, episodes of a season */
-            children: components["schemas"]["ItemSummary"][];
-        };
-        ItemFacet: {
-            name: string;
-            count: number;
-        };
-        ItemFacets: {
-            /** @description Most common first */
-            genres: components["schemas"]["ItemFacet"][];
-            /** @description AniList tags on at least two titles, most common first */
-            tags: components["schemas"]["ItemFacet"][];
-        };
-        MatchCandidate: {
-            /** @enum {string} */
-            source: "tmdb" | "anilist";
-            id: number;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            /** @description Remote poster URL for preview; not cached */
-            posterUrl: string | null;
-            /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
-            score: number;
-        };
-        FixMatchRequest: {
-            tmdbId?: number;
-            anilistId?: number;
-            /** @description Anime only: shift when mapping absolute episodes onto TMDB seasons */
-            seasonOffset?: number;
-        };
-        DeviceProfile: {
-            name: string;
-            /** @description e.g. mp4, mkv, webm */
-            containers: string[];
-            /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
-            videoCodecs: string[];
-            /** @description e.g. aac, ac3, eac3, opus, flac */
-            audioCodecs: string[];
-            maxWidth: number | null;
-            /** @description bits per second */
-            maxBitrate: number | null;
-            /** @enum {string} */
-            hlsSegmentContainer: "ts" | "fmp4";
-            /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
-            hdr?: boolean;
-        };
-        PlaybackDecideRequest: {
-            /** @description Opaque identifier */
-            fileId: string;
-            profile: components["schemas"]["DeviceProfile"];
-            audioStreamIndex?: number;
-            subtitleStreamIndex?: number;
-            /** @default 0 */
-            startPositionMs: number;
-        };
-        /** @enum {string} */
-        PlaybackMethod: "direct" | "remux" | "transcode";
-        PlaybackDecision: {
-            method: components["schemas"]["PlaybackMethod"];
-            /** @enum {string} */
-            video: "copy" | "transcode";
-            /** @enum {string} */
-            audio: "copy" | "transcode" | "none";
-            /** @description Relative URL of the media or HLS master playlist */
-            url: string;
-            sessionId: string | null;
-            reason: string;
-            /** @description Text subtitles available for this file as WebVTT */
-            subtitles: components["schemas"]["SubtitleTrack"][];
-            /** @description The audio stream played: the request's, else the one last picked for this show; null leaves it to the player */
-            audioStreamIndex: number | null;
-            /** @description The subtitle last picked for this show, matched in this file; null when none */
-            preferredSubtitleId: string | null;
-            /** @description Subtitles were last turned off for this show */
-            subtitlesOff: boolean;
-        };
-        TrackChoiceRequest: {
-            /** @description Opaque identifier */
-            fileId: string;
-            /** @description The audio stream picked */
-            audioStreamIndex?: number;
-            /** @description The subtitle picked */
-            subtitleId?: string;
-            /** @description Subtitles were turned off */
-            subtitlesOff?: boolean;
-        };
-        ProgressUpdateRequest: {
-            /** @description Opaque identifier */
-            itemId: string;
-            positionMs: number;
-            durationMs: number;
-        };
-        SecretStatus: {
-            set: boolean;
-            /** @description Last characters of the stored value, for recognition */
-            hint: string | null;
-        };
-        SettingsView: {
-            tmdbApiKey: components["schemas"]["SecretStatus"];
-            openSubtitlesApiKey: components["schemas"]["SecretStatus"];
-            openSubtitlesUsername: string | null;
-            openSubtitlesPassword: components["schemas"]["SecretStatus"];
-            /** @description Xtream Codes server URL; defaults to the owner's provider */
-            iptvUrl: string;
-            iptvUsername: string | null;
-            iptvPassword: components["schemas"]["SecretStatus"];
-        };
-        /** @description Only fields present are changed */
-        SettingsUpdate: {
-            /** @description TMDB v3 API key or v4 read access token. Null clears it. */
-            tmdbApiKey?: string | null;
-            openSubtitlesApiKey?: string | null;
-            openSubtitlesUsername?: string | null;
-            openSubtitlesPassword?: string | null;
-            iptvUrl?: string | null;
-            iptvUsername?: string | null;
-            iptvPassword?: string | null;
-        };
-        LiveCategory: {
-            id: string;
-            name: string;
-            /** @enum {string} */
-            kind: "live" | "vod" | "series";
-        };
-        LiveProgramme: {
-            id: string;
-            title: string;
-            description: string | null;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            startAt: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            endAt: string;
-        };
-        LiveChannel: {
-            id: string;
-            name: string;
-            number: number | null;
-            logoUrl: string | null;
-            categoryId: string | null;
-            hasArchive: boolean;
-            archiveDays: number;
-            /** @description Programme on air at request time, if the guide knows */
-            now: components["schemas"]["LiveProgramme"] | null;
-            next: components["schemas"]["LiveProgramme"] | null;
-        };
-        LiveStatus: {
-            /** @description Provider URL, username, and password are all set */
-            configured: boolean;
-            refreshing: boolean;
-            lastRefreshAt: string | null;
-            lastError: string | null;
-            channels: number;
-            programmes: number;
-            /** @description Provider's account status, e.g. Active */
-            accountStatus: string | null;
-            accountExpiresAt: string | null;
-            movies: number;
-            series: number;
-            /** @description TMDB matching of provider titles is running */
-            matching: boolean;
-        };
-        LiveDecideRequest: {
-            /** @description Required unless vodId or episodeId is given */
-            channelId?: string;
-            profile: components["schemas"]["DeviceProfile"];
-            /** @description An IPTV movie */
-            vodId?: string;
-            /** @description An IPTV series episode */
-            episodeId?: string;
-            /** @description A past programme on a catch-up channel; omit for the live stream */
-            programmeId?: string;
-            /** @description A recording made by the server */
-            recordingId?: string;
-        };
-        LivePlaybackDecision: {
-            /**
-             * @description direct: raw MPEG-TS relay; hls: live playlist
-             * @enum {string}
-             */
-            method: "direct" | "hls";
-            /** @description Relative URL of the TS stream or the HLS playlist */
-            url: string;
-            sessionId: string | null;
-            reason: string;
-            /** @enum {string} */
-            kind: "live" | "catchup" | "vod" | "recording";
-            /** @description Programme length for catch-up (seekable); null while live */
-            durationMs: number | null;
-            /** @description Programme title for catch-up */
-            title: string | null;
-        };
-        IptvMovie: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            runtimeMs: number | null;
-            /** @description Cached TMDB artwork; null when unmatched */
-            posterKey: string | null;
-            backdropKey: string | null;
-            /** @description The provider's own cover image URL */
-            logoUrl: string | null;
-            categoryId: string | null;
-            containerExtension: string;
-            needsReview: boolean;
-            tmdbId: number | null;
-            addedAt: string | null;
-        };
-        IptvMoviePage: {
-            items: components["schemas"]["IptvMovie"][];
-            total: number;
-            offset: number;
-        };
-        IptvSeries: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            coverUrl: string | null;
-            categoryId: string | null;
-            needsReview: boolean;
-            tmdbId: number | null;
-        };
-        IptvSeriesPage: {
-            items: components["schemas"]["IptvSeries"][];
-            total: number;
-            offset: number;
-        };
-        IptvEpisode: {
-            id: string;
-            seriesId: string;
-            seasonNumber: number;
-            episodeNumber: number;
-            title: string;
-            overview: string | null;
-            imageUrl: string | null;
-            durationMs: number | null;
-            containerExtension: string;
-        };
-        IptvSeriesDetail: {
-            id: string;
-            title: string;
-            year: number | null;
-            overview: string | null;
-            genres: string[];
-            rating: number | null;
-            posterKey: string | null;
-            backdropKey: string | null;
-            coverUrl: string | null;
-            categoryId: string | null;
-            needsReview: boolean;
-            tmdbId: number | null;
-            seasons: {
-                number: number;
-                episodes: components["schemas"]["IptvEpisode"][];
-            }[];
-        };
-        /** @enum {string} */
-        RecordingState: "scheduled" | "recording" | "done" | "failed";
-        Recording: {
-            /** @description Opaque identifier */
-            id: string;
-            channelId: string;
-            channelName: string;
-            channelLogoUrl: string | null;
-            title: string;
-            description: string | null;
-            programmeId: string | null;
-            /**
-             * Format: date-time
-             * @description Planned start
-             */
-            startAt: string;
-            /** @description Planned end including padding; null until stopped by hand */
-            endAt: string | null;
-            actualStartAt: string | null;
-            actualEndAt: string | null;
-            state: components["schemas"]["RecordingState"];
-            sizeBytes: number;
-            /** @description Measured once the recording is done */
-            durationMs: number | null;
-            error: string | null;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-        };
-        CreateRecordingRequest: {
-            channelId: string;
-            /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
-            programmeId?: string;
-            /**
-             * Format: date-time
-             * @description When to start; defaults to now (ignored with programmeId)
-             */
-            startAt?: string;
-            /** @description How long to record; omit for manual stop (ignored with programmeId) */
-            durationMinutes?: number;
-            title?: string;
-            /** @description Overrides RECORDING_PADDING_MS for a programme recording */
-            paddingMs?: number;
-        };
-        /** @enum {string} */
-        ComicFormat: "cbz" | "cbr" | "cb7" | "cbt" | "pdf";
-        /**
-         * @description rtl: manga, read right to left
-         * @enum {string}
-         */
-        ReadingDirection: "ltr" | "rtl";
-        ComicProgress: {
-            /** @description 0-based index of the page last shown */
-            page: number;
-            pageCount: number;
-            /** @description Reached the last page, or marked read */
-            finished: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            updatedAt: string;
-        };
-        ComicBook: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            seriesId: string;
-            seriesTitle: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @description ComicInfo title, else the file name without tags */
-            title: string;
-            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
-            label: string | null;
-            fileName: string;
-            /** @description Null until the book is indexed */
-            format: components["schemas"]["ComicFormat"] | null;
-            sizeBytes: number;
-            pageCount: number | null;
-            volume: number | null;
-            chapter: number | null;
-            special: boolean;
-            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
-            direction: components["schemas"]["ReadingDirection"] | null;
-            /** @description Image key for GET /api/images/{key} */
-            coverKey: string | null;
-            indexError: string | null;
-            progress: components["schemas"]["ComicProgress"] | null;
-        };
-        ComicBookDetail: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            seriesId: string;
-            seriesTitle: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            /** @description ComicInfo title, else the file name without tags */
-            title: string;
-            /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
-            label: string | null;
-            fileName: string;
-            /** @description Null until the book is indexed */
-            format: components["schemas"]["ComicFormat"] | null;
-            sizeBytes: number;
-            pageCount: number | null;
-            volume: number | null;
-            chapter: number | null;
-            special: boolean;
-            /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
-            direction: components["schemas"]["ReadingDirection"] | null;
-            /** @description Image key for GET /api/images/{key} */
-            coverKey: string | null;
-            indexError: string | null;
-            progress: components["schemas"]["ComicProgress"] | null;
-            summary: string | null;
-            writer: string | null;
-            year: number | null;
-            /** @description The book before this one in reading order */
-            previousId: string | null;
-            /** @description The book after this one in reading order */
-            nextId: string | null;
-        };
-        ComicSeries: {
-            /** @description Opaque identifier */
-            id: string;
-            /** @description Opaque identifier */
-            libraryId: string;
-            title: string;
-            bookCount: number;
-            readCount: number;
-            coverKey: string | null;
-            /** @description rtl when most of its books read right to left */
-            direction: components["schemas"]["ReadingDirection"] | null;
-            lastReadAt: string | null;
-            /** @description Favorited by this user (PUT /api/favorites/{id}) */
-            favorite: boolean;
-            /**
-             * Format: date-time
-             * @description ISO 8601 UTC timestamp
-             */
-            createdAt: string;
-        };
-        ComicSeriesDetail: {
-            series: components["schemas"]["ComicSeries"];
-            /** @description Reading order: volumes, then loose chapters, then unnumbered books */
-            books: components["schemas"]["ComicBook"][];
-        };
-        ComicProgressUpdate: {
-            page: number;
-            /**
-             * Format: date-time
-             * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
-             */
-            at?: string;
-        };
-        HealthResponse: {
-            /** @constant */
-            status: "ok";
-            version: string;
-            time: string;
-            /**
-             * @description Video encoder transcodes will use
-             * @enum {string}
-             */
-            encoder: "h264_vaapi" | "libx264";
-            encoderReason: string;
-        };
-        CreateUserRequest: {
-            name: string;
-            /** @default false */
-            isAdmin: boolean;
-        };
+  schemas: {
+    /** @enum {string} */
+    LibraryKindInput: 'movie' | 'tv' | 'anime' | 'comic';
+    /** @enum {string} */
+    ItemKindInput: 'movie' | 'show' | 'season' | 'episode';
+    ErrorResponseInput: {
+      statusCode: number;
+      error: string;
+      message: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    ProfileInput: {
+      /** @description Opaque identifier */
+      id: string;
+      name: string;
+      isAdmin: boolean;
+      avatarColor: string;
+    };
+    /** @description True until the first admin profile exists */
+    SetupStatusInput: {
+      needsSetup: boolean;
+    };
+    SetupRequestInput: {
+      name: string;
+    };
+    LoginRequestInput: {
+      /** @description Opaque identifier */
+      profileId: string;
+      deviceName: string;
+    };
+    LoginResponseInput: {
+      token: string;
+      profile: components['schemas']['ProfileInput'];
+    };
+    SessionInput: {
+      /** @description Opaque identifier */
+      id: string;
+      deviceName: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      lastSeenAt: string;
+      current: boolean;
+    };
+    LibraryInput: {
+      /** @description Opaque identifier */
+      id: string;
+      name: string;
+      kind: components['schemas']['LibraryKindInput'];
+      paths: string[];
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+      lastScannedAt: string | null;
+    };
+    CreateLibraryRequestInput: {
+      name: string;
+      kind: components['schemas']['LibraryKindInput'];
+      paths: string[];
+    };
+    ScanStatusInput: {
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @enum {string} */
+      state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
+      filesSeen: number;
+      filesChanged: number;
+      filesMissing: number;
+      filesProbed: number;
+      /** @description Files ffprobe could not read */
+      filesFailed: number;
+      /** @description Files linked to a movie or episode this scan */
+      itemsLinked: number;
+      /** @description Items matched to TMDB this scan */
+      itemsMatched: number;
+      /** @description Items TMDB search could not match confidently */
+      itemsUnmatched: number;
+      startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
+    };
+    ProgressStateInput: {
+      positionMs: number;
+      durationMs: number;
+      watched: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      updatedAt: string;
+    };
+    /** @description Audience scores by source; anime has all three */
+    ItemRatingsInput: {
+      /** @description AniList average score, out of ten */
+      anilist: number | null;
+      /** @description MyAnimeList score, out of ten */
+      mal: number | null;
+      /** @description TMDB vote average, out of ten */
+      tmdb: number | null;
+    };
+    ItemSummaryInput: {
+      /** @description Opaque identifier */
+      id: string;
+      kind: components['schemas']['ItemKindInput'];
+      libraryKind: components['schemas']['LibraryKindInput'];
+      title: string;
+      year: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      seasonNumber: number | null;
+      episodeNumber: number | null;
+      showTitle: string | null;
+      /** @description Seasons and episodes: the show they belong to */
+      showId: string | null;
+      /** @description Episodes filed under a season: that season; null otherwise */
+      seasonId: string | null;
+      needsReview: boolean;
+      progress: components['schemas']['ProgressStateInput'] | null;
+      /** @description Movies and shows in the user's favorites; always false otherwise. */
+      favorite: boolean;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
+      /** @description Movies and shows; empty otherwise */
+      genres: string[];
+      ratings: components['schemas']['ItemRatingsInput'];
+    };
+    StreamInfoInput: {
+      index: number;
+      /** @enum {string} */
+      type: 'video' | 'audio' | 'subtitle';
+      codec: string;
+      language: string | null;
+      title: string | null;
+      isDefault: boolean;
+      isForced: boolean;
+      width: number | null;
+      height: number | null;
+      channels: number | null;
+      /** @description Video bits per sample; null when unknown */
+      bitDepth: number | null;
+      /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
+      hdr: boolean;
+    };
+    SubtitleTrackInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+      /** @description ASS and SSA tracks: the original script, styling intact, for libass */
+      assUrl: string | null;
+      /** @description ASS and SSA tracks: lists the fonts attached to the media file */
+      fontsUrl: string | null;
+    };
+    SubtitleFontInput: {
+      /** @description The attachment file name in the media file */
+      name: string;
+      url: string;
+    };
+    MediaFileInput: {
+      /** @description Opaque identifier */
+      id: string;
+      fileName: string;
+      sizeBytes: number;
+      container: string;
+      durationMs: number;
+      bitrate: number | null;
+      streams: components['schemas']['StreamInfoInput'][];
+      subtitles: components['schemas']['SubtitleTrackInput'][];
+    };
+    ItemDetailInput: {
+      /** @description Opaque identifier */
+      id: string;
+      kind: components['schemas']['ItemKindInput'];
+      libraryKind: components['schemas']['LibraryKindInput'];
+      title: string;
+      year: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      seasonNumber: number | null;
+      episodeNumber: number | null;
+      showTitle: string | null;
+      /** @description Seasons and episodes: the show they belong to */
+      showId: string | null;
+      /** @description Episodes filed under a season: that season; null otherwise */
+      seasonId: string | null;
+      needsReview: boolean;
+      progress: components['schemas']['ProgressStateInput'] | null;
+      /** @description Movies and shows in the user's favorites; always false otherwise. */
+      favorite: boolean;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
+      /** @description Movies and shows; empty otherwise */
+      genres: string[];
+      ratings: components['schemas']['ItemRatingsInput'];
+      overview: string | null;
+      tagline: string | null;
+      /** @description Anime: AniList tags, strongest first */
+      tags: string[];
+      /** @description Anime: MAL age rating, e.g. PG-13 */
+      ageRating: string | null;
+      /** @description Anime: AniList users with it on a list */
+      popularity: number | null;
+      rating: number | null;
+      airDate: string | null;
+      tmdbId: number | null;
+      anilistId: number | null;
+      files: components['schemas']['MediaFileInput'][];
+      /** @description Seasons of a show, episodes of a season */
+      children: components['schemas']['ItemSummaryInput'][];
+    };
+    ItemFacetInput: {
+      name: string;
+      count: number;
+    };
+    ItemFacetsInput: {
+      /** @description Most common first */
+      genres: components['schemas']['ItemFacetInput'][];
+      /** @description AniList tags on at least two titles, most common first */
+      tags: components['schemas']['ItemFacetInput'][];
+    };
+    MatchCandidateInput: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
+    };
+    FixMatchRequestInput: {
+      tmdbId?: number;
+      anilistId?: number;
+      /** @description Anime only: shift when mapping absolute episodes onto TMDB seasons */
+      seasonOffset?: number;
+    };
+    DeviceProfileInput: {
+      name: string;
+      /** @description e.g. mp4, mkv, webm */
+      containers: string[];
+      /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
+      videoCodecs: string[];
+      /** @description e.g. aac, ac3, eac3, opus, flac */
+      audioCodecs: string[];
+      maxWidth: number | null;
+      /** @description bits per second */
+      maxBitrate: number | null;
+      /** @enum {string} */
+      hlsSegmentContainer: 'ts' | 'fmp4';
+      /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
+      hdr?: boolean;
+    };
+    PlaybackDecideRequestInput: {
+      /** @description Opaque identifier */
+      fileId: string;
+      profile: components['schemas']['DeviceProfileInput'];
+      audioStreamIndex?: number;
+      subtitleStreamIndex?: number;
+      /** @default 0 */
+      startPositionMs: number;
+    };
+    /** @enum {string} */
+    PlaybackMethodInput: 'direct' | 'remux' | 'transcode';
+    PlaybackDecisionInput: {
+      method: components['schemas']['PlaybackMethodInput'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
+      /** @description Relative URL of the media or HLS master playlist */
+      url: string;
+      sessionId: string | null;
+      reason: string;
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrackInput'][];
+      /** @description The audio stream played: the request's, else the one last picked for this show; null leaves it to the player */
+      audioStreamIndex: number | null;
+      /** @description The subtitle last picked for this show, matched in this file; null when none */
+      preferredSubtitleId: string | null;
+      /** @description Subtitles were last turned off for this show */
+      subtitlesOff: boolean;
+    };
+    TrackChoiceRequestInput: {
+      /** @description Opaque identifier */
+      fileId: string;
+      /** @description The audio stream picked */
+      audioStreamIndex?: number;
+      /** @description The subtitle picked */
+      subtitleId?: string;
+      /** @description Subtitles were turned off */
+      subtitlesOff?: boolean;
+    };
+    ProgressUpdateRequestInput: {
+      /** @description Opaque identifier */
+      itemId: string;
+      positionMs: number;
+      durationMs: number;
+    };
+    SecretStatusInput: {
+      set: boolean;
+      /** @description Last characters of the stored value, for recognition */
+      hint: string | null;
+    };
+    SettingsViewInput: {
+      tmdbApiKey: components['schemas']['SecretStatusInput'];
+      openSubtitlesApiKey: components['schemas']['SecretStatusInput'];
+      openSubtitlesUsername: string | null;
+      openSubtitlesPassword: components['schemas']['SecretStatusInput'];
+      /** @description Xtream Codes server URL; defaults to the owner's provider */
+      iptvUrl: string;
+      iptvUsername: string | null;
+      iptvPassword: components['schemas']['SecretStatusInput'];
+    };
+    /** @description Only fields present are changed */
+    SettingsUpdateInput: {
+      /** @description TMDB v3 API key or v4 read access token. Null clears it. */
+      tmdbApiKey?: string | null;
+      openSubtitlesApiKey?: string | null;
+      openSubtitlesUsername?: string | null;
+      openSubtitlesPassword?: string | null;
+      iptvUrl?: string | null;
+      iptvUsername?: string | null;
+      iptvPassword?: string | null;
+    };
+    LiveCategoryInput: {
+      id: string;
+      name: string;
+      /** @enum {string} */
+      kind: 'live' | 'vod' | 'series';
+    };
+    LiveProgrammeInput: {
+      id: string;
+      title: string;
+      description: string | null;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      startAt: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      endAt: string;
+    };
+    LiveChannelInput: {
+      id: string;
+      name: string;
+      number: number | null;
+      logoUrl: string | null;
+      categoryId: string | null;
+      hasArchive: boolean;
+      archiveDays: number;
+      /** @description Programme on air at request time, if the guide knows */
+      now: components['schemas']['LiveProgrammeInput'] | null;
+      next: components['schemas']['LiveProgrammeInput'] | null;
+    };
+    LiveStatusInput: {
+      /** @description Provider URL, username, and password are all set */
+      configured: boolean;
+      refreshing: boolean;
+      lastRefreshAt: string | null;
+      lastError: string | null;
+      channels: number;
+      programmes: number;
+      /** @description Provider's account status, e.g. Active */
+      accountStatus: string | null;
+      accountExpiresAt: string | null;
+      movies: number;
+      series: number;
+      /** @description TMDB matching of provider titles is running */
+      matching: boolean;
+    };
+    LiveDecideRequestInput: {
+      /** @description Required unless vodId or episodeId is given */
+      channelId?: string;
+      profile: components['schemas']['DeviceProfileInput'];
+      /** @description An IPTV movie */
+      vodId?: string;
+      /** @description An IPTV series episode */
+      episodeId?: string;
+      /** @description A past programme on a catch-up channel; omit for the live stream */
+      programmeId?: string;
+      /** @description A recording made by the server */
+      recordingId?: string;
+    };
+    LivePlaybackDecisionInput: {
+      /**
+       * @description direct: raw MPEG-TS relay; hls: live playlist
+       * @enum {string}
+       */
+      method: 'direct' | 'hls';
+      /** @description Relative URL of the TS stream or the HLS playlist */
+      url: string;
+      sessionId: string | null;
+      reason: string;
+      /** @enum {string} */
+      kind: 'live' | 'catchup' | 'vod' | 'recording';
+      /** @description Programme length for catch-up (seekable); null while live */
+      durationMs: number | null;
+      /** @description Programme title for catch-up */
+      title: string | null;
+    };
+    IptvMovieInput: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      runtimeMs: number | null;
+      /** @description Cached TMDB artwork; null when unmatched */
+      posterKey: string | null;
+      backdropKey: string | null;
+      /** @description The provider's own cover image URL */
+      logoUrl: string | null;
+      categoryId: string | null;
+      containerExtension: string;
+      needsReview: boolean;
+      tmdbId: number | null;
+      addedAt: string | null;
+    };
+    IptvMoviePageInput: {
+      items: components['schemas']['IptvMovieInput'][];
+      total: number;
+      offset: number;
+    };
+    IptvSeriesInput: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      coverUrl: string | null;
+      categoryId: string | null;
+      needsReview: boolean;
+      tmdbId: number | null;
+    };
+    IptvSeriesPageInput: {
+      items: components['schemas']['IptvSeriesInput'][];
+      total: number;
+      offset: number;
+    };
+    IptvEpisodeInput: {
+      id: string;
+      seriesId: string;
+      seasonNumber: number;
+      episodeNumber: number;
+      title: string;
+      overview: string | null;
+      imageUrl: string | null;
+      durationMs: number | null;
+      containerExtension: string;
+    };
+    IptvSeriesDetailInput: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      coverUrl: string | null;
+      categoryId: string | null;
+      needsReview: boolean;
+      tmdbId: number | null;
+      seasons: {
+        number: number;
+        episodes: components['schemas']['IptvEpisodeInput'][];
+      }[];
+    };
+    /** @enum {string} */
+    RecordingStateInput: 'scheduled' | 'recording' | 'done' | 'failed';
+    RecordingInput: {
+      /** @description Opaque identifier */
+      id: string;
+      channelId: string;
+      channelName: string;
+      channelLogoUrl: string | null;
+      title: string;
+      description: string | null;
+      programmeId: string | null;
+      /**
+       * Format: date-time
+       * @description Planned start
+       */
+      startAt: string;
+      /** @description Planned end including padding; null until stopped by hand */
+      endAt: string | null;
+      actualStartAt: string | null;
+      actualEndAt: string | null;
+      state: components['schemas']['RecordingStateInput'];
+      sizeBytes: number;
+      /** @description Measured once the recording is done */
+      durationMs: number | null;
+      error: string | null;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+    };
+    CreateRecordingRequestInput: {
+      channelId: string;
+      /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
+      programmeId?: string;
+      /**
+       * Format: date-time
+       * @description When to start; defaults to now (ignored with programmeId)
+       */
+      startAt?: string;
+      /** @description How long to record; omit for manual stop (ignored with programmeId) */
+      durationMinutes?: number;
+      title?: string;
+      /** @description Overrides RECORDING_PADDING_MS for a programme recording */
+      paddingMs?: number;
+    };
+    /** @enum {string} */
+    ComicFormatInput: 'cbz' | 'cbr' | 'cb7' | 'cbt' | 'pdf';
+    /**
+     * @description rtl: manga, read right to left
+     * @enum {string}
+     */
+    ReadingDirectionInput: 'ltr' | 'rtl';
+    ComicProgressInput: {
+      /** @description 0-based index of the page last shown */
+      page: number;
+      pageCount: number;
+      /** @description Reached the last page, or marked read */
+      finished: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      updatedAt: string;
+    };
+    ComicBookInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      seriesId: string;
+      seriesTitle: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @description ComicInfo title, else the file name without tags */
+      title: string;
+      /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+      label: string | null;
+      fileName: string;
+      /** @description Null until the book is indexed */
+      format: components['schemas']['ComicFormatInput'] | null;
+      sizeBytes: number;
+      pageCount: number | null;
+      volume: number | null;
+      chapter: number | null;
+      special: boolean;
+      /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
+      direction: components['schemas']['ReadingDirectionInput'] | null;
+      /** @description Image key for GET /api/images/{key} */
+      coverKey: string | null;
+      indexError: string | null;
+      progress: components['schemas']['ComicProgressInput'] | null;
+    };
+    ComicBookDetailInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      seriesId: string;
+      seriesTitle: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @description ComicInfo title, else the file name without tags */
+      title: string;
+      /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+      label: string | null;
+      fileName: string;
+      /** @description Null until the book is indexed */
+      format: components['schemas']['ComicFormatInput'] | null;
+      sizeBytes: number;
+      pageCount: number | null;
+      volume: number | null;
+      chapter: number | null;
+      special: boolean;
+      /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
+      direction: components['schemas']['ReadingDirectionInput'] | null;
+      /** @description Image key for GET /api/images/{key} */
+      coverKey: string | null;
+      indexError: string | null;
+      progress: components['schemas']['ComicProgressInput'] | null;
+      summary: string | null;
+      writer: string | null;
+      year: number | null;
+      /** @description The book before this one in reading order */
+      previousId: string | null;
+      /** @description The book after this one in reading order */
+      nextId: string | null;
+    };
+    ComicSeriesInput: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      title: string;
+      bookCount: number;
+      readCount: number;
+      coverKey: string | null;
+      /** @description rtl when most of its books read right to left */
+      direction: components['schemas']['ReadingDirectionInput'] | null;
+      lastReadAt: string | null;
+      /** @description Favorited by this user (PUT /api/favorites/{id}) */
+      favorite: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+    };
+    ComicSeriesDetailInput: {
+      series: components['schemas']['ComicSeriesInput'];
+      /** @description Reading order: volumes, then loose chapters, then unnumbered books */
+      books: components['schemas']['ComicBookInput'][];
+    };
+    ComicProgressUpdateInput: {
+      page: number;
+      /**
+       * Format: date-time
+       * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
+       */
+      at?: string;
+    };
+    HealthResponseInput: {
+      /** @constant */
+      status: 'ok';
+      version: string;
+      time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
+    };
+    CreateUserRequestInput: {
+      name: string;
+      /** @default false */
+      isAdmin: boolean;
+    };
+    /** @enum {string} */
+    LibraryKind: 'movie' | 'tv' | 'anime' | 'comic';
+    /** @enum {string} */
+    ItemKind: 'movie' | 'show' | 'season' | 'episode';
+    ErrorResponse: {
+      statusCode: number;
+      error: string;
+      message: string;
+    };
+    Profile: {
+      /** @description Opaque identifier */
+      id: string;
+      name: string;
+      isAdmin: boolean;
+      avatarColor: string;
+    };
+    /** @description True until the first admin profile exists */
+    SetupStatus: {
+      needsSetup: boolean;
+    };
+    SetupRequest: {
+      name: string;
+    };
+    LoginRequest: {
+      /** @description Opaque identifier */
+      profileId: string;
+      deviceName: string;
+    };
+    LoginResponse: {
+      token: string;
+      profile: components['schemas']['Profile'];
+    };
+    Session: {
+      /** @description Opaque identifier */
+      id: string;
+      deviceName: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      lastSeenAt: string;
+      current: boolean;
+    };
+    Library: {
+      /** @description Opaque identifier */
+      id: string;
+      name: string;
+      kind: components['schemas']['LibraryKind'];
+      paths: string[];
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+      lastScannedAt: string | null;
+    };
+    CreateLibraryRequest: {
+      name: string;
+      kind: components['schemas']['LibraryKind'];
+      paths: string[];
+    };
+    ScanStatus: {
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @enum {string} */
+      state: 'idle' | 'running';
+      phase: ('walking' | 'probing' | 'identifying' | 'matching') | null;
+      filesSeen: number;
+      filesChanged: number;
+      filesMissing: number;
+      filesProbed: number;
+      /** @description Files ffprobe could not read */
+      filesFailed: number;
+      /** @description Files linked to a movie or episode this scan */
+      itemsLinked: number;
+      /** @description Items matched to TMDB this scan */
+      itemsMatched: number;
+      /** @description Items TMDB search could not match confidently */
+      itemsUnmatched: number;
+      startedAt: string | null;
+      finishedAt: string | null;
+      /** @description Set when the last scan failed */
+      error: string | null;
+    };
+    ProgressState: {
+      positionMs: number;
+      durationMs: number;
+      watched: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      updatedAt: string;
+    };
+    /** @description Audience scores by source; anime has all three */
+    ItemRatings: {
+      /** @description AniList average score, out of ten */
+      anilist: number | null;
+      /** @description MyAnimeList score, out of ten */
+      mal: number | null;
+      /** @description TMDB vote average, out of ten */
+      tmdb: number | null;
+    };
+    ItemSummary: {
+      /** @description Opaque identifier */
+      id: string;
+      kind: components['schemas']['ItemKind'];
+      libraryKind: components['schemas']['LibraryKind'];
+      title: string;
+      year: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      seasonNumber: number | null;
+      episodeNumber: number | null;
+      showTitle: string | null;
+      /** @description Seasons and episodes: the show they belong to */
+      showId: string | null;
+      /** @description Episodes filed under a season: that season; null otherwise */
+      seasonId: string | null;
+      needsReview: boolean;
+      progress: components['schemas']['ProgressState'] | null;
+      /** @description Movies and shows in the user's favorites; always false otherwise. */
+      favorite: boolean;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
+      /** @description Movies and shows; empty otherwise */
+      genres: string[];
+      ratings: components['schemas']['ItemRatings'];
+    };
+    StreamInfo: {
+      index: number;
+      /** @enum {string} */
+      type: 'video' | 'audio' | 'subtitle';
+      codec: string;
+      language: string | null;
+      title: string | null;
+      isDefault: boolean;
+      isForced: boolean;
+      width: number | null;
+      height: number | null;
+      channels: number | null;
+      /** @description Video bits per sample; null when unknown */
+      bitDepth: number | null;
+      /** @description PQ or HLG transfer (HDR10, Dolby Vision base layer, HLG) */
+      hdr: boolean;
+    };
+    SubtitleTrack: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @enum {string} */
+      source: 'embedded' | 'external' | 'opensubtitles';
+      streamIndex: number | null;
+      language: string | null;
+      title: string | null;
+      /** @description Source format: subrip, ass, mov_text, webvtt, ... */
+      format: string;
+      /** @description WebVTT URL under /api/subtitles */
+      url: string;
+      /** @description ASS and SSA tracks: the original script, styling intact, for libass */
+      assUrl: string | null;
+      /** @description ASS and SSA tracks: lists the fonts attached to the media file */
+      fontsUrl: string | null;
+    };
+    SubtitleFont: {
+      /** @description The attachment file name in the media file */
+      name: string;
+      url: string;
+    };
+    MediaFile: {
+      /** @description Opaque identifier */
+      id: string;
+      fileName: string;
+      sizeBytes: number;
+      container: string;
+      durationMs: number;
+      bitrate: number | null;
+      streams: components['schemas']['StreamInfo'][];
+      subtitles: components['schemas']['SubtitleTrack'][];
+    };
+    ItemDetail: {
+      /** @description Opaque identifier */
+      id: string;
+      kind: components['schemas']['ItemKind'];
+      libraryKind: components['schemas']['LibraryKind'];
+      title: string;
+      year: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      seasonNumber: number | null;
+      episodeNumber: number | null;
+      showTitle: string | null;
+      /** @description Seasons and episodes: the show they belong to */
+      showId: string | null;
+      /** @description Episodes filed under a season: that season; null otherwise */
+      seasonId: string | null;
+      needsReview: boolean;
+      progress: components['schemas']['ProgressState'] | null;
+      /** @description Movies and shows in the user's favorites; always false otherwise. */
+      favorite: boolean;
+      /** @description Movies and episodes: runtime from TMDB, else the longest file. Null for shows and seasons. */
+      runtimeMs: number | null;
+      /** @description Movies and shows; empty otherwise */
+      genres: string[];
+      ratings: components['schemas']['ItemRatings'];
+      overview: string | null;
+      tagline: string | null;
+      /** @description Anime: AniList tags, strongest first */
+      tags: string[];
+      /** @description Anime: MAL age rating, e.g. PG-13 */
+      ageRating: string | null;
+      /** @description Anime: AniList users with it on a list */
+      popularity: number | null;
+      rating: number | null;
+      airDate: string | null;
+      tmdbId: number | null;
+      anilistId: number | null;
+      files: components['schemas']['MediaFile'][];
+      /** @description Seasons of a show, episodes of a season */
+      children: components['schemas']['ItemSummary'][];
+    };
+    ItemFacet: {
+      name: string;
+      count: number;
+    };
+    ItemFacets: {
+      /** @description Most common first */
+      genres: components['schemas']['ItemFacet'][];
+      /** @description AniList tags on at least two titles, most common first */
+      tags: components['schemas']['ItemFacet'][];
+    };
+    MatchCandidate: {
+      /** @enum {string} */
+      source: 'tmdb' | 'anilist';
+      id: number;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      /** @description Remote poster URL for preview; not cached */
+      posterUrl: string | null;
+      /** @description Ranking score, higher is better; 0.85 is the auto-accept threshold */
+      score: number;
+    };
+    FixMatchRequest: {
+      tmdbId?: number;
+      anilistId?: number;
+      /** @description Anime only: shift when mapping absolute episodes onto TMDB seasons */
+      seasonOffset?: number;
+    };
+    DeviceProfile: {
+      name: string;
+      /** @description e.g. mp4, mkv, webm */
+      containers: string[];
+      /** @description e.g. h264, hevc, vp9, av1; add hevc10 when 10-bit HEVC decodes */
+      videoCodecs: string[];
+      /** @description e.g. aac, ac3, eac3, opus, flac */
+      audioCodecs: string[];
+      maxWidth: number | null;
+      /** @description bits per second */
+      maxBitrate: number | null;
+      /** @enum {string} */
+      hlsSegmentContainer: 'ts' | 'fmp4';
+      /** @description Device shows HDR itself; otherwise HDR sources are tone-mapped to SDR */
+      hdr?: boolean;
+    };
+    PlaybackDecideRequest: {
+      /** @description Opaque identifier */
+      fileId: string;
+      profile: components['schemas']['DeviceProfile'];
+      audioStreamIndex?: number;
+      subtitleStreamIndex?: number;
+      /** @default 0 */
+      startPositionMs: number;
+    };
+    /** @enum {string} */
+    PlaybackMethod: 'direct' | 'remux' | 'transcode';
+    PlaybackDecision: {
+      method: components['schemas']['PlaybackMethod'];
+      /** @enum {string} */
+      video: 'copy' | 'transcode';
+      /** @enum {string} */
+      audio: 'copy' | 'transcode' | 'none';
+      /** @description Relative URL of the media or HLS master playlist */
+      url: string;
+      sessionId: string | null;
+      reason: string;
+      /** @description Text subtitles available for this file as WebVTT */
+      subtitles: components['schemas']['SubtitleTrack'][];
+      /** @description The audio stream played: the request's, else the one last picked for this show; null leaves it to the player */
+      audioStreamIndex: number | null;
+      /** @description The subtitle last picked for this show, matched in this file; null when none */
+      preferredSubtitleId: string | null;
+      /** @description Subtitles were last turned off for this show */
+      subtitlesOff: boolean;
+    };
+    TrackChoiceRequest: {
+      /** @description Opaque identifier */
+      fileId: string;
+      /** @description The audio stream picked */
+      audioStreamIndex?: number;
+      /** @description The subtitle picked */
+      subtitleId?: string;
+      /** @description Subtitles were turned off */
+      subtitlesOff?: boolean;
+    };
+    ProgressUpdateRequest: {
+      /** @description Opaque identifier */
+      itemId: string;
+      positionMs: number;
+      durationMs: number;
+    };
+    SecretStatus: {
+      set: boolean;
+      /** @description Last characters of the stored value, for recognition */
+      hint: string | null;
+    };
+    SettingsView: {
+      tmdbApiKey: components['schemas']['SecretStatus'];
+      openSubtitlesApiKey: components['schemas']['SecretStatus'];
+      openSubtitlesUsername: string | null;
+      openSubtitlesPassword: components['schemas']['SecretStatus'];
+      /** @description Xtream Codes server URL; defaults to the owner's provider */
+      iptvUrl: string;
+      iptvUsername: string | null;
+      iptvPassword: components['schemas']['SecretStatus'];
+    };
+    /** @description Only fields present are changed */
+    SettingsUpdate: {
+      /** @description TMDB v3 API key or v4 read access token. Null clears it. */
+      tmdbApiKey?: string | null;
+      openSubtitlesApiKey?: string | null;
+      openSubtitlesUsername?: string | null;
+      openSubtitlesPassword?: string | null;
+      iptvUrl?: string | null;
+      iptvUsername?: string | null;
+      iptvPassword?: string | null;
+    };
+    LiveCategory: {
+      id: string;
+      name: string;
+      /** @enum {string} */
+      kind: 'live' | 'vod' | 'series';
+    };
+    LiveProgramme: {
+      id: string;
+      title: string;
+      description: string | null;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      startAt: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      endAt: string;
+    };
+    LiveChannel: {
+      id: string;
+      name: string;
+      number: number | null;
+      logoUrl: string | null;
+      categoryId: string | null;
+      hasArchive: boolean;
+      archiveDays: number;
+      /** @description Programme on air at request time, if the guide knows */
+      now: components['schemas']['LiveProgramme'] | null;
+      next: components['schemas']['LiveProgramme'] | null;
+    };
+    LiveStatus: {
+      /** @description Provider URL, username, and password are all set */
+      configured: boolean;
+      refreshing: boolean;
+      lastRefreshAt: string | null;
+      lastError: string | null;
+      channels: number;
+      programmes: number;
+      /** @description Provider's account status, e.g. Active */
+      accountStatus: string | null;
+      accountExpiresAt: string | null;
+      movies: number;
+      series: number;
+      /** @description TMDB matching of provider titles is running */
+      matching: boolean;
+    };
+    LiveDecideRequest: {
+      /** @description Required unless vodId or episodeId is given */
+      channelId?: string;
+      profile: components['schemas']['DeviceProfile'];
+      /** @description An IPTV movie */
+      vodId?: string;
+      /** @description An IPTV series episode */
+      episodeId?: string;
+      /** @description A past programme on a catch-up channel; omit for the live stream */
+      programmeId?: string;
+      /** @description A recording made by the server */
+      recordingId?: string;
+    };
+    LivePlaybackDecision: {
+      /**
+       * @description direct: raw MPEG-TS relay; hls: live playlist
+       * @enum {string}
+       */
+      method: 'direct' | 'hls';
+      /** @description Relative URL of the TS stream or the HLS playlist */
+      url: string;
+      sessionId: string | null;
+      reason: string;
+      /** @enum {string} */
+      kind: 'live' | 'catchup' | 'vod' | 'recording';
+      /** @description Programme length for catch-up (seekable); null while live */
+      durationMs: number | null;
+      /** @description Programme title for catch-up */
+      title: string | null;
+    };
+    IptvMovie: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      runtimeMs: number | null;
+      /** @description Cached TMDB artwork; null when unmatched */
+      posterKey: string | null;
+      backdropKey: string | null;
+      /** @description The provider's own cover image URL */
+      logoUrl: string | null;
+      categoryId: string | null;
+      containerExtension: string;
+      needsReview: boolean;
+      tmdbId: number | null;
+      addedAt: string | null;
+    };
+    IptvMoviePage: {
+      items: components['schemas']['IptvMovie'][];
+      total: number;
+      offset: number;
+    };
+    IptvSeries: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      coverUrl: string | null;
+      categoryId: string | null;
+      needsReview: boolean;
+      tmdbId: number | null;
+    };
+    IptvSeriesPage: {
+      items: components['schemas']['IptvSeries'][];
+      total: number;
+      offset: number;
+    };
+    IptvEpisode: {
+      id: string;
+      seriesId: string;
+      seasonNumber: number;
+      episodeNumber: number;
+      title: string;
+      overview: string | null;
+      imageUrl: string | null;
+      durationMs: number | null;
+      containerExtension: string;
+    };
+    IptvSeriesDetail: {
+      id: string;
+      title: string;
+      year: number | null;
+      overview: string | null;
+      genres: string[];
+      rating: number | null;
+      posterKey: string | null;
+      backdropKey: string | null;
+      coverUrl: string | null;
+      categoryId: string | null;
+      needsReview: boolean;
+      tmdbId: number | null;
+      seasons: {
+        number: number;
+        episodes: components['schemas']['IptvEpisode'][];
+      }[];
+    };
+    /** @enum {string} */
+    RecordingState: 'scheduled' | 'recording' | 'done' | 'failed';
+    Recording: {
+      /** @description Opaque identifier */
+      id: string;
+      channelId: string;
+      channelName: string;
+      channelLogoUrl: string | null;
+      title: string;
+      description: string | null;
+      programmeId: string | null;
+      /**
+       * Format: date-time
+       * @description Planned start
+       */
+      startAt: string;
+      /** @description Planned end including padding; null until stopped by hand */
+      endAt: string | null;
+      actualStartAt: string | null;
+      actualEndAt: string | null;
+      state: components['schemas']['RecordingState'];
+      sizeBytes: number;
+      /** @description Measured once the recording is done */
+      durationMs: number | null;
+      error: string | null;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+    };
+    CreateRecordingRequest: {
+      channelId: string;
+      /** @description Record this guide programme: starts at its start (or now) and ends at its end plus padding */
+      programmeId?: string;
+      /**
+       * Format: date-time
+       * @description When to start; defaults to now (ignored with programmeId)
+       */
+      startAt?: string;
+      /** @description How long to record; omit for manual stop (ignored with programmeId) */
+      durationMinutes?: number;
+      title?: string;
+      /** @description Overrides RECORDING_PADDING_MS for a programme recording */
+      paddingMs?: number;
+    };
+    /** @enum {string} */
+    ComicFormat: 'cbz' | 'cbr' | 'cb7' | 'cbt' | 'pdf';
+    /**
+     * @description rtl: manga, read right to left
+     * @enum {string}
+     */
+    ReadingDirection: 'ltr' | 'rtl';
+    ComicProgress: {
+      /** @description 0-based index of the page last shown */
+      page: number;
+      pageCount: number;
+      /** @description Reached the last page, or marked read */
+      finished: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      updatedAt: string;
+    };
+    ComicBook: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      seriesId: string;
+      seriesTitle: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @description ComicInfo title, else the file name without tags */
+      title: string;
+      /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+      label: string | null;
+      fileName: string;
+      /** @description Null until the book is indexed */
+      format: components['schemas']['ComicFormat'] | null;
+      sizeBytes: number;
+      pageCount: number | null;
+      volume: number | null;
+      chapter: number | null;
+      special: boolean;
+      /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
+      direction: components['schemas']['ReadingDirection'] | null;
+      /** @description Image key for GET /api/images/{key} */
+      coverKey: string | null;
+      indexError: string | null;
+      progress: components['schemas']['ComicProgress'] | null;
+    };
+    ComicBookDetail: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      seriesId: string;
+      seriesTitle: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      /** @description ComicInfo title, else the file name without tags */
+      title: string;
+      /** @description "Vol. 3", "Ch. 120.5", "Vol. 3 · Ch. 20", "#12"; null when unnumbered */
+      label: string | null;
+      fileName: string;
+      /** @description Null until the book is indexed */
+      format: components['schemas']['ComicFormat'] | null;
+      sizeBytes: number;
+      pageCount: number | null;
+      volume: number | null;
+      chapter: number | null;
+      special: boolean;
+      /** @description From ComicInfo.xml, else rtl for a book under a Manga folder; null when neither says */
+      direction: components['schemas']['ReadingDirection'] | null;
+      /** @description Image key for GET /api/images/{key} */
+      coverKey: string | null;
+      indexError: string | null;
+      progress: components['schemas']['ComicProgress'] | null;
+      summary: string | null;
+      writer: string | null;
+      year: number | null;
+      /** @description The book before this one in reading order */
+      previousId: string | null;
+      /** @description The book after this one in reading order */
+      nextId: string | null;
+    };
+    ComicSeries: {
+      /** @description Opaque identifier */
+      id: string;
+      /** @description Opaque identifier */
+      libraryId: string;
+      title: string;
+      bookCount: number;
+      readCount: number;
+      coverKey: string | null;
+      /** @description rtl when most of its books read right to left */
+      direction: components['schemas']['ReadingDirection'] | null;
+      lastReadAt: string | null;
+      /** @description Favorited by this user (PUT /api/favorites/{id}) */
+      favorite: boolean;
+      /**
+       * Format: date-time
+       * @description ISO 8601 UTC timestamp
+       */
+      createdAt: string;
+    };
+    ComicSeriesDetail: {
+      series: components['schemas']['ComicSeries'];
+      /** @description Reading order: volumes, then loose chapters, then unnumbered books */
+      books: components['schemas']['ComicBook'][];
+    };
+    ComicProgressUpdate: {
+      page: number;
+      /**
+       * Format: date-time
+       * @description When the page was read, for progress saved offline and sent later. An update older than the stored one is ignored.
+       */
+      at?: string;
+    };
+    HealthResponse: {
+      /** @constant */
+      status: 'ok';
+      version: string;
+      time: string;
+      /**
+       * @description Video encoder transcodes will use
+       * @enum {string}
+       */
+      encoder: 'h264_vaapi' | 'libx264';
+      encoderReason: string;
+    };
+    CreateUserRequest: {
+      name: string;
+      /** @default false */
+      isAdmin: boolean;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

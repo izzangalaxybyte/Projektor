@@ -8,6 +8,7 @@ import app.projektor.core.api.models.ItemDetail
 import app.projektor.core.api.models.ItemKindInput
 import app.projektor.core.api.models.ItemFacets
 import app.projektor.core.api.models.ItemSummary
+import app.projektor.core.api.models.ProgressState
 import app.projektor.core.api.models.LibraryKindInput
 import app.projektor.core.api.models.PlaybackDecideRequestInput
 import app.projektor.core.api.models.PlaybackDecision
@@ -82,4 +83,16 @@ class ItemsRepository(private val client: ProjektorClient) {
         // Unwatching answers `null` (no progress left), which the generated model cannot parse.
         client.progress.apiProgressItemIdWatchedPut(itemId, ApiProgressItemIdWatchedPutRequest(watched)).okOrThrow()
     }
+
+    /** Takes a movie or episode off continue watching, leaving its progress and watched mark alone. */
+    suspend fun dismissFromContinueWatching(itemId: String) {
+        client.progress.apiProgressContinueItemIdDelete(itemId).okOrThrow()
+    }
 }
+
+/**
+ * Played part way, so it resumes and shows a progress bar: never finished, or finished before and
+ * being rewatched (a rewatch keeps its watched mark while it is short of the end). Same rule as the
+ * server's continue watching.
+ */
+val ProgressState.inProgress: Boolean get() = positionMs > 0 && positionMs < durationMs * 0.9

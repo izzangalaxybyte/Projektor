@@ -88,4 +88,23 @@ export const progressRoutes: FastifyPluginAsyncZod = async (app) => {
         .slice(0, request.query.limit);
     },
   );
+
+  app.delete(
+    '/continue/:itemId',
+    {
+      schema: {
+        tags: ['progress'],
+        summary: 'Take a movie or episode off continue watching',
+        description:
+          'Leaves its progress and watched mark alone. It comes back when it is played again, or, for a next episode, when another episode of the show is finished.',
+        security: [{ bearerAuth: [] }],
+        params: z.object({ itemId: Id }),
+        response: { 204: z.null() },
+      },
+    },
+    async (request, reply) => {
+      progress.dismiss(request.user!.id, request.params.itemId);
+      return reply.code(204).send(null);
+    },
+  );
 };

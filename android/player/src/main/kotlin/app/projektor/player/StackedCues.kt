@@ -64,7 +64,8 @@ fun PlayerView.showWithStackedSubtitles(projektor: ProjektorPlayer) {
  * its edges are cropped off with the picture. It is then scaled down around the screen's centre to
  * fit the screen, which puts every line, top or bottom, where fit mode would. This is worked out
  * again whenever the subtitle view is laid out (a resize-mode switch, rotation), since that happens
- * after the call that asked for it.
+ * after the call that asked for it. Zoomed, the picture runs to the screen's edge, so the lines are
+ * also kept [ZOOMED_GAP] of the screen height clear of the bottom edge.
  */
 @OptIn(UnstableApi::class)
 fun PlayerView.liftSubtitles(controlsPx: Int) {
@@ -79,6 +80,9 @@ fun PlayerView.liftSubtitles(controlsPx: Int) {
     subs.setTag(R.id.projektor_lift_px, controlsPx)
     applyLift(controlsPx)
 }
+
+/** Extra room under subtitles while the video is zoomed, as a fraction of the screen height. */
+private const val ZOOMED_GAP = 0.05f
 
 @OptIn(UnstableApi::class)
 private fun PlayerView.applyLift(controlsPx: Int) {
@@ -99,8 +103,10 @@ private fun PlayerView.applyLift(controlsPx: Int) {
     subs.scaleY = scale
     val shownBottom = subsTop + pivotY + (subs.height - pivotY) * scale
     val gapBelow = height - shownBottom
+    val zoomed = scale < 1f
+    val wanted = maxOf(controlsPx.toFloat(), if (zoomed) height * ZOOMED_GAP else 0f)
     // In the subtitle view's own (unscaled) pixels.
-    val overlap = ((controlsPx - gapBelow).coerceAtLeast(0f) / scale).toInt()
+    val overlap = ((wanted - gapBelow).coerceAtLeast(0f) / scale).toInt()
     subs.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION + overlap.toFloat() / subs.height)
     for (i in 0 until subs.childCount) {
         val child = subs.getChildAt(i)

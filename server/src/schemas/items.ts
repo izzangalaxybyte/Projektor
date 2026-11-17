@@ -32,6 +32,10 @@ export const ItemSummary = z
     seasonNumber: z.number().int().nullable(),
     episodeNumber: z.number().int().nullable(),
     showTitle: z.string().nullable(),
+    showId: Id.nullable().meta({ description: 'Seasons and episodes: the show they belong to' }),
+    seasonId: Id.nullable().meta({
+      description: 'Episodes filed under a season: that season; null otherwise',
+    }),
     needsReview: z.boolean(),
     progress: ProgressState.nullable(),
     favorite: z

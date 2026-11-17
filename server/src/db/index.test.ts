@@ -27,6 +27,7 @@ const EXPECTED_TABLES = [
   'settings',
   'track_preferences',
   'comic_series',
+  'continue_dismissals',
   'comic_books',
   'comic_progress',
 ];

@@ -1,5 +1,6 @@
 package app.projektor.mobile.ui.components
 
+import app.projektor.core.items.inProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,7 +61,7 @@ data class TileAction(val label: String, val run: () -> Unit)
 
 @Composable
 fun PosterTile(item: ItemSummary, client: ProjektorClient, onClick: () -> Unit, modifier: Modifier = Modifier, wide: Boolean = item.kind.value == "episode", actions: List<TileAction> = emptyList(), caption: String = item.subtitle()) {
-    val progress = item.progress?.takeIf { !it.watched }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
+    val progress = item.progress?.takeIf { it.inProgress }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
     Column(modifier.clickable(onClick = onClick).testTag("tile-${item.kind.value}")) {
         Box(
             Modifier.fillMaxWidth().aspectRatio(if (wide) 16f / 9f else 2f / 3f).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface),

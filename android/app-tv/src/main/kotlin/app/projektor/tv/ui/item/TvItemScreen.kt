@@ -1,5 +1,6 @@
 package app.projektor.tv.ui.item
 
+import app.projektor.core.items.inProgress
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -86,7 +87,7 @@ fun TvItemScreen(container: TvContainer, itemId: String, openItem: (String) -> U
                                 LaunchedEffect(d.id) { runCatching { primaryFocus.requestFocus() } }
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     val file = d.files.firstOrNull()
-                                    val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
+                                    val resume = d.progress?.takeIf { it.inProgress && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
                                     if (file != null) {
                                         Button(onClick = { start(file.id, resume) }, modifier = Modifier.focusRequester(primaryFocus).testTag("play")) {
                                             Text(if (resume > 0) "Resume from ${formatMs(resume)}" else "Play")

@@ -1,5 +1,6 @@
 package app.projektor.mobile.ui.item
 
+import app.projektor.core.items.inProgress
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -162,7 +163,7 @@ fun EpisodeSection(items: List<ItemSummary>, client: ProjektorClient, prefs: Bro
 
 private fun number(e: ItemSummary): String = listOfNotNull(e.seasonNumber?.let { "S$it" }, e.episodeNumber?.let { "E$it" }).joinToString(" ")
 
-private fun progressOf(e: ItemSummary): Float? = e.progress?.takeIf { !it.watched && it.positionMs > 0 }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
+private fun progressOf(e: ItemSummary): Float? = e.progress?.takeIf { it.inProgress }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
 
 @Composable
 private fun Thumb(e: ItemSummary, client: ProjektorClient, modifier: Modifier) {

@@ -64,7 +64,10 @@ export function ItemPage() {
 function PlayActions({ detail }: { detail: ItemDetail }) {
   const file = detail.files[0]!;
   const resume =
-    detail.progress && !detail.progress.watched && detail.progress.positionMs > 5000
+    // Resumes a rewatch too: watched items keep their mark while played again from the start.
+    detail.progress &&
+    detail.progress.positionMs < detail.progress.durationMs * 0.9 &&
+    detail.progress.positionMs > 5000
       ? detail.progress.positionMs
       : 0;
   return (

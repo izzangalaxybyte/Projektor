@@ -85,6 +85,19 @@ export class ProgressService {
     return { positionMs: durationMs, durationMs, watched: true, updatedAt: row.updatedAt };
   }
 
+  /** Takes an item off the continue watching row until it is played again. */
+  dismiss(userId: string, itemId: string): void {
+    const dismissedAt = now();
+    this.db
+      .insert(schema.continueDismissals)
+      .values({ userId, itemId, dismissedAt })
+      .onConflictDoUpdate({
+        target: [schema.continueDismissals.userId, schema.continueDismissals.itemId],
+        set: { dismissedAt },
+      })
+      .run();
+  }
+
   get(userId: string, itemId: string): ProgressState | null {
     const row = this.db
       .select()
@@ -123,8 +136,10 @@ export class ProgressService {
   }
 
   /**
-   * Ids for the continue watching row, most recently played first: in-progress items, plus the
-   * next unwatched episode of a show whose latest activity was finishing an episode.
+   * Ids for the continue watching row, most recently played first: in-progress items (including
+   * a watched item being rewatched), plus the next unwatched episode of a show whose latest
+   * activity was finishing an episode. Items the user dismissed after that activity are left out,
+   * and so is the rest of their show.
    */
   continueWatching(userId: string, limit = 50): string[] {
     const rows = this.db
@@ -134,6 +149,18 @@ export class ProgressService {
       .orderBy(desc(schema.playbackState.updatedAt))
       .limit(1000)
       .all();
+    const dismissed = new Map(
+      this.db
+        .select()
+        .from(schema.continueDismissals)
+        .where(eq(schema.continueDismissals.userId, userId))
+        .all()
+        .map((d) => [d.itemId, d.dismissedAt]),
+    );
+    const isDismissed = (itemId: string, since: string) => {
+      const at = dismissed.get(itemId);
+      return at !== undefined && at >= since;
+    };
     const watched = new Set(rows.filter((r) => r.watched).map((r) => r.itemId));
     const showOf = this.showsOf(rows.filter((r) => r.itemKind === 'episode').map((r) => r.itemId));
     const shows = new Set<string>();
@@ -141,8 +168,8 @@ export class ProgressService {
     for (const row of rows) {
       if (out.size >= limit) break;
       const show = showOf.get(row.itemId);
-      if (!row.watched) {
-        out.add(row.itemId);
+      if (isInProgress(row)) {
+        if (!isDismissed(row.itemId, row.updatedAt)) out.add(row.itemId);
         if (show) shows.add(show);
         continue;
       }
@@ -150,7 +177,7 @@ export class ProgressService {
       shows.add(show);
       let next = this.nextEpisode(row.itemId);
       while (next && watched.has(next)) next = this.nextEpisode(next);
-      if (next) out.add(next);
+      if (next && !isDismissed(next, row.updatedAt)) out.add(next);
     }
     return [...out];
   }
@@ -226,6 +253,19 @@ export class ProgressService {
       .get();
     return byMovie?.d ?? byEpisode?.d ?? null;
   }
+}
+
+/**
+ * Played part way: never finished, or finished before and being watched again (a rewatch keeps
+ * its watched mark while its position is short of the end).
+ */
+export function isInProgress(p: {
+  positionMs: number;
+  durationMs: number;
+  watched: boolean;
+}): boolean {
+  if (!p.watched) return true;
+  return p.positionMs > 0 && p.positionMs / Math.max(p.durationMs, 1) < WATCHED_FRACTION;
 }
 
 /** Season-major ordering; specials (season 0) first, season-less anime by absolute number at the end. */

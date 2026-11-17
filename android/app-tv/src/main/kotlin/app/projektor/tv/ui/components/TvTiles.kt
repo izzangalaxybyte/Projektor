@@ -1,5 +1,6 @@
 package app.projektor.tv.ui.components
 
+import app.projektor.core.items.inProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +38,7 @@ fun ItemSummary.caption(): String = captionFor(kind.value, seasonNumber, episode
 @Composable
 fun TvTile(item: ItemSummary, client: ProjektorClient, onClick: () -> Unit, modifier: Modifier = Modifier, focusRequester: FocusRequester? = null) {
     val wide = item.kind.value == "episode"
-    val progress = item.progress?.takeIf { !it.watched }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
+    val progress = item.progress?.takeIf { it.inProgress }?.let { it.positionMs.toFloat() / it.durationMs.coerceAtLeast(1) }
     // Ask for focus from inside the tile so the request cannot run before the tile exists.
     if (focusRequester != null) LaunchedEffect(item.id) { runCatching { focusRequester.requestFocus() } }
     Column(modifier.width(if (wide) 300.dp else 160.dp)) {

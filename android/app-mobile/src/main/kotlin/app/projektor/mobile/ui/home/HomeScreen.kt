@@ -29,6 +29,7 @@ import app.projektor.core.api.models.ComicBook
 import app.projektor.core.api.models.ComicSeries
 import app.projektor.core.api.models.ItemSummary
 import app.projektor.core.api.models.LibraryKindInput
+import app.projektor.core.items.inProgress
 import app.projektor.mobile.AppContainer
 import app.projektor.mobile.BuildConfig
 import app.projektor.mobile.ui.UiState
@@ -103,17 +104,26 @@ fun HomeScreen(
             load()
         } catch (e: Exception) { Toast.makeText(context, e.userMessage(), Toast.LENGTH_SHORT).show() }
     }
-    fun actions(item: ItemSummary): List<TileAction> {
+    fun dismiss(item: ItemSummary) = scope.launch {
+        try {
+            items.dismissFromContinueWatching(item.id)
+            load()
+        } catch (e: Exception) { Toast.makeText(context, e.userMessage(), Toast.LENGTH_SHORT).show() }
+    }
+    fun actions(item: ItemSummary, inContinueWatching: Boolean = false): List<TileAction> {
         val playable = item.kind.value == "movie" || item.kind.value == "episode"
         val favoritable = item.kind.value == "movie" || item.kind.value == "show"
         if (!playable && !favoritable) return emptyList()
         val p = item.progress
+        val episode = item.kind.value == "episode"
         return listOfNotNull(
             TileAction("Details") { openItem(item.id) },
+            TileAction(item.seasonNumber?.let { "Go to season $it" } ?: "Go to season") { openItem(item.seasonId!!) }.takeIf { episode && item.seasonId != null },
+            TileAction("Go to show") { openItem(item.showId!!) }.takeIf { item.showId != null },
             TileAction("Add to favorites") { setFavorite(item, true) }.takeIf { favoritable && !item.favorite },
             TileAction("Remove from favorites") { setFavorite(item, false) }.takeIf { favoritable && item.favorite },
-            TileAction("Mark as watched") { setWatched(item, true) }.takeIf { playable && p?.watched != true },
-            TileAction("Remove from Continue watching") { setWatched(item, false) }.takeIf { playable && p != null && !p.watched },
+            TileAction("Mark as watched") { setWatched(item, true) }.takeIf { playable && (p?.watched != true || p?.inProgress == true) },
+            TileAction("Remove from Continue watching") { dismiss(item) }.takeIf { inContinueWatching },
             TileAction("Mark as unwatched") { setWatched(item, false) }.takeIf { playable && p?.watched == true },
         )
     }
@@ -132,7 +142,7 @@ fun HomeScreen(
                 Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
             }
             is UiState.Ready -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                KINDS.forEach { k -> TileRow("Continue watching · ${LABEL[k]}", s.value.continueWatching[k].orEmpty(), client, { openItem(it.id) }, "continue-${k.value}", ::actions) }
+                KINDS.forEach { k -> TileRow("Continue watching · ${LABEL[k]}", s.value.continueWatching[k].orEmpty(), client, { openItem(it.id) }, "continue-${k.value}") { actions(it, inContinueWatching = true) } }
                 if (s.value.reading.isNotEmpty()) BookRow("Continue reading · Comics & manga", s.value.reading, container, openComic, "continue-comics", edge = 16.dp)
                 TileRow("Favorites", s.value.favorites, client, { openItem(it.id) }, "favorites", ::actions)
                 if (s.value.favoriteComics.isNotEmpty()) SeriesRow("Favorite comics & manga", s.value.favoriteComics, container, openComicSeries, "favorite-comics", edge = 16.dp)

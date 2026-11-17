@@ -1,5 +1,6 @@
 package app.projektor.mobile.ui.item
 
+import app.projektor.core.items.inProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -170,7 +171,7 @@ fun ItemScreen(container: AppContainer, itemId: String, openItem: (String) -> Un
                     }
                 }
                 d.files.firstOrNull()?.let { file ->
-                    val resume = d.progress?.takeIf { !it.watched && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
+                    val resume = d.progress?.takeIf { it.inProgress && it.positionMs > 5000 }?.positionMs?.toLong() ?: 0L
                     // Several files for one item (a sub and a dub release, say): ask which to play.
                     var choosingFrom by remember(d.id) { mutableStateOf<Long?>(null) }
                     var choosingDownload by remember(d.id) { mutableStateOf(false) }

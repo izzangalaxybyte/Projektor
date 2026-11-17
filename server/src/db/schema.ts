@@ -264,6 +264,23 @@ export const playbackState = sqliteTable(
   ],
 );
 
+/**
+ * Items a user took off the continue watching row. An item stays off until it is played again
+ * (its progress is newer than the dismissal) or, for a next episode, until another episode of
+ * the show is finished.
+ */
+export const continueDismissals = sqliteTable(
+  'continue_dismissals',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull(),
+    dismissedAt: text('dismissed_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.itemId] })],
+);
+
 /** Movies and shows a user has favorited, shown as a row on home. */
 export const favorites = sqliteTable(
   'favorites',

@@ -1,5 +1,6 @@
 package app.projektor.mobile.ui.downloads
 
+import app.projektor.core.items.inProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -154,7 +155,7 @@ private fun ComicDownloadRow(d: app.projektor.mobile.comics.ComicDownload, conta
 
 /** Where to start a download: its own saved spot, or the server's from when it was downloaded. */
 private fun resumeAt(d: Download): Long {
-    val pos = maxOf(d.positionMs, d.detail.progress?.takeIf { !it.watched }?.positionMs ?: 0L)
+    val pos = maxOf(d.positionMs, d.detail.progress?.takeIf { it.inProgress }?.positionMs ?: 0L)
     return pos.takeIf { it > 5_000L && it < d.file.durationMs * 95 / 100 } ?: 0L
 }
 

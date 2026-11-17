@@ -134,6 +134,49 @@ describe('ProgressService', () => {
     expect(service.continueWatching(userId)).toEqual([]);
   });
 
+  it('keeps a rewatch in continue watching until it reaches the end again', () => {
+    const { db, libraryId, userId, service } = setup();
+    const [e1, e2] = addShow(db, libraryId, [
+      [1, 1, null],
+      [1, 2, null],
+    ]);
+    service.setWatched(userId, e2!, true);
+    service.update(userId, e1!, 95, 100);
+    expect(service.continueWatching(userId)).toEqual([]);
+    db.update(schema.playbackState).set({ updatedAt: '2020-01-01T00:00:00.000Z' }).run();
+    expect(service.update(userId, e1!, 40, 100).watched).toBe(true);
+    expect(service.continueWatching(userId)).toEqual([e1]);
+    service.update(userId, e1!, 92, 100);
+    expect(service.continueWatching(userId)).toEqual([]);
+  });
+
+  it('leaves dismissed items off continue watching until they are played again', () => {
+    const { db, libraryId, userId, service } = setup();
+    const [e1, e2, e3] = addShow(db, libraryId, [
+      [1, 1, null],
+      [1, 2, null],
+      [1, 3, null],
+    ]);
+    const old = '2020-01-01T00:00:00.000Z';
+    service.update(userId, e1!, 40, 100);
+    service.dismiss(userId, e1!);
+    expect(service.continueWatching(userId)).toEqual([]);
+    db.update(schema.continueDismissals).set({ dismissedAt: old }).run();
+    db.update(schema.playbackState).set({ updatedAt: '2019-01-01T00:00:00.000Z' }).run();
+    service.update(userId, e1!, 50, 100);
+    expect(service.continueWatching(userId)).toEqual([e1]);
+    // A next episode stays off until another episode is finished.
+    service.update(userId, e1!, 95, 100);
+    expect(service.continueWatching(userId)).toEqual([e2]);
+    service.dismiss(userId, e2!);
+    expect(service.continueWatching(userId)).toEqual([]);
+    db.update(schema.continueDismissals).set({ dismissedAt: old }).run();
+    service.setWatched(userId, e2!, true);
+    expect(service.continueWatching(userId)).toEqual([e3]);
+    // Progress and watched marks are untouched.
+    expect(service.get(userId, e1!)).toMatchObject({ watched: true });
+  });
+
   it('finds the next episode across seasons and by absolute number', () => {
     const { db, libraryId, service } = setup();
     const [s1e1, s1e2, s2e1, special] = addShow(db, libraryId, [

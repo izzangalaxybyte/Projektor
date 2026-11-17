@@ -11,7 +11,8 @@ interface Props {
 export function PosterTile({ item, wide = item.kind === 'episode' }: Props) {
   const src = imageUrl(item.posterKey, wide ? 780 : 300);
   const percent =
-    item.progress && !item.progress.watched
+    // Below 90% it is in progress: unwatched, or a rewatch of something watched.
+    item.progress && item.progress.positionMs < item.progress.durationMs * 0.9
       ? Math.round((item.progress.positionMs / item.progress.durationMs) * 100)
       : 0;
   return (
