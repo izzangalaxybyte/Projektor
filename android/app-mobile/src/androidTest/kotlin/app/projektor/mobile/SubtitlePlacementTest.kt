@@ -109,7 +109,8 @@ class SubtitlePlacementTest {
         rule.waitForIdle()
         val zoom = gapUnderText(view)
         rule.runOnUiThread { projektor.exo.release() }
-        assertTrue("playing: gap under subtitles: fit $fit px, zoom $zoom px", fit > 0 && abs(fit - zoom) <= 4)
+        // WebVTT puts the cue on line -1; it must still get the usual bottom padding (8% of 450 px).
+        assertTrue("playing: gap under subtitles: fit $fit px, zoom $zoom px", fit >= 30 && abs(fit - zoom) <= 4)
     }
 
     /** Pixels between the lowest white (subtitle text) pixel and the bottom of [view]. */

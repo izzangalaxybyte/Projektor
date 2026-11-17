@@ -16,18 +16,22 @@ import io.github.peerless2012.ass.media.widget.AssSubtitleView
  * WebVTT stacks cues that show at the same time exactly one line apart (line -1, -2, …), measured
  * by each cue's first line, so a two-line cue is drawn over the one above it. Merging the stacked
  * cues into one bottom cue, top cue first, lets the text lay itself out. Positioned cues are kept.
+ *
+ * The bottom cue's line is then cleared: Media3 only keeps the subtitle view's bottom padding
+ * under cues without a line, so a cue on line -1 sat right on the bottom edge and was not lifted
+ * above the controls by [liftSubtitles].
  */
 @OptIn(UnstableApi::class)
 fun stackCues(cues: List<Cue>): List<Cue> {
     val (stacked, placed) = cues.partition { it.text != null && it.lineType == Cue.LINE_TYPE_NUMBER && it.line < 0 }
-    if (stacked.size < 2) return cues
+    if (stacked.isEmpty()) return cues
     val ordered = stacked.sortedBy { it.line }
     val text = SpannableStringBuilder()
     ordered.forEachIndexed { i, cue ->
         if (i > 0) text.append('\n')
         text.append(cue.text)
     }
-    return placed + ordered.last().buildUpon().setText(text).setLine(-1f, Cue.LINE_TYPE_NUMBER).build()
+    return placed + ordered.last().buildUpon().setText(text).setLine(Cue.DIMEN_UNSET, Cue.TYPE_UNSET).build()
 }
 
 /**
