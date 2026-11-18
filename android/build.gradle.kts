@@ -8,13 +8,20 @@ plugins {
     alias(libs.plugins.openapi.generator) apply false
 }
 
-// Every APK carries a build number so a tester can tell which build is installed: versionCode is
-// the commit count on the current branch and versionName is <release>.<count>. Both apps
-// read these and show them on the sign-in and home screens.
-fun git(vararg args: String): String = providers.exec { commandLine("git", *args) }.standardOutput.asText.get().trim()
+// Versions come from git. The latest tag named vMAJOR.MINOR.0 (e.g. v1.1.0) starts a version;
+// versionName is MAJOR.MINOR.<commits since that tag>, so the build number starts over at 0 with
+// each new version. Tag a commit to start a new one: a feature bumps MINOR, a big change MAJOR.
+// versionCode is the commit count on the current branch, so it keeps rising across versions, as
+// Android needs for an update to install. Both apps show versionName on the sign-in and home screens.
+fun git(vararg args: String): String = providers.exec {
+    commandLine("git", *args)
+    isIgnoreExitValue = true
+}.standardOutput.asText.get().trim()
 val buildNumber = git("rev-list", "--count", "HEAD").toIntOrNull() ?: 1
-val release = "1.0"
-val versionName = "$release.$buildNumber"
+val versionTag = git("describe", "--tags", "--match", "v[0-9]*.[0-9]*.0", "--abbrev=0")
+val release = Regex("""^v(\d+)\.(\d+)\.0$""").find(versionTag)?.let { "${it.groupValues[1]}.${it.groupValues[2]}" } ?: "0.0"
+val sinceRelease = if (versionTag.isEmpty()) buildNumber else git("rev-list", "--count", "$versionTag..HEAD").toIntOrNull() ?: 0
+val versionName = "$release.$sinceRelease"
 extra["projektorVersionCode"] = buildNumber
 extra["projektorVersionName"] = versionName
 
