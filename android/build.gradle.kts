@@ -9,13 +9,15 @@ plugins {
 }
 
 // Every APK carries a build number so a tester can tell which build is installed: versionCode is
-// the commit count on the current branch and versionName is 0.1.<count>-<short sha>. Both apps
+// the commit count on the current branch and versionName is <release>.<count>-<short sha>. Both apps
 // read these and show them on the sign-in and home screens.
 fun git(vararg args: String): String = providers.exec { commandLine("git", *args) }.standardOutput.asText.get().trim()
 val buildNumber = git("rev-list", "--count", "HEAD").toIntOrNull() ?: 1
 val gitSha = git("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
+val release = "1.0"
+val versionName = "$release.$buildNumber-$gitSha"
 extra["projektorVersionCode"] = buildNumber
-extra["projektorVersionName"] = "0.1.$buildNumber-$gitSha"
+extra["projektorVersionName"] = versionName
 
 // ./gradlew publishToApphound builds both release APKs and publishes them to apphound, the private
 // store (~/Documents/GitHub/appster) that installs and updates them on devices. The changelog is
@@ -33,7 +35,7 @@ val publishTasks = apphoundApps.map { (module, flavor, storeName) ->
         group = "publishing"
         description = "Publishes the $flavor release APK to apphound as \"$storeName\"."
         dependsOn(":$module:assembleRelease")
-        val apk = file("$module/build/outputs/apk/release/Projektor-$flavor-0.1.$buildNumber-$gitSha-release.apk")
+        val apk = file("$module/build/outputs/apk/release/Projektor-$flavor-$versionName-release.apk")
         commandLine(
             uv, "run", "--project", apphoundDir.path, File(apphoundDir, "scripts/publish.py").path,
             apk.path, "--name", storeName, "--changelog", changelog, "--icon", file("store-icon.png").path,

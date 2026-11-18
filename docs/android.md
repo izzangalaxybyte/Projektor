@@ -107,7 +107,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 `local.properties` (gitignored) points `sdk.dir` at the SDK; Android Studio writes it, or create it with `sdk.dir=/Users/you/Library/Android/sdk`. Debug APKs land in `app-mobile/build/outputs/apk/debug/` and `app-tv/build/outputs/apk/debug/`.
 
-Every APK carries a build number taken from git at build time: `versionCode` is the commit count on the current branch and `versionName` is `0.1.<count>-<short sha>` (root `build.gradle.kts`). The file is named after it, `Projektor-phone-0.1.118-05856a1-debug.apk`, and both apps show "Build 0.1.118-05856a1" on the sign-in screen and the home screen, so a tester can tell at a glance which build is installed. Build from the merged `main` before handing out an APK so the number matches a commit in the repo.
+Every APK carries a build number taken from git at build time: `versionCode` is the commit count on the current branch and `versionName` is `1.0.<count>-<short sha>` (root `build.gradle.kts`). The file is named after it, `Projektor-phone-1.0.118-05856a1-debug.apk`, and both apps show "Build 1.0.118-05856a1" on the sign-in screen and the home screen, so a tester can tell at a glance which build is installed. Build from the merged `main` before handing out an APK so the number matches a commit in the repo.
 
 The generated client maps JSON `number` to `Double` and `integer` to `Long` (`typeMappings` in `core/build.gradle.kts`). The generator's defaults were `BigDecimal`, which kotlinx.serialization cannot decode, and `Int`, which a 7 GB file's `sizeBytes` overflows; the contract's integers are JS safe integers, so `Long` is the honest type.
 
