@@ -9,13 +9,12 @@ plugins {
 }
 
 // Every APK carries a build number so a tester can tell which build is installed: versionCode is
-// the commit count on the current branch and versionName is <release>.<count>-<short sha>. Both apps
+// the commit count on the current branch and versionName is <release>.<count>. Both apps
 // read these and show them on the sign-in and home screens.
 fun git(vararg args: String): String = providers.exec { commandLine("git", *args) }.standardOutput.asText.get().trim()
 val buildNumber = git("rev-list", "--count", "HEAD").toIntOrNull() ?: 1
-val gitSha = git("rev-parse", "--short", "HEAD").ifEmpty { "unknown" }
 val release = "1.0"
-val versionName = "$release.$buildNumber-$gitSha"
+val versionName = "$release.$buildNumber"
 extra["projektorVersionCode"] = buildNumber
 extra["projektorVersionName"] = versionName
 
